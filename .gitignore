@@ -1,0 +1,84 @@
+# =========================================================
+# KEAMANAN & PRIVASI DATA - SMART SUSTAINABILITY CAMPUS
+# Mencegah file kredensial dan data sensitif bocor ke Git/Public
+# =========================================================
+
+# 1. Environment & Kredensial Rahasia
+.env
+.env.local
+.env.*.local
+.env.production
+*.env
+config.json
+secrets.json
+credentials.json
+
+# 2. Database & Backup Data
+*.db
+*.sqlite
+*.sqlite3
+*.sql
+*.dump
+dump/
+backups/
+
+# 3. Kunci Keamanan, Token & Sertifikat
+*.pem
+*.key
+*.crt
+*.pfx
+*.p12
+id_rsa
+id_rsa.pub
+*.jwt
+
+# 4. Log & File Sementara
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.tmp
+*.bak
+
+# 5. Dependensi & Build
+node_modules/
+dist/
+build/
+.cache/
+.next/
+
+# 6. Python (jika terintegrasi dengan backend)
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+ussc_venv/
+*venv*/
+instance/
+
+# 7. File Sistem Operasi & Editor IDE
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+
+# GitHub backup: secret variants, runtime data and generated artifacts
+.env.*
+!.env.example
+!**/.env.example
+*.tsbuildinfo
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.backup-*
+*.before-audit-*
+/frontend/data/tps-ai-summary-cache.json
+/mediamtx/device_tree.json
+/mediamtx/device_tree_full.txt
+/mediamtx/mediamtx.yml

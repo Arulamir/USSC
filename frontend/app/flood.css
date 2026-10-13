@@ -1,0 +1,550 @@
+/* =========================================================
+   FLOOD MONITORING STYLING (MIGRASI DARI INDEX.HTML & STYLE.CSS)
+   ========================================================= */
+
+.flood-container {
+    padding: 0.5rem 0;
+}
+
+/* Page Heading */
+.flood-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.flood-eyebrow {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #059669;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.dark .flood-eyebrow {
+    color: #34d399;
+}
+
+.flood-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.5px;
+    margin: 0;
+}
+
+.dark .flood-title {
+    color: #f8fafc;
+}
+
+.flood-subtitle {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin-top: 0.25rem;
+    margin-bottom: 0;
+}
+
+.dark .flood-subtitle {
+    color: #94a3b8;
+}
+
+.flood-location-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.dark .flood-location-badge {
+    background: #064e3b;
+    color: #a7f3d0;
+    border-color: #047857;
+}
+
+/* Status Panel */
+.flood-status-panel {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    margin-bottom: 1.75rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+}
+
+.dark .flood-status-panel {
+    background: #1e293b;
+    border-color: #334155;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+.flood-status-light {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+
+.flood-status-light.safe {
+    background: #10b981;
+    border: 4px solid #d1fae5;
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
+    animation: floodPulseSafe 2s infinite;
+}
+
+.flood-status-light.warning {
+    background: #f59e0b;
+    border: 4px solid #fef3c7;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.5);
+    animation: floodPulseWarning 2s infinite;
+}
+
+.flood-status-light.danger {
+    background: #ef4444;
+    border: 4px solid #fee2e2;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+    animation: floodPulseDanger 1.5s infinite;
+}
+
+@keyframes floodPulseSafe {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
+    50% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+}
+
+@keyframes floodPulseWarning {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.6); }
+    50% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+}
+
+@keyframes floodPulseDanger {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+    50% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+}
+
+.flood-status-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.flood-status-info span {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #64748b;
+}
+
+.dark .flood-status-info span {
+    color: #94a3b8;
+}
+
+.flood-status-info strong {
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: -0.2px;
+}
+
+.flood-status-info strong.text-safe {
+    color: #059669;
+}
+.dark .flood-status-info strong.text-safe {
+    color: #34d399;
+}
+
+.flood-status-info strong.text-warning {
+    color: #d97706;
+}
+.dark .flood-status-info strong.text-warning {
+    color: #fbbf24;
+}
+
+.flood-status-info strong.text-danger {
+    color: #dc2626;
+}
+.dark .flood-status-info strong.text-danger {
+    color: #f87171;
+}
+
+.flood-status-info small {
+    font-size: 0.85rem;
+    color: #475569;
+}
+
+.dark .flood-status-info small {
+    color: #cbd5e1;
+}
+
+/* Section Title */
+.flood-section-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 1.75rem 0 1rem 0;
+}
+
+.flood-section-title h3 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+}
+
+.dark .flood-section-title h3 {
+    color: #f8fafc;
+}
+
+.flood-section-title span {
+    font-size: 0.75rem;
+    font-weight: 500;
+    background: #f1f5f9;
+    color: #64748b;
+    padding: 0.25rem 0.6rem;
+    border-radius: 9999px;
+}
+
+.dark .flood-section-title span {
+    background: #334155;
+    color: #94a3b8;
+}
+
+/* Monitor Grid (8 Cards) */
+.flood-monitor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.flood-monitor-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.flood-monitor-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+}
+
+.dark .flood-monitor-card {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+.flood-monitor-card.primary-accent {
+    border-left: 4px solid #0284c7;
+}
+
+.flood-monitor-card.rain-accent {
+    border-left: 4px solid #6366f1;
+}
+
+.flood-monitor-card.temp-accent {
+    border-left: 4px solid #f97316;
+}
+
+.flood-monitor-card.soil-accent {
+    border-left: 4px solid #10b981;
+}
+
+.flood-monitor-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    margin-bottom: 0.85rem;
+}
+
+.flood-monitor-icon.blue {
+    background: #e0f2fe;
+    color: #0284c7;
+}
+.dark .flood-monitor-icon.blue {
+    background: #0369a1;
+    color: #bae6fd;
+}
+
+.flood-monitor-icon.indigo {
+    background: #e0e7ff;
+    color: #4f46e5;
+}
+.dark .flood-monitor-icon.indigo {
+    background: #3730a3;
+    color: #c7d2fe;
+}
+
+.flood-monitor-icon.orange {
+    background: #ffedd5;
+    color: #ea580c;
+}
+.dark .flood-monitor-icon.orange {
+    background: #9a3412;
+    color: #fed7aa;
+}
+
+.flood-monitor-icon.emerald {
+    background: #d1fae5;
+    color: #059669;
+}
+.dark .flood-monitor-icon.emerald {
+    background: #065f46;
+    color: #a7f3d0;
+}
+
+.flood-monitor-icon.purple {
+    background: #f3e8ff;
+    color: #9333ea;
+}
+.dark .flood-monitor-icon.purple {
+    background: #6b21a8;
+    color: #e9d5ff;
+}
+
+.flood-monitor-icon.cyan {
+    background: #cffafe;
+    color: #0891b2;
+}
+.dark .flood-monitor-icon.cyan {
+    background: #155e75;
+    color: #a5f3fc;
+}
+
+.flood-monitor-icon.amber {
+    background: #fef3c7;
+    color: #d97706;
+}
+.dark .flood-monitor-icon.amber {
+    background: #78350f;
+    color: #fde68a;
+}
+
+.flood-monitor-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #64748b;
+    margin-bottom: 0.25rem;
+}
+
+.dark .flood-monitor-label {
+    color: #94a3b8;
+}
+
+.flood-monitor-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.2;
+    margin-bottom: 0.35rem;
+}
+
+.dark .flood-monitor-value {
+    color: #f8fafc;
+}
+
+.flood-monitor-note {
+    font-size: 0.72rem;
+    color: #94a3b8;
+}
+
+.dark .flood-monitor-note {
+    color: #64748b;
+}
+
+/* Charts Grid (4 Cards) */
+.flood-charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.flood-chart-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    padding: 1.25rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.dark .flood-chart-card {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+.flood-chart-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.flood-chart-header h4 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+}
+
+.dark .flood-chart-header h4 {
+    color: #f8fafc;
+}
+
+.flood-chart-header span {
+    font-size: 0.72rem;
+    color: #64748b;
+}
+
+.dark .flood-chart-header span {
+    color: #94a3b8;
+}
+
+.flood-chart-header i {
+    font-size: 1.15rem;
+    color: #0284c7;
+}
+
+.flood-chart-wrapper {
+    height: 220px;
+    width: 100%;
+    position: relative;
+}
+
+/* History Table Card */
+.flood-table-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    padding: 1.25rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    overflow-x: auto;
+}
+
+.dark .flood-table-card {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+.flood-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    text-align: left;
+}
+
+.flood-table th {
+    padding: 0.75rem 1rem;
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 600;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.dark .flood-table th {
+    background: #0f172a;
+    color: #94a3b8;
+    border-color: #334155;
+}
+
+.flood-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: #1e293b;
+}
+
+.dark .flood-table td {
+    border-color: #334155;
+    color: #e2e8f0;
+}
+
+.flood-badge-status {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    border-radius: 9999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.flood-badge-status.safe {
+    background: #d1fae5;
+    color: #065f46;
+}
+.dark .flood-badge-status.safe {
+    background: #064e3b;
+    color: #6ee7b7;
+}
+
+.flood-badge-status.warning {
+    background: #fef3c7;
+    color: #92400e;
+}
+.dark .flood-badge-status.warning {
+    background: #78350f;
+    color: #fde68a;
+}
+
+.flood-badge-status.danger {
+    background: #fee2e2;
+    color: #991b1b;
+}
+.dark .flood-badge-status.danger {
+    background: #7f1d1d;
+    color: #fca5a5;
+}
+
+/* Quick Campus Switcher Bar */
+.flood-switcher {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.flood-switcher a {
+    padding: 0.4rem 0.85rem;
+    border-radius: 0.5rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.flood-switcher a.active {
+    background: #059669;
+    color: #ffffff;
+}
+
+.flood-switcher a:not(.active) {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+.dark .flood-switcher a:not(.active) {
+    background: #334155;
+    color: #cbd5e1;
+}

@@ -1,0 +1,746 @@
+/* =========================================================
+   AIR QUALITY PAGE
+   Semua CSS di-scope ke .air-quality-page
+   sehingga tidak mempengaruhi halaman lain.
+   ========================================================= */
+
+.air-quality-page {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.air-quality-page *,
+.air-quality-page *::before,
+.air-quality-page *::after {
+    box-sizing: border-box;
+}
+
+
+/* =========================================================
+   CONTAINER
+   ========================================================= */
+
+.aq-container {
+    width: 100%;
+    max-width: none;
+    margin: 0 auto;
+    padding: 24px;
+    min-width: 0;
+}
+
+
+/* =========================================================
+   SPACING
+   ========================================================= */
+
+.aq-mb-4 {
+    margin-bottom: 1.5rem;
+}
+
+
+/* =========================================================
+   CARD
+   ========================================================= */
+
+.aq-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    width: 100%;
+    word-wrap: break-word;
+
+    background-color: #fff;
+    background-clip: border-box;
+
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+}
+
+.aq-card-body {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 1rem;
+}
+
+.aq-card-header {
+    display: flex;
+    justify-content: space-between; 
+    align-items: center;
+    flex: 0 0 auto;
+    padding: 0.9rem 1rem;
+    background-color: #fff;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    font-weight: 600;
+}
+
+.aq-shadow {
+    box-shadow:
+        0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+
+/* =========================================================
+   FILTER
+   ========================================================= */
+
+.aq-filter-card {
+    border: none;
+}
+
+.aq-filter-card .aq-card-body {
+    padding: 1.25rem;
+}
+
+.aq-filter-grid {
+    display: grid;
+    grid-template-columns:
+        minmax(0, 2fr)
+        minmax(0, 1.5fr)
+        minmax(0, 1.5fr)
+        minmax(0, 1fr);
+
+    gap: 1rem;
+
+    align-items: end;
+}
+
+.aq-field {
+    width: 100%;
+    min-width: 0;
+}
+
+
+/* =========================================================
+   FORM
+   ========================================================= */
+
+.aq-form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.aq-fw-semibold {
+    font-weight: 600;
+}
+
+.aq-fw-bold {
+    font-weight: 700;
+}
+
+.aq-form-select,
+.aq-form-control {
+    display: block;
+
+    width: 100%;
+    min-width: 0;
+
+    padding: 0.55rem 0.75rem;
+
+    font-size: 0.95rem;
+    font-weight: 400;
+    line-height: 1.5;
+
+    color: #212529;
+    background-color: #fff;
+    background-clip: padding-box;
+
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+
+    outline: none;
+}
+
+.aq-form-select {
+    appearance: auto;
+}
+
+.aq-form-select:focus,
+.aq-form-control:focus {
+    border-color: #86b7fe;
+
+    outline: 0;
+
+    box-shadow:
+        0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+}
+
+
+/* =========================================================
+   BUTTON
+   ========================================================= */
+
+.aq-btn {
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    font-weight: 500;
+    line-height: 1.5;
+
+    text-align: center;
+    vertical-align: middle;
+
+    cursor: pointer;
+    user-select: none;
+
+    border: 1px solid transparent;
+
+    padding: 0.55rem 0.9rem;
+
+    font-size: 0.95rem;
+
+    border-radius: 6px;
+
+    transition:
+        background-color 0.15s ease-in-out,
+        border-color 0.15s ease-in-out,
+        color 0.15s ease-in-out;
+
+    box-sizing: border-box;
+}
+
+.aq-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+
+.aq-btn-full {
+    width: 100%;
+}
+
+.aq-btn-primary {
+    color: #fff;
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.aq-btn-primary:hover:not(:disabled) {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+
+.aq-btn-outline-primary {
+    color: #0d6efd;
+    background-color: transparent;
+    border-color: #0d6efd;
+}
+
+.aq-btn-outline-primary:hover:not(:disabled),
+.aq-btn-outline-primary.active {
+    color: #fff;
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.aq-btn-sm {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.875rem;
+}
+
+
+/* =========================================================
+   INFO
+   ========================================================= */
+
+.aq-info-card {
+    border: none;
+}
+
+.aq-info-card .aq-card-body {
+    padding: 1.25rem;
+}
+
+.aq-info-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+    gap: 1rem;
+}
+
+
+/* =========================================================
+   TEXT
+   ========================================================= */
+
+.aq-text-muted {
+    color: #6c757d !important;
+}
+
+.aq-text-center {
+    text-align: center;
+}
+
+.aq-icon-spacing {
+    margin-right: 8px;
+}
+
+
+/* =========================================================
+   SENSOR CARDS
+   ========================================================= */
+
+.aq-sensor-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+    gap: 1rem;
+
+    min-width: 0;
+}
+
+.aq-sensor-item {
+    min-width: 0;
+}
+
+.aq-data-card {
+    height: 100%;
+    min-height: 155px;
+    border: none;
+}
+
+.aq-data-card .aq-card-body {
+    padding: 1.25rem;
+}
+
+.aq-data-card h6 {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.aq-data-card h2 {
+    margin-top: 0;
+    margin-bottom: 0.15rem;
+
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.aq-data-card span {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+
+/* =========================================================
+   CHART
+   ========================================================= */
+
+   /* =========================================================
+   CHART HEADER
+   ========================================================= */
+
+.aq-chart-header {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  text-align: left;
+}
+
+.aq-chart-title {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.aq-chart-card {
+    border: none;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.aq-chart-card .aq-card-header {
+    font-size: 1rem;
+}
+
+.aq-chart-card .aq-card-body {
+    padding: 1rem;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.aq-chart-container {
+    position: relative;
+
+    width: 100%;
+    max-width: 100%;
+
+    height: 350px;
+
+    min-width: 0;
+
+    overflow: hidden;
+}
+
+.aq-chart-container canvas {
+    display: block;
+
+    width: 100% !important;
+    max-width: 100% !important;
+
+    height: 100% !important;
+}
+
+
+/* =========================================================
+   TABLE
+   ========================================================= */
+
+.aq-table-card {
+    border: none;
+    min-width: 0;
+}
+
+.aq-table-responsive {
+    width: 100%;
+    max-width: 100%;
+
+    overflow-x: auto;
+    overflow-y: hidden;
+
+    -webkit-overflow-scrolling: touch;
+}
+
+.aq-table {
+    width: 100%;
+
+    margin-bottom: 0;
+
+    vertical-align: top;
+
+    border-collapse: collapse;
+
+    table-layout: auto;
+}
+
+.aq-table th,
+.aq-table td {
+    padding: 0.75rem;
+
+    border-bottom: 1px solid #dee2e6;
+
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.aq-table thead th {
+    font-weight: 600;
+    background-color: #f8f9fa;
+}
+
+
+/* =========================================================
+   PAGINATION
+   ========================================================= */
+
+.aq-pagination {
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+
+    flex-wrap: wrap;
+
+    margin-top: 1rem;
+
+    gap: 4px;
+}
+
+.aq-pagination-ellipsis {
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    min-width: 30px;
+
+    padding: 0.3rem;
+
+    color: #6c757d;
+}
+
+
+/* =========================================================
+   ALERT
+   ========================================================= */
+
+.aq-alert {
+    position: relative;
+
+    width: 100%;
+
+    padding: 0.9rem 1rem;
+
+    margin-bottom: 1rem;
+
+    border: 1px solid transparent;
+    border-radius: 6px;
+}
+
+.aq-alert-danger {
+    color: #842029;
+    background-color: #f8d7da;
+    border-color: #f5c2c7;
+}
+
+
+/* =========================================================
+   SPINNER
+   ========================================================= */
+
+.aq-spinner {
+    display: inline-block;
+
+    width: 1rem;
+    height: 1rem;
+
+    vertical-align: -0.125em;
+
+    border: 0.15em solid currentColor;
+    border-right-color: transparent;
+
+    border-radius: 50%;
+
+    animation:
+        aq-spinner-border 0.75s linear infinite;
+}
+
+.aq-spinner-sm {
+    width: 0.875rem;
+    height: 0.875rem;
+
+    border-width: 0.12em;
+}
+
+.aq-spinner-spacing {
+    margin-right: 0.5rem;
+}
+
+@keyframes aq-spinner-border {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+
+/* =========================================================
+   DARK MODE
+   ========================================================= */
+
+.dark .air-quality-page {
+    color: #e2e8f0;
+}
+
+.dark .aq-card {
+    background-color: #1e293b;
+    color: #e2e8f0;
+    border-color: #334155;
+}
+
+.dark .aq-card-header {
+    background-color: #1e293b;
+    color: #f1f5f9;
+    border-bottom-color: #334155;
+}
+
+.dark .aq-text-muted {
+    color: #94a3b8 !important;
+}
+
+.dark .aq-data-card h6 {
+    color: #cbd5e1;
+}
+
+.dark .aq-data-card h2 {
+    color: #f8fafc;
+}
+
+.dark .aq-data-card span {
+    color: #94a3b8;
+}
+
+
+/* =========================================================
+   DARK MODE - FORM
+   ========================================================= */
+
+.dark .aq-form-select,
+.dark .aq-form-control {
+    background-color: #0f172a;
+    border-color: #475569;
+    color: #f1f5f9;
+}
+
+.dark .aq-form-control::placeholder {
+    color: #94a3b8;
+}
+
+.dark .aq-form-select option {
+    background-color: #0f172a;
+    color: #f1f5f9;
+}
+
+
+/* =========================================================
+   DARK MODE - TABLE
+   ========================================================= */
+
+.dark .aq-table {
+    color: #e2e8f0;
+}
+
+.dark .aq-table th,
+.dark .aq-table td {
+    border-bottom-color: #475569;
+    color: #e2e8f0;
+}
+
+.dark .aq-table thead th {
+    background-color: #1e293b;
+    color: #f1f5f9;
+}
+
+.dark .aq-table tbody tr:hover {
+    background-color: #334155;
+}
+
+
+/* =========================================================
+   DARK MODE - PAGINATION
+   ========================================================= */
+
+.dark .aq-pagination .aq-btn-outline-primary {
+    color: #60a5fa;
+    border-color: #3b82f6;
+}
+
+.dark .aq-pagination .aq-btn-outline-primary:hover:not(:disabled) {
+    background-color: #2563eb;
+    color: #fff;
+}
+
+.dark .aq-pagination .aq-btn-outline-primary.active {
+    background-color: #2563eb;
+    color: #fff;
+}
+
+.dark .aq-pagination-ellipsis {
+    color: #94a3b8;
+}
+
+
+/* =========================================================
+   MOBILE / TABLET
+   ========================================================= */
+
+@media (max-width: 1100px) {
+
+    .aq-sensor-grid {
+        grid-template-columns:
+            repeat(3, minmax(0, 1fr));
+    }
+
+}
+
+
+@media (max-width: 900px) {
+
+    .aq-filter-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+    .aq-info-grid {
+        grid-template-columns:
+            repeat(3, minmax(0, 1fr));
+    }
+
+    .aq-sensor-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+}
+
+
+@media (max-width: 768px) {
+
+    .aq-container {
+        padding: 20px;
+    }
+
+    .aq-filter-grid {
+        grid-template-columns:
+            1fr;
+    }
+
+    .aq-info-grid {
+        grid-template-columns:
+            1fr;
+    }
+
+    .aq-sensor-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+    .aq-chart-container {
+        height: 320px;
+    }
+
+    .aq-pagination {
+        gap: 3px;
+    }
+
+}
+
+
+@media (max-width: 576px) {
+
+    .aq-container {
+        padding: 16px;
+    }
+
+    .aq-sensor-grid {
+        grid-template-columns:
+            1fr;
+    }
+
+    .aq-data-card {
+        min-height: 140px;
+    }
+
+    .aq-data-card h2 {
+        font-size: 1.75rem;
+    }
+
+    .aq-chart-container {
+        height: 280px;
+    }
+
+    .aq-table th,
+    .aq-table td {
+        padding: 0.65rem;
+    }
+    .aq-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .aq-card-header .aq-btn {
+        width: 100%;
+    }
+}
+

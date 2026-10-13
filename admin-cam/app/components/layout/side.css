@@ -1,0 +1,32 @@
+.sidebar {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-menu {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.sidebar-footer {
+  flex-shrink: 0;
+  padding: 12px;
+  border-top: 1px solid var(--border-color, #e2e8f0);
+}
+
+.sidebar-footer .menu-item {
+  width: 100%;
+  text-align: left;
+  margin-bottom: 6px;
+}
+
+.sidebar-footer .menu-item:last-child {
+  margin-bottom: 0;
+}
+
+.sidebar-logout-error {
+  padding: 8px 12px;
+  color: #dc2626;
+  font-size: 12px;
+}

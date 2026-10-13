@@ -1,0 +1,1802 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="icon" href="assets/img/logoweb.png" type="image/x-icon">
+    <title>Smart Sustainability Campus | UNESA</title>
+
+    <!-- Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+
+<body>
+
+    <!-- =========================================================
+     MOBILE OVERLAY
+========================================================= -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+
+    <!-- =========================================================
+     SIDEBAR
+========================================================= -->
+    <aside class="sidebar" id="sidebar">
+
+        <div class="sidebar-header">
+
+            <div class="brand-logo">
+                <img src="assets/img/lo.png" alt="Logo" style="width: 100%; height: auto; object-fit: contain;">
+            </div>
+
+            <div class="brand-text">
+                <strong>USSC</strong>
+                <span>Universitas Negeri Surabaya</span>
+            </div>
+
+        </div>
+
+
+
+        <nav class="sidebar-menu">
+
+            <!-- DASHBOARD -->
+            <button class="menu-item active" data-page="dashboard">
+
+                <i class="bi bi-grid-1x2-fill"></i>
+
+                <span>Dashboard</span>
+
+            </button>
+
+
+            <!-- BANJIR -->
+            <div class="menu-group">
+
+                <button class="menu-item submenu-toggle" id="floodMenu">
+
+                    <i class="bi bi-water"></i>
+
+                    <span>Pemantauan Banjir</span>
+
+                    <i class="bi bi-chevron-down menu-arrow"></i>
+
+                </button>
+
+
+                <div class="submenu" id="floodSubmenu">
+
+                    <button class="submenu-item" data-page="lidah-wetan">
+
+                        <i class="bi bi-geo-alt"></i>
+
+                        Lidah Wetan
+
+                    </button>
+
+
+                    <button class="submenu-item" data-page="ketintang">
+
+                        <i class="bi bi-geo-alt"></i>
+
+                        Ketintang
+
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- KUALITAS UDARA -->
+            <button class="menu-item" data-page="air-quality">
+
+                <i class="bi bi-wind"></i>
+
+                <span>Kualitas Udara</span>
+
+            </button>
+
+
+            <!-- KENDARAAN -->
+            <button class="menu-item" data-page="vehicles">
+
+                <i class="bi bi-car-front-fill"></i>
+
+                <span>Pemantauan Kendaraan & Emisi</span>
+
+            </button>
+
+
+            <!-- RIWAYAT & EKSPOR DATA -->
+            <button class="menu-item" data-page="reports">
+
+                <i class="bi bi-file-earmark-arrow-down-fill"></i>
+
+                <span>Riwayat & Ekspor Data</span>
+
+            </button>
+
+        </nav>
+
+
+        <!-- SIDEBAR FOOTER -->
+        <div class="sidebar-footer">
+
+            <div class="online-status">
+
+                <span class="online-dot"></span>
+
+                <div>
+                    <strong>Sistem Online</strong>
+                    <small>Monitoring aktif</small>
+                </div>
+
+            </div>
+
+            <div class="sidebar-version">
+                Smart Sustainability Campus v1.0
+            </div>
+
+        </div>
+
+    </aside>
+
+
+    <!-- =========================================================
+     MAIN CONTENT
+========================================================= -->
+    <main class="main-content" id="mainContent">
+
+
+        <!-- TOPBAR -->
+        <header class="topbar">
+
+            <button class="mobile-menu-btn" id="mobileMenuBtn">
+
+                <i class="bi bi-list"></i>
+
+            </button>
+
+
+            <div class="topbar-title">
+
+                <h1>
+                    <span class="title-desktop">UNESA Smart Sustainability Campus</span>
+                    <span class="title-mobile">UNESA Smart Campus</span>
+                </h1>
+
+                <p>
+                    <span class="subtitle-desktop">Monitoring Lingkungan Kampus Universitas Negeri Surabaya</span>
+                    <span class="subtitle-mobile">Monitoring Lingkungan Kampus</span>
+                </p>
+
+            </div>
+
+
+            <div class="topbar-right">
+
+                <!-- Weather Widget (Open-Meteo Surabaya) di Pojok Paling Kanan -->
+                <div class="topbar-weather" id="topbarWeather" title="Cuaca Surabaya (Open-Meteo)">
+
+                    <i class="bi bi-cloud-sun-fill" id="topbarWeatherIcon"></i>
+
+                    <span id="topbarWeatherTemp">-- °C</span>
+
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <!-- =====================================================
+         PAGE CONTENT
+    ====================================================== -->
+        <section class="page-container">
+
+
+            <!-- =================================================
+             DASHBOARD
+        ================================================== -->
+            <section class="page active" id="page-dashboard">
+
+                <div class="page-heading">
+
+                    <div>
+
+                        <span class="eyebrow">
+                            OVERVIEW
+                        </span>
+
+                        <h2>Dashboard Utama</h2>
+
+                        <p>
+                            Ringkasan kondisi lingkungan kampus secara real-time.
+                        </p>
+
+                    </div>
+
+                    <div class="last-update">
+
+                        <i class="bi bi-arrow-repeat"></i>
+
+                        Update otomatis
+
+                    </div>
+
+                </div>
+
+
+                <!-- DASHBOARD STATUS -->
+                <div class="summary-grid">
+
+                    <div class="summary-card">
+
+                        <div class="summary-icon blue">
+                            <i class="bi bi-water"></i>
+                        </div>
+
+                        <div>
+
+                            <span>Pemantauan Banjir</span>
+
+                            <strong id="dashboardFloodStatus">
+                                AMAN
+                            </strong>
+
+                            <small id="dashboardFloodDesc">
+                                2 lokasi Kondisi AMAN
+                            </small>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="summary-card">
+
+                        <div class="summary-icon green">
+                            <i class="bi bi-wind"></i>
+                        </div>
+
+                        <div>
+
+                            <span>Kualitas Udara</span>
+
+                            <strong id="dashboardAirStatus">
+                                BAIK
+                            </strong>
+
+                            <small>
+                                Kondisi udara kampus
+                            </small>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="summary-card">
+
+                        <div class="summary-icon orange">
+                            <i class="bi bi-car-front"></i>
+                        </div>
+
+                        <div>
+
+                            <span>Total Kendaraan</span>
+
+                            <strong id="dashboardVehicleTotal">
+                                0
+                            </strong>
+
+                            <small>
+                                Kendaraan terpantau
+                            </small>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="summary-card">
+
+                        <div class="summary-icon purple">
+                            <i class="bi bi-cloud-haze2"></i>
+                        </div>
+
+                        <div>
+
+                            <span>Emisi Karbon</span>
+
+                            <strong id="dashboardEmission">
+                                0 kg
+                            </strong>
+
+                            <small>
+                                Total emisi kendaraan
+                            </small>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- LOCATION STATUS -->
+                <div class="section-title">
+
+                    <h3>Status Lokasi Banjir</h3>
+
+                    <span>Real-time</span>
+
+                </div>
+
+
+                <div class="location-grid">
+
+                    <div class="location-card">
+
+                        <div class="location-header">
+
+                            <div>
+
+                                <span class="location-label">
+                                    LOKASI 01
+                                </span>
+
+                                <h3>Lidah Wetan</h3>
+
+                            </div>
+
+                            <div class="status-light safe" id="dashboardLightLidah"></div>
+
+                        </div>
+
+
+                        <div class="location-data">
+
+                            <div>
+                                <span>Ketinggian Air</span>
+                                <strong id="dashLidahWater">-- cm</strong>
+                            </div>
+
+                            <div>
+                                <span>Suhu</span>
+                                <strong id="dashLidahTemp">-- °C</strong>
+                            </div>
+
+                            <div>
+                                <span>Kelembaban Tanah</span>
+                                <strong id="dashLidahSoil">-- %</strong>
+                            </div>
+
+                        </div>
+
+                        <button class="detail-btn" data-page="lidah-wetan">
+
+                            Lihat Detail
+
+                            <i class="bi bi-arrow-right"></i>
+
+                        </button>
+
+                    </div>
+
+
+                    <div class="location-card">
+
+                        <div class="location-header">
+
+                            <div>
+
+                                <span class="location-label">
+                                    LOKASI 02
+                                </span>
+
+                                <h3>Ketintang</h3>
+
+                            </div>
+
+                            <div class="status-light safe" id="dashboardLightKetintang"></div>
+
+                        </div>
+
+
+                        <div class="location-data">
+
+                            <div>
+                                <span>Ketinggian Air</span>
+                                <strong id="dashKetintangWater">-- cm</strong>
+                            </div>
+
+                            <div>
+                                <span>Suhu</span>
+                                <strong id="dashKetintangTemp">-- °C</strong>
+                            </div>
+
+                            <div>
+                                <span>Kelembaban Tanah</span>
+                                <strong id="dashKetintangSoil">-- %</strong>
+                            </div>
+
+                        </div>
+
+                        <button class="detail-btn" data-page="ketintang">
+
+                            Lihat Detail
+
+                            <i class="bi bi-arrow-right"></i>
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ENVIRONMENT -->
+                <div class="section-title">
+
+                    <h3>Lingkungan Kampus</h3>
+
+                    <span>Data terbaru</span>
+
+                </div>
+
+
+                <div class="environment-grid">
+
+                    <!-- Card 1: PM1.0 -->
+                    <div class="metric-card">
+                        <i class="bi bi-circle"></i>
+                        <span>PM1.0</span>
+                        <strong id="dashboardPM1">
+                            -- µg/m³
+                        </strong>
+                    </div>
+
+                    <!-- Card 2: PM2.5 -->
+                    <div class="metric-card">
+                        <i class="bi bi-circle-half"></i>
+                        <span>PM2.5</span>
+                        <strong id="dashboardPM25">
+                            -- µg/m³
+                        </strong>
+                    </div>
+
+                    <!-- Card 3: PM10 -->
+                    <div class="metric-card">
+                        <i class="bi bi-cloud"></i>
+                        <span>PM10</span>
+                        <strong id="dashboardPM10">
+                            -- µg/m³
+                        </strong>
+                    </div>
+
+                    <!-- Card 4: CO2 -->
+                    <div class="metric-card">
+                        <i class="bi bi-cloud-haze2"></i>
+                        <span>CO₂</span>
+                        <strong id="dashboardCO2">
+                            -- ppm
+                        </strong>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+             LIDAH WETAN
+        ================================================== -->
+            <section class="page" id="page-lidah-wetan">
+
+                <div class="page-heading">
+
+                    <div>
+
+                        <span class="eyebrow">
+                            FLOOD MONITORING
+                        </span>
+
+                        <h2>Lidah Wetan</h2>
+
+                        <p>
+                            Monitoring kondisi lingkungan dan potensi banjir.
+                        </p>
+
+                    </div>
+
+                    <div class="location-badge">
+
+                        <i class="bi bi-geo-alt-fill"></i>
+
+                        Lidah Wetan
+
+                    </div>
+
+                </div>
+
+
+                <!-- STATUS -->
+                <div class="status-panel">
+
+                    <div class="status-light large safe" id="lidahStatusLight"></div>
+
+                    <div class="status-info">
+
+                        <span>STATUS KONDISI</span>
+
+                        <strong id="lidahStatus">
+                            AMAN
+                        </strong>
+
+                        <small id="lidahStatusDescription">
+                            Kondisi lingkungan dalam keadaan aman.
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <!-- MONITORING -->
+                <div class="section-title">
+
+                    <h3>Data Monitoring</h3>
+
+                    <span>Real-time</span>
+
+                </div>
+
+
+                <div class="monitor-grid">
+
+                    <div class="monitor-card water">
+
+                        <div class="monitor-icon">
+                            <i class="bi bi-water"></i>
+                        </div>
+
+                        <span>Ketinggian Air</span>
+
+                        <strong id="lidahWater">
+                            -- cm
+                        </strong>
+
+                        <small>
+                            Sensor JSN-SR04T
+                        </small>
+
+                    </div>
+
+
+                    <div class="monitor-card">
+
+                        <div class="monitor-icon">
+                            <i class="bi bi-thermometer-half"></i>
+                        </div>
+
+                        <span>Suhu</span>
+
+                        <strong id="lidahTemp">
+                            -- °C
+                        </strong>
+
+                        <small>
+                            Sensor lingkungan
+                        </small>
+
+                    </div>
+
+
+                    <div class="monitor-card">
+
+                        <div class="monitor-icon">
+                            <i class="bi bi-moisture"></i>
+                        </div>
+
+                        <span>Kelembaban Tanah</span>
+
+                        <strong id="lidahSoil">
+                            -- %
+                        </strong>
+
+                        <small>
+                            Soil moisture
+                        </small>
+
+                    </div>
+
+                    <div class="monitor-card rain">
+                        <div class="monitor-icon">
+                            <i class="bi bi-cloud-rain"></i>
+                        </div>
+                        <span>Intensitas Hujan</span>
+                        <strong id="lidahRain">
+                            -- mm/jam
+                        </strong>
+                        <small>
+                            Sensor Curah Hujan
+                        </small>
+                    </div>
+
+
+                    <div class="monitor-card">
+
+                        <div class="monitor-icon">
+                            <i class="bi bi-cpu"></i>
+                        </div>
+
+                        <span>Suhu Panel</span>
+
+                        <strong id="lidahPanelTemp">
+                            -- °C
+                        </strong>
+
+                        <small>
+                            Kondisi panel
+                        </small>
+
+                    </div>
+
+
+                    <div class="monitor-card">
+
+                        <div class="monitor-icon">
+                            <i class="bi bi-droplet-half"></i>
+                        </div>
+
+                        <span>Kelembaban Panel</span>
+
+                        <strong id="lidahPanelHumidity">
+                            -- %
+                        </strong>
+
+                        <small>
+                            Kondisi panel
+                        </small>
+
+                    </div>
+
+
+                    <div class="monitor-card">
+
+                        <div class="monitor-icon">
+                            <i class="bi bi-cloud-sun"></i>
+                        </div>
+
+                        <span>Suhu Surabaya</span>
+
+                        <strong id="lidahCityTemp">
+                            -- °C
+                        </strong>
+
+                        <small>
+                            Data lingkungan kota
+                        </small>
+
+                    </div>
+
+
+                    <div class="monitor-card">
+
+                        <div class="monitor-icon">
+                            <i class="bi bi-cloud-drizzle"></i>
+                        </div>
+
+                        <span>Kelembaban Surabaya</span>
+
+                        <strong id="lidahCityHumidity">
+                            -- %
+                        </strong>
+
+                        <small>
+                            Data lingkungan kota
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <!-- CHARTS -->
+                <div class="section-title">
+
+                    <h3>Grafik Monitoring</h3>
+
+                    <span>10 data terakhir • Update 10 detik</span>
+
+                </div>
+
+
+                <div class="charts-grid">
+
+                    <div class="chart-card">
+
+                        <div class="chart-header">
+
+                            <div>
+
+                                <h4>Ketinggian Air</h4>
+
+                                <span>cm</span>
+
+                            </div>
+
+                            <i class="bi bi-water"></i>
+
+                        </div>
+
+                        <div class="chart-wrapper">
+
+                            <canvas id="lidahWaterChart"></canvas>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="chart-card">
+
+                        <div class="chart-header">
+
+                            <div>
+
+                                <h4>Suhu</h4>
+
+                                <span>°C</span>
+
+                            </div>
+
+                            <i class="bi bi-thermometer-half"></i>
+
+                        </div>
+
+                        <div class="chart-wrapper">
+
+                            <canvas id="lidahTempChart"></canvas>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="chart-card">
+
+                        <div class="chart-header">
+
+                            <div>
+
+                                <h4>Kelembaban Tanah</h4>
+
+                                <span>%</span>
+
+                            </div>
+
+                            <i class="bi bi-moisture"></i>
+
+                        </div>
+
+                        <div class="chart-wrapper">
+
+                            <canvas id="lidahSoilChart"></canvas>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- HISTORY -->
+                <div class="section-title history-title">
+
+                    <div>
+
+                        <h3>Histori Monitoring</h3>
+
+                        <span id="lidahHistoryDate">
+                            Hari ini
+                        </span>
+
+                    </div>
+
+                    <span>
+                        24 data • Update setiap jam
+                    </span>
+
+                </div>
+
+
+                <div class="table-container">
+
+                    <table>
+
+                        <thead>
+
+                            <tr>
+                                <th>No</th>
+                                <th>Tanggal</th>
+                                <th>Waktu</th>
+                                <th>Ketinggian Air</th>
+                                <th>Suhu</th>
+                                <th>Kelembaban Tanah</th>
+                                <th>Status</th>
+                            </tr>
+
+                        </thead>
+
+                        <tbody id="lidahHistoryBody"></tbody>
+
+                    </table>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+             KETINTANG
+        ================================================== -->
+            <section class="page" id="page-ketintang">
+
+                <div class="page-heading">
+
+                    <div>
+
+                        <span class="eyebrow">
+                            FLOOD MONITORING
+                        </span>
+
+                        <h2>Ketintang</h2>
+
+                        <p>
+                            Monitoring kondisi lingkungan dan potensi banjir.
+                        </p>
+
+                    </div>
+
+                    <div class="location-badge">
+
+                        <i class="bi bi-geo-alt-fill"></i>
+
+                        Ketintang
+
+                    </div>
+
+                </div>
+
+
+                <div class="status-panel">
+
+                    <div class="status-light large safe" id="ketintangStatusLight"></div>
+
+                    <div class="status-info">
+
+                        <span>STATUS KONDISI</span>
+
+                        <strong id="ketintangStatus">
+                            AMAN
+                        </strong>
+
+                        <small id="ketintangStatusDescription">
+                            Kondisi lingkungan dalam keadaan aman.
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <div class="section-title">
+
+                    <h3>Data Monitoring</h3>
+
+                    <span>Real-time</span>
+
+                </div>
+
+
+                <div class="monitor-grid">
+
+                    <div class="monitor-card water">
+
+                        <div class="monitor-icon">
+                            <i class="bi bi-water"></i>
+                        </div>
+
+                        <span>Ketinggian Air</span>
+
+                        <strong id="ketintangWater">
+                            -- cm
+                        </strong>
+
+                        <small>
+                            Sensor JSN-SR04T
+                        </small>
+
+                    </div>
+
+
+                    <div class="monitor-card">
+
+                        <div class="monitor-icon">
+                            <i class="bi bi-thermometer-half"></i>
+                        </div>
+
+                        <span>Suhu</span>
+
+                        <strong id="ketintangTemp">
+                            -- °C
+                        </strong>
+
+                        <small>
+                            Sensor lingkungan
+                        </small>
+
+                    </div>
+
+
+                    <div class="monitor-card">
+
+                        <div class="monitor-icon">
+                            <i class="bi bi-moisture"></i>
+                        </div>
+
+                        <span>Kelembaban Tanah</span>
+
+                        <strong id="ketintangSoil">
+                            -- %
+                        </strong>
+
+                        <small>
+                            Soil moisture
+                        </small>
+
+                    </div>
+
+                    <div class="monitor-card rain">
+                        <div class="monitor-icon">
+                            <i class="bi bi-cloud-rain"></i>
+                        </div>
+                        <span>Intensitas Hujan</span>
+                        <strong id="ketintangRain">
+                            -- mm/jam
+                        </strong>
+                        <small>
+                            Sensor Curah Hujan
+                        </small>
+                    </div>
+
+
+                    <div class="monitor-card">
+
+                        <div class="monitor-icon">
+                            <i class="bi bi-cpu"></i>
+                        </div>
+
+                        <span>Suhu Panel</span>
+
+                        <strong id="ketintangPanelTemp">
+                            -- °C
+                        </strong>
+
+                        <small>
+                            Kondisi panel
+                        </small>
+
+                    </div>
+
+
+                    <div class="monitor-card">
+
+                        <div class="monitor-icon">
+                            <i class="bi bi-droplet-half"></i>
+                        </div>
+
+                        <span>Kelembaban Panel</span>
+
+                        <strong id="ketintangPanelHumidity">
+                            -- %
+                        </strong>
+
+                        <small>
+                            Kondisi panel
+                        </small>
+
+                    </div>
+
+
+                    <div class="monitor-card">
+
+                        <div class="monitor-icon">
+                            <i class="bi bi-cloud-sun"></i>
+                        </div>
+
+                        <span>Suhu Surabaya</span>
+
+                        <strong id="ketintangCityTemp">
+                            -- °C
+                        </strong>
+
+                        <small>
+                            Data lingkungan kota
+                        </small>
+
+                    </div>
+
+
+                    <div class="monitor-card">
+
+                        <div class="monitor-icon">
+
+                            <i class="bi bi-cloud-drizzle"></i>
+
+                        </div>
+
+                        <span>Kelembaban Surabaya</span>
+
+                        <strong id="ketintangCityHumidity">
+                            -- %
+                        </strong>
+
+                        <small>
+                            Data lingkungan kota
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <div class="section-title">
+
+                    <h3>Grafik Monitoring</h3>
+
+                    <span>10 data terakhir • Update 10 detik</span>
+
+                </div>
+
+
+                <div class="charts-grid">
+
+                    <div class="chart-card">
+
+                        <div class="chart-header">
+
+                            <div>
+                                <h4>Ketinggian Air</h4>
+                                <span>cm</span>
+                            </div>
+
+                            <i class="bi bi-water"></i>
+
+                        </div>
+
+                        <div class="chart-wrapper">
+
+                            <canvas id="ketintangWaterChart"></canvas>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="chart-card">
+
+                        <div class="chart-header">
+
+                            <div>
+                                <h4>Suhu</h4>
+                                <span>°C</span>
+                            </div>
+
+                            <i class="bi bi-thermometer-half"></i>
+
+                        </div>
+
+                        <div class="chart-wrapper">
+
+                            <canvas id="ketintangTempChart"></canvas>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="chart-card">
+
+                        <div class="chart-header">
+
+                            <div>
+                                <h4>Kelembaban Tanah</h4>
+                                <span>%</span>
+                            </div>
+
+                            <i class="bi bi-moisture"></i>
+
+                        </div>
+
+                        <div class="chart-wrapper">
+
+                            <canvas id="ketintangSoilChart"></canvas>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="section-title history-title">
+
+                    <div>
+
+                        <h3>Histori Monitoring</h3>
+
+                        <span id="ketintangHistoryDate">
+                            Hari ini
+                        </span>
+
+                    </div>
+
+                    <span>
+                        24 data • Update setiap jam
+                    </span>
+
+                </div>
+
+
+                <div class="table-container">
+
+                    <table>
+
+                        <thead>
+
+                            <tr>
+                                <th>No</th>
+                                <th>Tanggal</th>
+                                <th>Waktu</th>
+                                <th>Ketinggian Air</th>
+                                <th>Suhu</th>
+                                <th>Kelembaban Tanah</th>
+                                <th>Status</th>
+                            </tr>
+
+                        </thead>
+
+                        <tbody id="ketintangHistoryBody"></tbody>
+
+                    </table>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+             KUALITAS UDARA
+        ================================================== -->
+            <section class="page" id="page-air-quality">
+
+                <div class="page-heading">
+
+                    <div>
+
+                        <span class="eyebrow">
+                            ENVIRONMENT
+                        </span>
+
+                        <h2>Kualitas Udara</h2>
+
+                        <p>
+                            Monitoring kualitas udara lingkungan kampus.
+                        </p>
+
+                    </div>
+
+                    <div class="location-badge">
+
+                        <i class="bi bi-wind"></i>
+
+                        Air Quality
+
+                    </div>
+
+                </div>
+
+
+                <div class="air-metric-grid">
+
+                    <div class="air-card">
+
+                        <span>PM1.0</span>
+
+                        <strong id="airPM1">
+                            --
+                        </strong>
+
+                        <small>µg/m³</small>
+
+                        <div class="air-progress">
+                            <span id="pm1Progress"></span>
+                        </div>
+
+                    </div>
+
+
+                    <div class="air-card">
+
+                        <span>PM2.5</span>
+
+                        <strong id="airPM25">
+                            --
+                        </strong>
+
+                        <small>µg/m³</small>
+
+                        <div class="air-progress">
+                            <span id="pm25Progress"></span>
+                        </div>
+
+                    </div>
+
+
+                    <div class="air-card">
+
+                        <span>PM10</span>
+
+                        <strong id="airPM10">
+                            --
+                        </strong>
+
+                        <small>µg/m³</small>
+
+                        <div class="air-progress">
+                            <span id="pm10Progress"></span>
+                        </div>
+
+                    </div>
+
+
+                    <div class="air-card">
+
+                        <span>CO₂</span>
+
+                        <strong id="airCO2">
+                            --
+                        </strong>
+
+                        <small>PPM</small>
+
+                        <div class="air-progress">
+                            <span id="co2Progress"></span>
+                        </div>
+
+                    </div>
+
+
+                    <div class="air-card">
+
+                        <span>Suhu</span>
+
+                        <strong id="airTemp">
+                            --
+                        </strong>
+
+                        <small>°C</small>
+
+                    </div>
+
+
+                    <div class="air-card">
+
+                        <span>Kelembaban</span>
+
+                        <strong id="airHumidity">
+                            --
+                        </strong>
+
+                        <small>%</small>
+
+                    </div>
+
+
+                    <div class="air-card">
+
+                        <span>TVOC</span>
+
+                        <strong id="airTVOC">
+                            --
+                        </strong>
+
+                        <small>ppb</small>
+
+                    </div>
+
+
+                    <div class="air-card">
+
+                        <span>Nox Index</span>
+
+                        <strong id="airNOX">
+                            --
+                        </strong>
+
+                        <small>index</small>
+
+                    </div>
+
+                </div>
+
+
+                <div class="section-title">
+
+                    <h3>Grafik Kualitas Udara</h3>
+
+                    <span>10 data terakhir • Update 10 detik</span>
+
+                </div>
+
+
+                <div class="charts-grid air-charts">
+
+                    <div class="chart-card">
+
+                        <div class="chart-header">
+
+                            <div>
+                                <h4>PM1.0</h4>
+                                <span>µg/m³</span>
+                            </div>
+
+                            <i class="bi bi-circle"></i>
+
+                        </div>
+
+                        <div class="chart-wrapper">
+                            <canvas id="airPM1Chart"></canvas>
+                        </div>
+
+                    </div>
+
+
+                    <div class="chart-card">
+
+                        <div class="chart-header">
+
+                            <div>
+                                <h4>PM2.5</h4>
+                                <span>µg/m³</span>
+                            </div>
+
+                            <i class="bi bi-circle-half"></i>
+
+                        </div>
+
+                        <div class="chart-wrapper">
+                            <canvas id="airPM25Chart"></canvas>
+                        </div>
+
+                    </div>
+
+
+                    <div class="chart-card">
+
+                        <div class="chart-header">
+
+                            <div>
+                                <h4>PM10</h4>
+                                <span>µg/m³</span>
+                            </div>
+
+                            <i class="bi bi-cloud"></i>
+
+                        </div>
+
+                        <div class="chart-wrapper">
+                            <canvas id="airPM10Chart"></canvas>
+                        </div>
+
+                    </div>
+
+
+                    <div class="chart-card">
+
+                        <div class="chart-header">
+
+                            <div>
+                                <h4>CO₂</h4>
+                                <span>PPM</span>
+                            </div>
+
+                            <i class="bi bi-cloud-haze2"></i>
+
+                        </div>
+
+                        <div class="chart-wrapper">
+                            <canvas id="airCO2Chart"></canvas>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+             VEHICLE
+        ================================================== -->
+            <section class="page" id="page-vehicles">
+
+                <div class="page-heading">
+
+                    <div>
+
+                        <span class="eyebrow">
+                            TRANSPORTATION
+                        </span>
+
+                        <h2>Pemantauan Kendaraan & Emisi Karbon</h2>
+
+                        <p>
+                            Monitoring jumlah kendaraan dan estimasi emisi karbon.
+                        </p>
+
+                    </div>
+
+                    <div class="location-badge">
+
+                        <i class="bi bi-car-front-fill"></i>
+
+                        Traffic Monitoring
+
+                    </div>
+
+                </div>
+
+
+                <!-- VEHICLE TOTAL -->
+                <div class="vehicle-total-card">
+
+                    <div>
+
+                        <span>Total Kendaraan</span>
+
+                        <strong id="vehicleTotal">
+                            0
+                        </strong>
+
+                        <small>
+                            kendaraan terpantau
+                        </small>
+
+                    </div>
+
+                    <div class="vehicle-total-icon">
+
+                        <i class="bi bi-car-front-fill"></i>
+
+                    </div>
+
+                </div>
+
+
+                <div class="section-title">
+
+                    <h3>Jumlah Kendaraan</h3>
+
+                    <span>Update setiap jam</span>
+
+                </div>
+
+
+                <div class="vehicle-grid">
+
+                    <div class="vehicle-card">
+
+                        <i class="bi bi-bicycle"></i>
+
+                        <span>Motor</span>
+
+                        <strong id="vehicleMotor">
+                            0
+                        </strong>
+
+                        <small>kendaraan</small>
+
+                    </div>
+
+
+                    <div class="vehicle-card">
+
+                        <i class="bi bi-car-front"></i>
+
+                        <span>Mobil</span>
+
+                        <strong id="vehicleCar">
+                            0
+                        </strong>
+
+                        <small>kendaraan</small>
+
+                    </div>
+
+
+                    <div class="vehicle-card">
+
+                        <i class="bi bi-bus-front"></i>
+
+                        <span>Bus</span>
+
+                        <strong id="vehicleBus">
+                            0
+                        </strong>
+
+                        <small>kendaraan</small>
+
+                    </div>
+
+
+                    <div class="vehicle-card">
+
+                        <i class="bi bi-truck"></i>
+
+                        <span>Truk</span>
+
+                        <strong id="vehicleTruck">
+                            0
+                        </strong>
+
+                        <small>kendaraan</small>
+
+                    </div>
+
+                </div>
+
+
+                <div class="section-title">
+
+                    <h3>Emisi Kendaraan</h3>
+
+                    <span>Estimasi emisi karbon</span>
+
+                </div>
+
+
+                <div class="emission-grid">
+
+                    <div class="emission-card">
+
+                        <span>Emisi Motor</span>
+
+                        <strong id="emissionMotor">
+                            0 kg
+                        </strong>
+
+                    </div>
+
+
+                    <div class="emission-card">
+
+                        <span>Emisi Mobil</span>
+
+                        <strong id="emissionCar">
+                            0 kg
+                        </strong>
+
+                    </div>
+
+
+                    <div class="emission-card">
+
+                        <span>Emisi Truk</span>
+
+                        <strong id="emissionTruck">
+                            0 kg
+                        </strong>
+
+                    </div>
+
+
+                    <div class="emission-card total">
+
+                        <span>Total Emisi Kendaraan</span>
+
+                        <strong id="emissionTotal">
+                            0 kg
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <div class="section-title">
+
+                    <h3>Grafik Transportasi</h3>
+
+                    <span>10 data terakhir • Update setiap jam</span>
+
+                </div>
+
+
+                <div class="charts-grid vehicle-charts">
+
+                    <div class="chart-card">
+
+                        <div class="chart-header">
+
+                            <div>
+
+                                <h4>Total Kendaraan</h4>
+
+                                <span>kendaraan</span>
+
+                            </div>
+
+                            <i class="bi bi-bar-chart"></i>
+
+                        </div>
+
+                        <div class="chart-wrapper">
+
+                            <canvas id="vehicleChart"></canvas>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="chart-card">
+
+                        <div class="chart-header">
+
+                            <div>
+
+                                <h4>Total Emisi Kendaraan</h4>
+
+                                <span>kg CO₂</span>
+
+                            </div>
+
+                            <i class="bi bi-cloud"></i>
+
+                        </div>
+
+                        <div class="chart-wrapper">
+
+                            <canvas id="emissionChart"></canvas>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+             RIWAYAT & EKSPOR DATA
+        ================================================== -->
+            <section class="page" id="page-reports">
+
+                <div class="page-heading">
+                    <div>
+                        <span class="eyebrow">DATABASE & DATA ARCHIVE</span>
+                        <h2>Riwayat & Ekspor Data Kampus</h2>
+                        <p>Pilih tanggal tertentu untuk memeriksa riwayat data atau mengunduh arsip laporan (CSV / ZIP) untuk ketiga proyek USSC.</p>
+                    </div>
+                </div>
+
+                <!-- CONTROL PANEL CARD -->
+                <div class="card reports-control-card">
+                    <div class="card-header">
+                        <div>
+                            <h4>Filter & Konfigurasi Ekspor</h4>
+                        </div>
+                    </div>
+
+                    <div class="reports-form-grid">
+                        <div class="form-group">
+                            <label for="exportModuleSelect"><i class="bi bi-layers-fill"></i> Pilih Modul Proyek:</label>
+                            <select id="exportModuleSelect" class="form-control-custom">
+                                <option value="all">📦 Semua Proyek (Paket ZIP Laporan Terpadu)</option>
+                                <option value="traffic">🚗 Lalu Lintas & Emisi Kendaraan (CSV)</option>
+                                <option value="airquality">🌿 Kualitas Udara - AirGradient (CSV)</option>
+                                <option value="flood">🌊 Monitoring Banjir & Cuaca - ESP32 (CSV)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="exportDateInput"><i class="bi bi-calendar-event-fill"></i> Pilih Tanggal:</label>
+                            <div class="date-input-wrapper">
+                                <input type="date" id="exportDateInput" class="form-control-custom">
+                                <button type="button" class="btn-today-quick" id="btnExportToday" title="Pilih Hari Ini">Hari Ini</button>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn-action btn-check" id="btnCheckHistory">
+                                <i class="bi bi-search"></i>
+                                <span>Cek Riwayat</span>
+                            </button>
+                            <button type="button" class="btn-action btn-download" id="btnDownloadData">
+                                <i class="bi bi-cloud-arrow-down-fill"></i>
+                                <span>Download Data</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="available-dates-banner" id="availableDatesBanner">
+                        <i class="bi bi-info-circle-fill"></i>
+                        <span>Koneksi ke database aktif. Silakan pilih tanggal untuk mengecek atau mengunduh.</span>
+                    </div>
+                </div>
+
+                <!-- PREVIEW CONTAINER -->
+                <div class="reports-preview-section" id="reportsPreviewSection">
+                    <div class="section-title">
+                        <h3>Pratinjau Riwayat Data</h3>
+                        <span id="previewDateLabel">Belum ada tanggal yang dipilih</span>
+                    </div>
+
+                    <div id="previewContentArea">
+                        <div class="empty-preview-card">
+                            <i class="bi bi-calendar2-range"></i>
+                            <h4>Belum Ada Data yang Ditampilkan</h4>
+                            <p>Silakan pilih tanggal dan modul di atas, lalu klik <strong>"Cek Riwayat"</strong> untuk melihat ringkasan atau langsung klik <strong>"Download Data"</strong>.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+        </section>
+
+
+        <!-- FOOTER -->
+        <footer>
+
+            <span>
+                © 2026 Smart Sustainability Campus
+            </span>
+
+            <span>
+                Universitas Negeri Surabaya
+            </span>
+
+        </footer>
+
+    </main>
+
+
+    <!-- JAVASCRIPT -->
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/api.js"></script>
+    <script src="assets/js/jawa.js"></script>
+
+</body>
+
+</html>

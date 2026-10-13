@@ -1,0 +1,858 @@
+/* =========================================================
+   TRAFFIC PAGE
+   Semua CSS di-scope ke .traffic-page
+   ========================================================= */
+
+.traffic-page {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.traffic-page *,
+.traffic-page *::before,
+.traffic-page *::after {
+    box-sizing: border-box;
+}
+
+
+/* =========================================================
+   CONTAINER
+   Disamakan dengan Air Quality
+   ========================================================= */
+
+.traffic-container {
+    width: 100%;
+    max-width: none;
+    margin: 0 auto;
+    padding: 24px;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+
+/* =========================================================
+   CARD DASAR
+   ========================================================= */
+
+.traffic-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    width: 100%;
+    word-wrap: break-word;
+
+    background-color: #fff;
+    background-clip: border-box;
+
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+}
+
+.traffic-card-body {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 1rem;
+}
+
+.traffic-card-header {
+    display: flex;
+    justify-content: space-between;
+    flex: 0 0 auto;
+    padding: 0.9rem 1rem;
+    background-color: #fff;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    font-weight: 600;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.traffic-shadow {
+    box-shadow:
+        0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+/* =========================================================
+   SPACING
+   ========================================================= */
+
+.traffic-mb-4 {
+    margin-bottom: 1.5rem;
+}
+
+
+/* =========================================================
+   FILTER
+   Disamakan dengan Air Quality
+   ========================================================= */
+
+.traffic-filter-card {
+    border: none;
+    margin-bottom: 1rem;
+    overflow: visible;
+}
+
+.traffic-filter-card .traffic-card-body {
+    padding: 1.25rem;
+}
+
+.traffic-filter-grid {
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 2fr)
+        minmax(0, 1.5fr)
+        minmax(0, 1.5fr)
+        minmax(0, 1fr);
+
+    gap: 1rem;
+
+    width: 100%;
+    min-width: 0;
+
+    align-items: end;
+}
+
+.traffic-field {
+    width: 100%;
+    min-width: 0;
+}
+
+.traffic-icon-spacing {
+    margin-right: 8px;
+}
+.traffic-spinner {
+    display: inline-block;
+
+    width: 1rem;
+    height: 1rem;
+
+    vertical-align: -0.125em;
+
+    border: 0.15em solid currentColor;
+    border-right-color: transparent;
+
+    border-radius: 50%;
+
+    animation:
+        aq-spinner-border 0.75s linear infinite;
+}
+
+/* =========================================================
+   LABEL
+   ========================================================= */
+
+.traffic-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    line-height: 1.5;
+    font-weight: 600;
+    color: #212529;
+}
+
+.traffic-label i {
+    margin-right: 8px;
+}
+
+
+/* =========================================================
+   FORM
+   Disamakan dengan Air Quality
+   ========================================================= */
+
+.traffic-control {
+    display: block;
+
+    width: 100%;
+    min-width: 0;
+
+    padding: 0.55rem 0.75rem;
+
+    font-size: 0.95rem;
+    font-weight: 400;
+    line-height: 1.5;
+
+    color: #212529;
+    background-color: #fff;
+    background-clip: padding-box;
+
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+
+    outline: none;
+}
+
+.traffic-control:focus {
+    border-color: #86b7fe;
+
+    outline: 0;
+
+    box-shadow:
+        0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+}
+
+
+/* =========================================================
+   BUTTON
+   Disamakan dengan Air Quality
+   ========================================================= */
+.traffic-btn {
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    font-weight: 500;
+    line-height: 1.5;
+
+    text-align: center;
+    vertical-align: middle;
+
+    cursor: pointer;
+    user-select: none;
+
+    border: 1px solid transparent;
+
+    padding: 0.55rem 0.9rem;
+
+    font-size: 0.95rem;
+
+    border-radius: 6px;
+
+    transition:
+        background-color 0.15s ease-in-out,
+        border-color 0.15s ease-in-out,
+        color 0.15s ease-in-out;
+
+    box-sizing: border-box;
+}
+
+.traffic-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+
+.traffic-icon-spacing {
+    margin-right: 8px;
+}
+
+.traffic-button {
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    width: 100%;
+
+    padding: 0.55rem 0.9rem;
+
+    font-size: 0.95rem;
+    font-weight: 500;
+    line-height: 1.5;
+
+    text-align: center;
+    vertical-align: middle;
+
+    color: #fff;
+    background-color: #0d6efd;
+
+    border: 1px solid #0d6efd;
+    border-radius: 6px;
+
+    cursor: pointer;
+    user-select: none;
+
+    transition:
+        background-color 0.15s ease-in-out,
+        border-color 0.15s ease-in-out,
+        color 0.15s ease-in-out;
+}
+
+.traffic-button:hover:not(:disabled) {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+
+.traffic-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+
+
+/* =========================================================
+   INFO
+   Disamakan dengan Air Quality
+   ========================================================= */
+
+.traffic-info-card {
+    border: none;
+    margin-bottom: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.traffic-info-card .traffic-card-body {
+    padding: 1.25rem;
+}
+
+.traffic-info-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.traffic-muted {
+    color: #94a3b8 !important;
+}
+
+.traffic-fw-bold {
+    font-weight: 700;
+}
+
+
+/* =========================================================
+   SECTION
+   ========================================================= */
+
+.traffic-section {
+    width: 100%;
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    margin-bottom: 1.5rem;
+}
+
+.traffic-emission-section {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+}
+
+.traffic-section-title {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+
+    font-size: 1.25rem;
+    font-weight: 700;
+
+    line-height: 1.2;
+
+    color: #212529;
+}
+
+
+/* =========================================================
+   SUMMARY
+   ========================================================= */
+
+.traffic-summary-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(5, minmax(0, 1fr));
+
+    gap: 1rem;
+
+    width: 100%;
+    min-width: 0;
+}
+
+.traffic-summary-item {
+    width: 100%;
+    min-width: 0;
+}
+
+
+/* =========================================================
+   DATA CARD
+   Ukuran disamakan dengan AQ
+   ========================================================= */
+
+.traffic-data-card {
+    height: 100%;
+    min-height: 155px;
+
+    border: none;
+
+    box-shadow: none !important;
+
+    transition:
+        transform 0.2s,
+        border-color 0.2s;
+}
+
+.traffic-data-card .traffic-card-body {
+    padding: 1.25rem;
+}
+
+.traffic-data-card:hover {
+    transform: translateY(-3px);
+}
+
+.traffic-data-card h6 {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+
+    font-size: 0.95rem;
+    font-weight: 600;
+
+    line-height: 1.2;
+
+    color: #6c757d;
+}
+
+.traffic-data-card h2 {
+    margin-top: 0;
+    margin-bottom: 0.15rem;
+
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.2;
+
+    color: #212529;
+
+    overflow-wrap: anywhere;
+}
+
+.traffic-data-card span {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+
+/* =========================================================
+   BORDER INDICATOR
+   ========================================================= */
+
+.traffic-total-card {
+    border-left: 5px solid #0d6efd;
+}
+
+.traffic-emission-card {
+    border-left: 5px solid #fd7e14;
+}
+
+.traffic-emission-total-card {
+    border-left: 5px solid #dc3545;
+}
+
+
+/* =========================================================
+   CHART
+   ========================================================= */
+
+.traffic-chart-card {
+    min-width: 0;
+
+    margin-top: 1.5rem;
+
+    overflow: hidden;
+
+    box-shadow: none !important;
+}
+
+.traffic-chart-card .traffic-card-header {
+    font-size: 1rem;
+}
+
+.traffic-chart-card .traffic-card-body {
+    padding: 1rem;
+
+    min-width: 0;
+
+    overflow: hidden;
+}
+
+.traffic-chart-container {
+    position: relative;
+
+    width: 100%;
+    max-width: 100%;
+
+    height: 350px;
+
+    min-width: 0;
+
+    overflow: hidden;
+}
+
+.traffic-chart-container canvas {
+    display: block;
+
+    width: 100% !important;
+    max-width: 100% !important;
+
+    height: 100% !important;
+}
+
+
+/* =========================================================
+   TABLE
+   ========================================================= */
+
+.traffic-table-card {
+    min-width: 0;
+
+    margin-top: 1.5rem;
+
+    overflow: hidden;
+
+    box-shadow: none !important;
+}
+
+.traffic-table-card .traffic-card-header {
+    font-size: 1rem;
+}
+
+.traffic-table-wrapper {
+    width: 100%;
+    max-width: 100%;
+
+    overflow-x: auto;
+    overflow-y: hidden;
+
+    -webkit-overflow-scrolling: touch;
+}
+
+.traffic-table {
+    width: 100%;
+
+    margin-bottom: 0;
+
+    vertical-align: top;
+
+    border-collapse: collapse;
+
+    table-layout: auto;
+}
+
+.traffic-table th,
+.traffic-table td {
+    padding: 0.75rem;
+
+    border-bottom: 1px solid #dee2e6;
+
+    white-space: nowrap;
+
+    vertical-align: middle;
+
+    text-align: left;
+}
+
+.traffic-table th {
+    font-weight: 600;
+
+    background-color: #f8f9fa;
+}
+
+.traffic-empty {
+    text-align: center !important;
+    padding: 20px !important;
+}
+
+
+/* =========================================================
+   PAGINATION
+   ========================================================= */
+
+.traffic-pagination {
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+
+    flex-wrap: wrap;
+
+    margin-top: 1rem;
+
+    gap: 4px;
+
+    width: 100%;
+}
+
+.traffic-pagination-buttons {
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+
+    flex-wrap: wrap;
+
+    gap: 4px;
+
+    max-width: 100%;
+}
+
+.traffic-pagination-buttons button {
+    min-width: 38px;
+    height: 36px;
+
+    padding: 6px 10px;
+
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+
+    background: #fff;
+    color: #212529;
+
+    cursor: pointer;
+
+    transition:
+        background-color 0.2s,
+        color 0.2s;
+}
+
+.traffic-pagination-buttons button:hover:not(:disabled) {
+    background: #f1f3f5;
+}
+
+.traffic-pagination-buttons button.active {
+    background: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
+}
+
+.traffic-pagination-buttons button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+
+/* =========================================================
+   HILANGKAN SHADOW TRAFFIC
+   ========================================================= */
+
+.traffic-card,
+.traffic-filter-card,
+.traffic-info-card,
+.traffic-data-card,
+.traffic-chart-card,
+.traffic-table-card {
+    box-shadow: none !important;
+}
+
+
+/* =========================================================
+   DARK MODE
+   ========================================================= */
+
+.dark .traffic-page {
+    color: #e2e8f0;
+}
+
+.dark .traffic-card {
+    background-color: #1e293b;
+    color: #e2e8f0;
+    border-color: #334155;
+}
+
+.dark .traffic-card-header {
+    background-color: #1e293b;
+    color: #f1f5f9;
+    border-bottom-color: #334155;
+}
+
+.dark .traffic-label {
+    color: #e2e8f0;
+}
+
+.dark .traffic-control {
+    background-color: #0f172a;
+    border-color: #475569;
+    color: #f1f5f9;
+}
+
+.dark .traffic-control option {
+    background-color: #0f172a;
+    color: #f1f5f9;
+}
+
+.dark .traffic-fw-bold {
+    color: #f1f5f9;
+}
+
+.dark .traffic-muted {
+    color: #94a3b8;
+}
+
+.dark .traffic-section-title {
+    color: #f1f5f9;
+}
+
+.dark .traffic-data-card h6 {
+    color: #cbd5e1;
+}
+
+.dark .traffic-data-card h2 {
+    color: #f8fafc;
+}
+
+.dark .traffic-data-card span {
+    color: #94a3b8;
+}
+
+.dark .traffic-table th,
+.dark .traffic-table td {
+    border-bottom-color: #475569;
+    color: #e2e8f0;
+}
+
+.dark .traffic-table th {
+    background-color: #1e293b;
+    color: #f1f5f9;
+}
+
+.dark .traffic-pagination-buttons button {
+    background-color: #1e293b;
+    border-color: #475569;
+    color: #e2e8f0;
+}
+
+.dark .traffic-pagination-buttons button:hover:not(:disabled) {
+    background-color: #334155;
+}
+
+.dark .traffic-pagination-buttons button.active {
+    background-color: #2563eb;
+    border-color: #2563eb;
+    color: #fff;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 1100px) {
+
+    .traffic-filter-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+    .traffic-summary-grid {
+        grid-template-columns:
+            repeat(3, minmax(0, 1fr));
+    }
+
+}
+
+
+@media (max-width: 900px) {
+
+    .traffic-info-grid {
+        grid-template-columns:
+            repeat(3, minmax(0, 1fr));
+    }
+
+}
+
+
+@media (max-width: 768px) {
+
+    .traffic-container {
+        padding: 20px;
+    }
+
+    .traffic-filter-grid {
+        grid-template-columns:
+            1fr;
+    }
+
+    .traffic-info-grid {
+        grid-template-columns:
+            1fr;
+    }
+
+    .traffic-summary-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+    .traffic-card-body {
+        padding: 1rem;
+    }
+
+    .traffic-chart-card .traffic-card-body {
+        padding: 1rem;
+    }
+
+    .traffic-chart-container {
+        height: 320px;
+    }
+
+    .traffic-chart-container canvas {
+        height: 100% !important;
+    }
+
+}
+
+
+@media (max-width: 576px) {
+
+    .traffic-container {
+        padding: 16px;
+    }
+
+    .traffic-summary-grid {
+        grid-template-columns:
+            1fr;
+    }
+
+    .traffic-data-card {
+        min-height: 140px;
+    }
+
+    .traffic-data-card h2 {
+        font-size: 1.75rem;
+    }
+
+    .traffic-chart-container {
+        height: 280px;
+    }
+
+    .traffic-table th,
+    .traffic-table td {
+        padding: 0.65rem;
+    }
+
+    .traffic-pagination-buttons {
+        width: 100%;
+    }
+
+    .traffic-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .traffic-card-header .traffic-btn {
+        width: 100%;
+    }
+
+}
+
+/* =========================================================
+   CHART DARK MODE
+   ========================================================= */
+
+.dark .traffic-chart-card {
+    background-color: #1e293b;
+    color: #e2e8f0;
+}
+
+.dark .traffic-chart-card .traffic-card-header {
+    background-color: #1e293b;
+    color: #f1f5f9;
+    border-bottom-color: #334155;
+}
+
+.dark .traffic-chart-card .traffic-card-body {
+    background-color: #1e293b;
+}
+
+.dark .traffic-chart-container {
+    background-color: #1e293b;
+}

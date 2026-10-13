@@ -1,0 +1,1886 @@
+/* =========================================================
+   DIGITAL TWIN
+   Smart Sustainability Campus
+   Compatible with MainLayout + Tailwind 4
+   ========================================================= */
+
+/* =========================================================
+   PAGE
+   ========================================================= */
+
+.pju-lidah-wetan-page-container {
+  padding: 20px 30px;
+  width: 100%;
+  animation: pageIn 0.3s ease;
+}
+
+@keyframes pageIn {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pju-lidah-wetan-page *,
+.pju-lidah-wetan-page *::before,
+.pju-lidah-wetan-page *::after {
+  box-sizing: border-box;
+}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.pju-lidah-wetan-top-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.pju-lidah-wetan-top-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 1.25;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.pju-lidah-wetan-top-header p {
+  margin: 5px 0 0;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.pju-lidah-wetan-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pju-lidah-wetan-last-update {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.pju-lidah-wetan-last-update > div {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.pju-lidah-wetan-last-update small {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+.pju-lidah-wetan-last-update strong {
+  margin-top: 3px;
+  font-size: 0.82rem;
+  color: #334155;
+  font-weight: 600;
+}
+
+.pju-lidah-wetan-status-green,
+.pju-lidah-wetan-status-red {
+  font-size: 0.9rem;
+}
+
+.pju-lidah-wetan-status-green {
+  color: #10b981;
+}
+
+.pju-lidah-wetan-status-red {
+  color: #ef4444;
+}
+
+.pju-lidah-wetan-map-control {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+
+  background: #ffffff;
+  color: #334155;
+
+  font-size: 1.25rem;
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.pju-lidah-wetan-map-control:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0d6efd;
+}
+
+.pju-lidah-wetan-map-control:active {
+  transform: scale(0.96);
+}
+
+/* =========================================================
+   STATISTICS
+   ========================================================= */
+
+.pju-lidah-wetan-stats {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.pju-lidah-wetan-stat-card {
+  position: relative;
+  /* margin-top: 24px; */
+  min-width: 0;
+  min-height: 108px;
+
+  display: flex;
+  align-items: center;
+  gap: 13px;
+
+  padding: 18px;
+
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+
+  overflow: hidden;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.pju-lidah-wetan-stat-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+}
+
+.pju-lidah-wetan-stat-icon {
+  width: 46px;
+  height: 46px;
+
+  flex: 0 0 46px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 12px;
+
+  font-size: 1.35rem;
+}
+
+.pju-lidah-wetan-stat-icon.total {
+  background: #eff6ff;
+}
+
+.pju-lidah-wetan-stat-icon.motor {
+  background: #ecfdf5;
+}
+
+.pju-lidah-wetan-stat-icon.car {
+  background: #fff7ed;
+}
+
+.pju-lidah-wetan-stat-icon.bus {
+  background: #fefce8;
+}
+
+.pju-lidah-wetan-stat-icon.truck {
+  background: #f5f3ff;
+}
+
+.pju-lidah-wetan-stat-card > div:not(.pju-lidah-wetan-stat-icon) {
+  min-width: 0;
+}
+
+.pju-lidah-wetan-stat-card span {
+  display: block;
+
+  font-size: 0.75rem;
+  line-height: 1.3;
+
+  color: #64748b;
+}
+
+.pju-lidah-wetan-stat-card strong {
+  display: block;
+
+  margin-top: 5px;
+
+  font-size: 1.5rem;
+  line-height: 1;
+
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.pju-lidah-wetan-stat-live {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+
+  padding: 3px 7px;
+
+  border-radius: 999px;
+
+  background: #ecfdf5;
+  color: #059669 !important;
+
+  font-size: 0.6rem !important;
+  font-weight: 700;
+}
+
+/* =========================================================
+   DIGITAL TWIN MAP CARD
+   ========================================================= */
+
+.pju-lidah-wetan-area {
+  position: relative;
+
+  width: 100%;
+  min-width: 0;
+
+  margin-bottom: 24px;
+
+  background: #ffffff;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+
+  overflow: hidden;
+}
+
+/* =========================================================
+   MAP HEADER
+   ========================================================= */
+
+.pju-lidah-wetan-map-header {
+  min-height: 72px;
+
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) auto minmax(160px, 1fr);
+  align-items: center;
+  gap: 14px;
+  padding: 10px 20px;
+
+  background: #ffffff;
+
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.pju-lidah-wetan-map-header h2 {
+  margin: 0;
+
+  font-size: 1rem;
+  line-height: 1.3;
+
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.pju-lidah-wetan-map-header span {
+  display: block;
+
+  margin-top: 4px;
+
+  font-size: 0.75rem;
+
+  color: #94a3b8;
+}
+
+/* =========================================================
+   MAP BUTTONS
+   ========================================================= */
+
+.pju-lidah-wetan-map-tools {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: nowrap;
+  justify-self: center;
+}
+
+.pju-lidah-wetan-map-header .pju-lidah-wetan-header-right {
+  justify-self: end;
+}
+
+.pju-lidah-wetan-map-tools button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 34px;
+
+  padding: 7px 11px;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+
+  background: #ffffff;
+  color: #475569;
+
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.pju-lidah-wetan-map-tools button:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0d6efd;
+}
+
+.pju-lidah-wetan-map-tools button.active {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #2563eb;
+}
+
+.pju-lidah-wetan-type-switch {
+  display: inline-flex;
+  gap: 2px;
+  margin: 0;
+  padding: 3px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.pju-lidah-wetan-type-switch label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 4px 8px;
+  border-radius: 5px;
+  color: #475569;
+  font-size: 0.73rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pju-lidah-wetan-type-switch input {
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  accent-color: #2563eb;
+}
+
+.pju-lidah-wetan-type-switch label.active {
+  background: #ffffff;
+  color: #1d4ed8;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+}
+
+/* =========================================================
+   MAP
+   ========================================================= */
+
+.pju-lidah-wetan-map {
+  position: relative;
+
+  width: 100%;
+  height: 470px;
+
+  min-height: 320px;
+
+  background: #e2e8f0;
+
+  overflow: hidden;
+}
+
+.pju-lidah-wetan-map-stage {
+  position: relative;
+  width: 100%;
+}
+
+/*
+ * PENTING:
+ * Leaflet menggunakan gambar tile 256x256.
+ * Tailwind/global CSS kadang memberikan
+ * max-width: 100% kepada img sehingga tile
+ * menjadi rusak seperti screenshot Anda.
+ */
+
+.pju-lidah-wetan-map .leaflet-container {
+  width: 100%;
+  height: 100%;
+
+  background: #e2e8f0;
+
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.pju-lidah-wetan-map .leaflet-container img {
+  max-width: none !important;
+}
+
+.pju-lidah-wetan-map .leaflet-tile {
+  width: 256px !important;
+  height: 256px !important;
+
+  max-width: none !important;
+  max-height: none !important;
+
+  object-fit: initial !important;
+}
+
+.pju-lidah-wetan-map .leaflet-tile-container img {
+  max-width: none !important;
+  max-height: none !important;
+}
+
+.pju-lidah-wetan-map .leaflet-pane img {
+  max-width: none !important;
+  max-height: none !important;
+}
+
+.pju-lidah-wetan-pju-marker {
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.pju-lidah-wetan-lux-marker {
+  width: 12px;
+  height: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.48);
+  border-radius: 50%;
+  opacity: 0.4;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.32);
+}
+
+/* =========================================================
+   LEAFLET Z-INDEX
+   ========================================================= */
+
+.pju-lidah-wetan-map .leaflet-map-pane {
+  z-index: 10;
+}
+
+.pju-lidah-wetan-map .leaflet-tile-pane {
+  z-index: 12;
+}
+
+.pju-lidah-wetan-map .leaflet-overlay-pane {
+  z-index: 14;
+}
+
+.pju-lidah-wetan-map .leaflet-shadow-pane {
+  z-index: 15;
+}
+
+.pju-lidah-wetan-map .leaflet-marker-pane {
+  z-index: 16;
+}
+
+.pju-lidah-wetan-map .leaflet-tooltip-pane {
+  z-index: 17;
+}
+
+.pju-lidah-wetan-map .leaflet-popup-pane {
+  z-index: 18;
+}
+
+.pju-lidah-wetan-map .leaflet-control {
+  z-index: 19;
+}
+
+/* =========================================================
+   LEAFLET CONTROLS
+   ========================================================= */
+
+.pju-lidah-wetan-map .leaflet-control-zoom {
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 8px !important;
+
+  overflow: hidden;
+
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+}
+
+.pju-lidah-wetan-map .leaflet-control-zoom a {
+  width: 32px !important;
+  height: 32px !important;
+
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+
+  background: #ffffff !important;
+  color: #334155 !important;
+
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.pju-lidah-wetan-map .leaflet-control-zoom a:last-child {
+  border-bottom: none !important;
+}
+
+.pju-lidah-wetan-map .leaflet-control-zoom a:hover {
+  background: #f8fafc !important;
+  color: #2563eb !important;
+}
+
+.pju-lidah-wetan-map .leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.88) !important;
+
+  padding: 2px 6px !important;
+
+  border-radius: 4px 0 0 0;
+
+  color: #64748b !important;
+
+  font-size: 9px !important;
+}
+
+.pju-lidah-wetan-map .leaflet-control-attribution a {
+  color: #475569 !important;
+}
+
+/* =========================================================
+   CAMERA MARKER
+   ========================================================= */
+
+.pju-lidah-wetan-camera-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.pju-lidah-wetan-camera-pulse {
+  width: 42px;
+  height: 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #2563eb;
+
+  border: 3px solid #ffffff;
+
+  box-shadow:
+    0 0 0 5px rgba(37, 99, 235, 0.18),
+    0 4px 10px rgba(15, 23, 42, 0.25);
+
+  font-size: 18px;
+
+  animation: digitalCameraPulse 2s infinite;
+}
+
+@keyframes digitalCameraPulse {
+  0% {
+    box-shadow:
+      0 0 0 0 rgba(37, 99, 235, 0.35),
+      0 4px 10px rgba(15, 23, 42, 0.25);
+  }
+
+  70% {
+    box-shadow:
+      0 0 0 9px rgba(37, 99, 235, 0),
+      0 4px 10px rgba(15, 23, 42, 0.25);
+  }
+
+  100% {
+    box-shadow:
+      0 0 0 0 rgba(37, 99, 235, 0),
+      0 4px 10px rgba(15, 23, 42, 0.25);
+  }
+}
+
+/* =========================================================
+   VEHICLE MARKERS
+   ========================================================= */
+
+.pju-lidah-wetan-vehicle-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.pju-lidah-wetan-vehicle-icon {
+  width: 40px;
+  height: 40px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: rgba(255, 255, 255, 0.95);
+
+  border: 2px solid #ffffff;
+
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.25);
+
+  font-size: 21px;
+
+  line-height: 1;
+
+  transform-origin: center center;
+
+  transition: transform 0.2s ease;
+}
+
+/* =========================================================
+   POPUP
+   ========================================================= */
+
+.pju-lidah-wetan-map .leaflet-popup-content-wrapper {
+  padding: 0;
+
+  background: #ffffff;
+
+  border-radius: 12px;
+
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+}
+
+.pju-lidah-wetan-map .leaflet-popup-content {
+  min-width: 220px;
+
+  margin: 0;
+
+  color: #334155;
+
+  font-size: 0.78rem;
+}
+
+.pju-lidah-wetan-map .leaflet-popup-tip {
+  background: #ffffff;
+}
+
+.pju-lidah-wetan-map .leaflet-popup-close-button {
+  color: #64748b !important;
+  font-size: 18px !important;
+  padding: 7px 9px !important;
+}
+
+/* =========================================================
+   CAMERA POPUP
+   ========================================================= */
+
+.pju-lidah-wetan-popup-camera,
+.pju-lidah-wetan-vehicle-popup {
+  padding: 14px;
+}
+
+.pju-lidah-wetan-popup-title {
+  margin-bottom: 8px;
+
+  color: #0f172a;
+
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.pju-lidah-wetan-popup-camera-name {
+  margin-bottom: 10px;
+
+  color: #2563eb;
+
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.pju-lidah-wetan-popup-coordinate {
+  margin-top: 4px;
+
+  color: #64748b;
+
+  font-size: 0.72rem;
+}
+
+.pju-lidah-wetan-popup-online {
+  margin-top: 10px;
+
+  color: #059669;
+
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+/* =========================================================
+   VEHICLE POPUP
+   ========================================================= */
+
+.pju-lidah-wetan-vehicle-popup .pju-lidah-wetan-popup-title {
+  padding-bottom: 9px;
+
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.pju-lidah-wetan-popup-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 15px;
+
+  padding: 5px 0;
+
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.pju-lidah-wetan-popup-row:last-child {
+  border-bottom: none;
+}
+
+.pju-lidah-wetan-popup-row span {
+  color: #64748b;
+}
+
+.pju-lidah-wetan-popup-row strong {
+  color: #334155;
+  font-weight: 600;
+  text-align: right;
+}
+
+.pju-lidah-wetan-vehicle-active {
+  color: #059669 !important;
+}
+
+/* =========================================================
+   MAP LEGEND
+   ========================================================= */
+
+.pju-lidah-wetan-map-legend {
+  position: absolute;
+
+  left: 15px;
+  bottom: 15px;
+
+  z-index: 20;
+  width: 100px;
+  padding: 11px 12px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.16);
+  backdrop-filter: blur(6px);
+}
+
+.pju-lidah-wetan-legend-title {
+  margin-bottom: 7px;
+
+  color: #334155;
+
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.pju-lidah-wetan-legend-item {
+  display: flex;
+  align-items: center;
+
+  gap: 7px;
+
+  min-height: 23px;
+
+  color: #475569;
+
+  font-size: 0.68rem;
+}
+
+.pju-lidah-wetan-legend-item span {
+  width: 20px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 13px;
+}
+
+.pju-lidah-wetan-lux-gradient {
+  height: 9px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, hsl(0 78% 45%), hsl(60 78% 45%), hsl(120 78% 45%));
+}
+
+.pju-lidah-wetan-lux-legend-labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 5px;
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 0.61rem;
+}
+
+/* =========================================================
+   LIVE INDICATOR
+   ========================================================= */
+
+.pju-lidah-wetan-live-indicator {
+  position: absolute;
+
+  top: 12px;
+  right: 14px;
+
+  z-index: 19;
+
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  min-width: 105px;
+
+  padding: 9px 11px;
+
+  background: rgba(255, 255, 255, 0.95);
+
+  border: 1px solid rgba(226, 232, 240, 0.95);
+
+  border-radius: 9px;
+
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.14);
+
+  backdrop-filter: blur(6px);
+}
+
+.pju-lidah-wetan-live-indicator > span {
+  width: 8px;
+  height: 8px;
+
+  flex: 0 0 8px;
+
+  border-radius: 50%;
+
+  background: #10b981;
+
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.12);
+}
+
+.pju-lidah-wetan-live-indicator > span.offline {
+  background: #ef4444;
+
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.12);
+}
+
+.pju-lidah-wetan-live-indicator div {
+  min-width: 0;
+}
+
+.pju-lidah-wetan-live-indicator strong {
+  display: block;
+
+  color: #059669;
+
+  font-size: 0.68rem;
+  line-height: 1.2;
+}
+
+.pju-lidah-wetan-live-indicator > span.offline + div strong {
+  color: #dc2626;
+}
+
+.pju-lidah-wetan-live-indicator small {
+  display: block;
+
+  margin-top: 2px;
+
+  color: #94a3b8;
+
+  font-size: 0.58rem;
+
+  white-space: nowrap;
+}
+
+/* =========================================================
+   BOTTOM INFORMATION
+   ========================================================= */
+
+.pju-lidah-wetan-bottom-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+
+  margin-bottom: 20px;
+}
+
+.pju-lidah-wetan-info-card {
+  min-width: 0;
+
+  background: #ffffff;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+
+  overflow: hidden;
+}
+
+.pju-lidah-wetan-card-header {
+  min-height: 70px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 15px;
+
+  padding: 15px 18px;
+
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.pju-lidah-wetan-card-header h3 {
+  margin: 0;
+
+  color: #0f172a;
+
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.pju-lidah-wetan-card-header span:not(.pju-lidah-wetan-online-badge):not(.pju-lidah-wetan-vehicle-count) {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #94a3b8;
+
+  font-size: 0.7rem;
+}
+
+/* =========================================================
+   ONLINE BADGE
+   ========================================================= */
+
+.pju-lidah-wetan-online-badge {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+
+  padding: 5px 9px;
+
+  border-radius: 999px;
+
+  background: #ecfdf5;
+  color: #059669 !important;
+
+  font-size: 0.63rem !important;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pju-lidah-wetan-online-badge::before {
+  content: '';
+
+  width: 6px;
+  height: 6px;
+
+  margin-right: 5px;
+
+  border-radius: 50%;
+
+  background: currentColor;
+}
+
+.pju-lidah-wetan-vehicle-count {
+  color: #2563eb !important;
+
+  font-size: 0.7rem !important;
+  font-weight: 600;
+
+  white-space: nowrap;
+}
+
+/* =========================================================
+   CAMERA INFORMATION
+   ========================================================= */
+
+.pju-lidah-wetan-camera-info-grid {
+  display: grid;
+
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  gap: 12px;
+
+  padding: 18px;
+}
+
+.pju-lidah-wetan-camera-info-grid > div {
+  min-width: 0;
+
+  padding: 12px;
+
+  background: #f8fafc;
+
+  border-radius: 10px;
+}
+
+.pju-lidah-wetan-camera-info-grid small {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: #94a3b8;
+
+  font-size: 0.68rem;
+}
+
+.pju-lidah-wetan-camera-info-grid strong {
+  display: block;
+
+  color: #334155;
+
+  font-size: 0.78rem;
+  font-weight: 600;
+
+  overflow-wrap: anywhere;
+}
+
+/* =========================================================
+   VEHICLE STATUS
+   ========================================================= */
+
+.pju-lidah-wetan-status-list {
+  display: flex;
+  flex-direction: column;
+
+  gap: 13px;
+
+  padding: 18px;
+}
+
+.pju-lidah-wetan-status-row {
+  display: grid;
+
+  grid-template-columns: 75px minmax(0, 1fr) 38px;
+
+  align-items: center;
+
+  gap: 10px;
+}
+
+.pju-lidah-wetan-vehicle-name {
+  color: #475569;
+
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.pju-lidah-wetan-status-bar {
+  width: 100%;
+  height: 7px;
+
+  overflow: hidden;
+
+  border-radius: 999px;
+
+  background: #f1f5f9;
+}
+
+.pju-lidah-wetan-status-fill {
+  height: 100%;
+
+  min-width: 0;
+
+  border-radius: 999px;
+
+  transition: width 0.35s ease;
+}
+
+.motor-fill {
+  background: #10b981;
+}
+
+.car-fill {
+  background: #f97316;
+}
+
+.bus-fill {
+  background: #eab308;
+}
+
+.truck-fill {
+  background: #8b5cf6;
+}
+
+.pju-lidah-wetan-status-row > strong {
+  color: #475569;
+
+  font-size: 0.7rem;
+  font-weight: 600;
+
+  text-align: right;
+}
+
+.pju-lidah-wetan-data-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.6fr);
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.pju-lidah-wetan-line-chart {
+  position: relative;
+  height: 260px;
+  padding: 16px 18px 8px;
+}
+
+.pju-lidah-wetan-chart-summary {
+  margin-top: 6px;
+  color: #64748b;
+  font-size: 0.68rem;
+  text-align: right;
+}
+
+.pju-lidah-wetan-table-wrap {
+  max-height: 390px;
+  overflow: auto;
+}
+
+.pju-lidah-wetan-table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.pju-lidah-wetan-table-wrap th,
+.pju-lidah-wetan-table-wrap td {
+  padding: 11px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.pju-lidah-wetan-table-wrap th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.pju-lidah-wetan-table-wrap tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.pju-lidah-wetan-condition {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border: 1px solid color-mix(in srgb, var(--condition-color) 28%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--condition-color) 12%, white);
+  color: var(--condition-color);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.pju-lidah-wetan-condition i {
+  font-size: 0.55rem;
+}
+
+.pju-lidah-wetan-lux-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border: 1px solid color-mix(in srgb, var(--lux-color) 28%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--lux-color) 12%, white);
+  color: color-mix(in srgb, var(--lux-color) 78%, #0f172a);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.pju-lidah-wetan-lux-badge i {
+  font-size: 0.75rem;
+}
+
+.pju-lidah-wetan-table-wrap .pju-lidah-wetan-empty {
+  padding: 26px 14px;
+  color: #94a3b8;
+  text-align: center;
+}
+
+/* =========================================================
+   SERVER TIME
+   ========================================================= */
+
+.pju-lidah-wetan-server-time {
+  width: 100%;
+
+  padding: 10px 14px;
+
+  color: #94a3b8;
+
+  font-size: 0.68rem;
+
+  text-align: right;
+}
+
+/* =========================================================
+   MAP ERROR
+   ========================================================= */
+
+.pju-lidah-wetan-map-error {
+  position: absolute;
+
+  top: 82px;
+  left: 50%;
+
+  z-index: 1100;
+
+  transform: translateX(-50%);
+
+  padding: 8px 12px;
+
+  background: #fef2f2;
+
+  border: 1px solid #fecaca;
+
+  border-radius: 8px;
+
+  color: #dc2626;
+
+  font-size: 0.72rem;
+
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.1);
+}
+
+/* =========================================================
+   DARK MODE
+   ========================================================= */
+
+.dark .pju-lidah-wetan-page {
+  color: #e2e8f0;
+}
+
+.dark .pju-lidah-wetan-top-header h1 {
+  color: #f8fafc;
+}
+
+.dark .pju-lidah-wetan-top-header p {
+  color: #94a3b8;
+}
+
+.dark .pju-lidah-wetan-last-update strong {
+  color: #cbd5e1;
+}
+
+.dark .pju-lidah-wetan-map-control {
+  background: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+.dark .pju-lidah-wetan-map-control:hover {
+  background: #0f172a;
+  border-color: #475569;
+  color: #60a5fa;
+}
+
+/* DARK STAT */
+
+.dark .pju-lidah-wetan-stat-card {
+  background: #1e293b;
+  border-color: #334155;
+
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+.dark .pju-lidah-wetan-stat-card:hover {
+  border-color: #475569;
+}
+
+.dark .pju-lidah-wetan-stat-card span {
+  color: #94a3b8;
+}
+
+.dark .pju-lidah-wetan-stat-card strong {
+  color: #f8fafc;
+}
+
+.dark .pju-lidah-wetan-stat-icon.total {
+  background: rgba(37, 99, 235, 0.14);
+}
+
+.dark .pju-lidah-wetan-stat-icon.motor {
+  background: rgba(16, 185, 129, 0.14);
+}
+
+.dark .pju-lidah-wetan-stat-icon.car {
+  background: rgba(249, 115, 22, 0.14);
+}
+
+.dark .pju-lidah-wetan-stat-icon.bus {
+  background: rgba(234, 179, 8, 0.14);
+}
+
+.dark .pju-lidah-wetan-stat-icon.truck {
+  background: rgba(139, 92, 246, 0.14);
+}
+
+/* DARK MAP */
+
+.dark .pju-lidah-wetan-area {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.dark .pju-lidah-wetan-map-header {
+  background: #1e293b;
+  border-bottom-color: #334155;
+}
+
+.dark .pju-lidah-wetan-map-header h2 {
+  color: #f1f5f9;
+}
+
+.dark .pju-lidah-wetan-map-header span {
+  color: #94a3b8;
+}
+
+.dark .pju-lidah-wetan-map-tools button {
+  background: #0f172a;
+  border-color: #475569;
+  color: #cbd5e1;
+}
+
+.dark .pju-lidah-wetan-map-tools button:hover {
+  background: #1e293b;
+  border-color: #64748b;
+  color: #60a5fa;
+}
+
+.dark .pju-lidah-wetan-map-tools button.active {
+  background: rgba(37, 99, 235, 0.18);
+  border-color: #3b82f6;
+  color: #60a5fa;
+}
+
+.dark .pju-lidah-wetan-type-switch {
+  border-color: #475569;
+  background: #0f172a;
+}
+
+.dark .pju-lidah-wetan-type-switch label {
+  color: #cbd5e1;
+}
+
+.dark .pju-lidah-wetan-type-switch label.active {
+  background: #1e293b;
+  color: #93c5fd;
+}
+
+.dark .pju-lidah-wetan-map {
+  background: #0f172a;
+}
+
+.dark .pju-lidah-wetan-chart-summary {
+  color: #94a3b8;
+}
+
+.dark .pju-lidah-wetan-table-wrap th,
+.dark .pju-lidah-wetan-table-wrap td {
+  border-bottom-color: #334155;
+  color: #cbd5e1;
+}
+
+.dark .pju-lidah-wetan-table-wrap th {
+  background: #0f172a;
+  color: #94a3b8;
+}
+
+.dark .pju-lidah-wetan-condition {
+  background: color-mix(in srgb, var(--condition-color) 18%, #0f172a);
+}
+
+.dark .pju-lidah-wetan-lux-badge {
+  background: color-mix(in srgb, var(--lux-color) 18%, #0f172a);
+  color: color-mix(in srgb, var(--lux-color) 55%, white);
+}
+
+/* DARK LEAFLET */
+
+.dark .pju-lidah-wetan-map .leaflet-control-zoom {
+  border-color: #475569 !important;
+}
+
+.dark .pju-lidah-wetan-map .leaflet-control-zoom a {
+  background: #1e293b !important;
+  color: #cbd5e1 !important;
+  border-bottom-color: #334155 !important;
+}
+
+.dark .pju-lidah-wetan-map .leaflet-control-zoom a:hover {
+  background: #0f172a !important;
+  color: #60a5fa !important;
+}
+
+.dark .pju-lidah-wetan-map .leaflet-control-attribution {
+  background: rgba(15, 23, 42, 0.88) !important;
+  color: #94a3b8 !important;
+}
+
+.dark .pju-lidah-wetan-map .leaflet-control-attribution a {
+  color: #cbd5e1 !important;
+}
+
+/* DARK POPUP */
+
+.dark .pju-lidah-wetan-map .leaflet-popup-content-wrapper {
+  background: #1e293b;
+
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.dark .pju-lidah-wetan-map .leaflet-popup-tip {
+  background: #1e293b;
+}
+
+.dark .pju-lidah-wetan-map .leaflet-popup-close-button {
+  color: #94a3b8 !important;
+}
+
+.dark .pju-lidah-wetan-popup-title {
+  color: #f1f5f9;
+}
+
+.dark .pju-lidah-wetan-popup-camera-name {
+  color: #60a5fa;
+}
+
+.dark .pju-lidah-wetan-popup-coordinate {
+  color: #94a3b8;
+}
+
+.dark .pju-lidah-wetan-popup-row {
+  border-bottom-color: #334155;
+}
+
+.dark .pju-lidah-wetan-popup-row span {
+  color: #94a3b8;
+}
+
+.dark .pju-lidah-wetan-popup-row strong {
+  color: #e2e8f0;
+}
+
+/* DARK LEGEND */
+
+.dark .pju-lidah-wetan-map-legend {
+  background: rgba(15, 23, 42, 0.94);
+
+  border-color: #334155;
+
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.dark .pju-lidah-wetan-legend-title {
+  color: #e2e8f0;
+}
+
+.dark .pju-lidah-wetan-legend-item {
+  color: #cbd5e1;
+}
+
+/* DARK LIVE */
+
+.dark .pju-lidah-wetan-live-indicator {
+  background: rgba(15, 23, 42, 0.94);
+
+  border-color: #334155;
+
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.dark .pju-lidah-wetan-live-indicator small {
+  color: #94a3b8;
+}
+
+/* DARK INFORMATION */
+
+.dark .pju-lidah-wetan-info-card {
+  background: #1e293b;
+  border-color: #334155;
+
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+.dark .pju-lidah-wetan-card-header {
+  border-bottom-color: #334155;
+}
+
+.dark .pju-lidah-wetan-card-header h3 {
+  color: #f1f5f9;
+}
+
+.dark .pju-lidah-wetan-card-header span:not(.pju-lidah-wetan-online-badge):not(.pju-lidah-wetan-vehicle-count) {
+  color: #94a3b8;
+}
+
+.dark .pju-lidah-wetan-camera-info-grid > div {
+  background: #0f172a;
+}
+
+.dark .pju-lidah-wetan-camera-info-grid small {
+  color: #94a3b8;
+}
+
+.dark .pju-lidah-wetan-camera-info-grid strong {
+  color: #e2e8f0;
+}
+
+.dark .pju-lidah-wetan-vehicle-name {
+  color: #cbd5e1;
+}
+
+.dark .pju-lidah-wetan-status-bar {
+  background: #334155;
+}
+
+.dark .pju-lidah-wetan-status-row > strong {
+  color: #cbd5e1;
+}
+
+.dark .pju-lidah-wetan-server-time {
+  color: #64748b;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 1200px) {
+  .pju-lidah-wetan-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .pju-lidah-wetan-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pju-lidah-wetan-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pju-lidah-wetan-data-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pju-lidah-wetan-map-header {
+    display: flex;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+
+  .pju-lidah-wetan-map-tools {
+    width: 100%;
+    justify-self: stretch;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .pju-lidah-wetan-map-header .pju-lidah-wetan-header-right {
+    width: 100%;
+    justify-self: stretch;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 768px) {
+  .pju-lidah-wetan-top-header {
+    align-items: flex-start;
+  }
+
+  .pju-lidah-wetan-header-right {
+    flex-shrink: 0;
+  }
+
+  .pju-lidah-wetan-stats {
+    gap: 12px;
+  }
+
+  .pju-lidah-wetan-stat-card {
+    min-height: 100px;
+    padding: 15px;
+  }
+
+  .pju-lidah-wetan-stat-icon {
+    width: 42px;
+    height: 42px;
+
+    flex-basis: 42px;
+
+    font-size: 1.15rem;
+  }
+
+  .pju-lidah-wetan-stat-card strong {
+    font-size: 1.35rem;
+  }
+
+  .pju-lidah-wetan-map {
+    height: 400px;
+  }
+
+}
+
+@media (max-width: 576px) {
+  .pju-lidah-wetan-top-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .pju-lidah-wetan-header-right {
+    width: 100%;
+
+    justify-content: space-between;
+  }
+
+  .pju-lidah-wetan-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .pju-lidah-wetan-stat-card {
+    min-height: 88px;
+  }
+
+  .pju-lidah-wetan-map-header {
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .pju-lidah-wetan-map-tools {
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+
+  .pju-lidah-wetan-map-tools button {
+    flex: 0 0 auto;
+
+    padding: 7px 6px;
+
+    font-size: 0.68rem;
+  }
+
+  .pju-lidah-wetan-map-header .pju-lidah-wetan-header-right {
+    flex-shrink: 0;
+  }
+
+  .pju-lidah-wetan-map {
+    height: 360px;
+  }
+
+  .pju-lidah-wetan-map-legend {
+    left: 10px;
+    bottom: 10px;
+
+    width: 112px;
+
+    padding: 9px 10px;
+  }
+
+  .pju-lidah-wetan-legend-item {
+    font-size: 0.63rem;
+  }
+
+  .pju-lidah-wetan-live-indicator {
+    right: 10px;
+    min-width: 96px;
+    padding: 7px 9px;
+  }
+
+  .pju-lidah-wetan-camera-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pju-lidah-wetan-status-row {
+    grid-template-columns: 70px minmax(0, 1fr) 35px;
+  }
+
+  .pju-lidah-wetan-type-switch {
+    flex: 1 1 auto;
+  }
+
+  .pju-lidah-wetan-type-switch label {
+    flex: 1;
+    justify-content: center;
+    padding: 4px;
+    font-size: 0.66rem;
+  }
+
+  .pju-lidah-wetan-line-chart {
+    height: 230px;
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+}
+
+@media (max-width: 400px) {
+  .pju-lidah-wetan-map-tools button {
+    font-size: 0.62rem;
+  }
+
+  .pju-lidah-wetan-map {
+    height: 330px;
+  }
+}
+
+.pju-lidah-wetan-photo-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pju-lidah-wetan-photo-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  min-height: 38px;
+  padding: 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #334155;
+  font: inherit;
+  font-size: 0.7rem;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.pju-lidah-wetan-photo-actions img {
+  width: 38px;
+  height: 38px;
+  object-fit: cover;
+  border-radius: 5px;
+}
+
+.pju-lidah-wetan-photo-actions button:hover:not(:disabled) {
+  border-color: #16a36a;
+  color: #087443;
+}
+
+.pju-lidah-wetan-photo-actions button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.pju-lidah-wetan-viewer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 16px 16px;
+  background: rgba(8, 13, 18, 0.96);
+}
+
+.pju-lidah-wetan-viewer-header {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 52px;
+  padding: 8px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  color: #f8fafc;
+}
+
+.pju-lidah-wetan-viewer-header strong {
+  overflow: hidden;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pju-lidah-wetan-viewer-header button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 6px;
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.pju-lidah-wetan-viewer-header button:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.pju-lidah-wetan-viewer-photo {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.pju-lidah-wetan-panorama {
+  width: 100%;
+  height: 100%;
+}
+
+.pju-lidah-wetan-viewer-error {
+  position: absolute;
+  top: 64px;
+  left: 50%;
+  max-width: calc(100% - 32px);
+  padding: 10px 14px;
+  transform: translateX(-50%);
+  border-radius: 6px;
+  background: #fff;
+  color: #b42318;
+  font-size: 0.85rem;
+}

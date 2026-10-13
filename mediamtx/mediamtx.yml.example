@@ -1,0 +1,49 @@
+logLevel: info
+
+rtsp: true
+rtspAddress: :8554
+
+hls: true
+hlsAddress: :8888
+
+webrtc: true
+webrtcAddress: :8889
+
+api: true
+apiAddress: :9997
+
+authMethod: internal
+
+webrtcIPsFromInterfaces: false
+
+webrtcAdditionalHosts:
+  - 100.86.6.76
+
+authInternalUsers:
+  - user: ussc_api
+    pass: ""
+    ips: []
+    permissions:
+      - action: api
+
+   # WebRTC viewer
+  - user: ussc_viewer
+    pass: ""
+    ips: []
+    permissions:
+      - action: read
+        path: ~.*
+
+  - user: any
+    pass:
+    ips: []
+    permissions:
+      - action: read
+        path: 'CTV_GL1_01_00_02'
+      - action: read
+        path: 'CCTV_GK_1_01_02_01'
+
+paths:
+  camera1:
+    source: rtsp://100.97.64.86:8554/hikvision
+    rtspTransport: tcp
