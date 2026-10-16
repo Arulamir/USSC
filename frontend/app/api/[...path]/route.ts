@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND_URL = "http://127.0.0.1:5000";
+const BACKEND_URL = (process.env.USSC_API_BACKEND_ORIGIN || "http://127.0.0.1:5000").replace(/\/$/, "");
 
 async function proxyRequest(
   request: NextRequest,
@@ -25,6 +25,8 @@ async function proxyRequest(
     if (authorization) {
       headers.set("authorization", authorization);
     }
+    const requestId = request.headers.get("x-request-id");
+    if (requestId) headers.set("x-request-id", requestId);
 
     const body =
       request.method === "GET" || request.method === "HEAD"
@@ -45,6 +47,10 @@ async function proxyRequest(
     const responseContentType = response.headers.get("content-type");
     if (responseContentType) {
       responseHeaders.set("content-type", responseContentType);
+    }
+    for (const name of ["content-disposition", "cache-control", "www-authenticate"]) {
+      const value = response.headers.get(name);
+      if (value) responseHeaders.set(name, value);
     }
 
     return new NextResponse(responseBody, {

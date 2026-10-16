@@ -1,0 +1,274 @@
+.office-controls-panel {
+  color: #1e293b;
+}
+
+.office-controls-access {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding-bottom: 18px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.office-controls-access-copy,
+.office-controls-device-name,
+.office-controls-form,
+.office-controls-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.office-controls-access-copy > i {
+  color: #059669;
+  font-size: 20px;
+}
+
+.office-controls-access-copy > p,
+.office-controls-note {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.office-controls-form {
+  flex-wrap: wrap;
+}
+
+.office-controls-key-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.office-controls-form > input {
+  min-width: 0;
+  width: 190px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fff;
+  color: #0f172a;
+  font: inherit;
+  font-size: 12px;
+}
+
+.office-controls-unlock,
+.office-controls-lock,
+.office-controls-on,
+.office-controls-off {
+  min-height: 38px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 9px 14px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: background 0.2s ease, opacity 0.2s ease;
+}
+
+.office-controls-unlock,
+.office-controls-on {
+  background: #047857;
+  border-color: #047857;
+  color: #fff;
+}
+
+.office-controls-unlock:hover:not(:disabled),
+.office-controls-on:hover:not(:disabled) {
+  background: #065f46;
+  border-color: #065f46;
+}
+
+.office-controls-lock,
+.office-controls-off {
+  color: #475569;
+  background: #f8fafc;
+}
+
+.office-controls-lock:hover:not(:disabled),
+.office-controls-off:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+
+.office-controls-unlock:disabled,
+.office-controls-lock:disabled,
+.office-controls-on:disabled,
+.office-controls-off:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.office-controls-form > input:focus-visible,
+.office-controls-unlock:focus-visible,
+.office-controls-lock:focus-visible,
+.office-controls-on:focus-visible,
+.office-controls-off:focus-visible {
+  outline: 2px solid #059669;
+  outline-offset: 3px;
+}
+
+.office-controls-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.office-controls-device {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: rgba(248, 250, 252, 0.6);
+}
+
+.office-controls-device-name {
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.office-controls-device-name > i {
+  color: #059669;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.office-controls-device-name > span {
+  overflow-wrap: anywhere;
+}
+
+.office-controls-actions {
+  flex-shrink: 0;
+  gap: 6px;
+}
+
+.office-controls-feedback:empty {
+  display: none;
+}
+
+.office-controls-notice {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border: 1px solid;
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.office-controls-notice-success {
+  color: #065f46;
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+}
+
+.office-controls-notice-warning {
+  color: #92400e;
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.office-controls-notice-error {
+  color: #991b1b;
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.office-controls-note {
+  margin-top: 16px;
+  font-size: 11px;
+}
+
+:where(.dark, .dark *) .office-controls-panel {
+  color: #f1f5f9;
+}
+
+:where(.dark, .dark *) .office-controls-access,
+:where(.dark, .dark *) .office-controls-device {
+  border-color: #334155;
+}
+
+:where(.dark, .dark *) .office-controls-access-copy > p,
+:where(.dark, .dark *) .office-controls-note {
+  color: #94a3b8;
+}
+
+:where(.dark, .dark *) .office-controls-device {
+  background: rgba(15, 23, 42, 0.4);
+}
+
+:where(.dark, .dark *) .office-controls-form > input,
+:where(.dark, .dark *) .office-controls-lock,
+:where(.dark, .dark *) .office-controls-off {
+  background: #0f172a;
+  border-color: #475569;
+  color: #e2e8f0;
+}
+
+:where(.dark, .dark *) .office-controls-off:hover:not(:disabled),
+:where(.dark, .dark *) .office-controls-lock:hover:not(:disabled) {
+  background: #334155;
+}
+
+:where(.dark, .dark *) .office-controls-notice-success {
+  color: #a7f3d0;
+  border-color: #065f46;
+  background: #022c22;
+}
+
+:where(.dark, .dark *) .office-controls-notice-warning {
+  color: #fde68a;
+  border-color: #92400e;
+  background: #451a03;
+}
+
+:where(.dark, .dark *) .office-controls-notice-error {
+  color: #fecaca;
+  border-color: #991b1b;
+  background: #450a0a;
+}
+
+@media (max-width: 1100px) {
+  .office-controls-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .office-controls-form {
+    width: 100%;
+  }
+
+  .office-controls-form > input {
+    flex: 1 1 130px;
+    width: auto;
+  }
+
+  .office-controls-device {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .office-controls-actions {
+    width: 100%;
+  }
+
+  .office-controls-on,
+  .office-controls-off {
+    flex: 1;
+  }
+}

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import MainLayout from "./components/layout/MainLayout";
+import SmartOfficeMonitoring from "./components/dashboard/SmartOfficeMonitoring";
 import { ApiService } from "../lib/api";
 import "./dashboard.css";
 
@@ -1023,9 +1024,7 @@ const airChartItems = [
             </div>
           </div>
 
-         
-
-          
+          <SmartOfficeMonitoring />
         </section>
       </div>
     </MainLayout>

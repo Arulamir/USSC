@@ -1,0 +1,96 @@
+/* Scoped to the new panel; existing dashboard styles stay unchanged. */
+.dashboard-page-container .smart-office-section {
+  margin-top: 28px;
+}
+
+.dashboard-page-container .smart-office-heading {
+  flex-wrap: wrap;
+}
+
+.dashboard-page-container .smart-office-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px 24px;
+}
+
+.dashboard-page-container .smart-office-metric {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.dashboard-page-container .smart-office-metric .summary-icon {
+  flex-shrink: 0;
+}
+
+.dashboard-page-container .smart-office-reading {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.dashboard-page-container .smart-office-reading > span {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--gray-500);
+}
+
+.dashboard-page-container .smart-office-reading > strong {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  color: var(--gray-900);
+}
+
+.dashboard-page-container .smart-office-updated {
+  font-size: 10px;
+  color: var(--gray-500);
+}
+
+.dashboard-page-container .smart-office-updated {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 22px 0 0;
+  border-top: 1px solid var(--gray-200);
+  padding-top: 14px;
+  line-height: 1.6;
+}
+
+:where(.dark, .dark *) .dashboard-page-container .smart-office-reading > strong {
+  color: #f8fafc;
+}
+
+:where(.dark, .dark *) .dashboard-page-container .smart-office-reading > span,
+:where(.dark, .dark *) .dashboard-page-container .smart-office-updated {
+  color: var(--gray-400);
+}
+
+:where(.dark, .dark *) .dashboard-page-container .smart-office-updated {
+  border-color: var(--gray-700);
+}
+
+@media (max-width: 768px) {
+  .dashboard-page-container .smart-office-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-page-container .smart-office-metric {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .dashboard-page-container .smart-office-reading > strong {
+    font-size: 18px;
+  }
+}

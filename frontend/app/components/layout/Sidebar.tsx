@@ -27,6 +27,7 @@ const pages = {
   vehicles: '/vehicles',
   'digital-twin': '/digital-twin',
   reports: '/reports',
+  'smart-office': '/smart-office',
   'pju-lidah-wetan': '/pju-lidah-wetan',
   'tps-lidah-wetan': '/tps-lidah-wetan',
 }
@@ -160,6 +161,15 @@ export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
             <span>Digital Twin</span>
           </button>*/}
 
+
+          <button
+            className={`menu-item ${active('smart-office') ? 'active' : ''}`}
+            data-page="smart-office"
+            onClick={() => goTo('smart-office')}
+          >
+            <i className="bi bi-building-gear"></i>
+            <span>Smart Office</span>
+          </button>
 
           {/* PJU LIDAH WETAN */}
           <button

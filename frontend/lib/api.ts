@@ -1,4 +1,5 @@
 import { APP_CONFIG } from "./config";
+import type { OfficeHistory, OfficePeriod, SmartOfficeResponse } from "./smart-office";
 
 async function request<T = any>(
   endpoint: string,
@@ -122,6 +123,20 @@ export const ApiService = {
 
   async getDashboardSummary() {
     return request(APP_CONFIG.ENDPOINTS.DASHBOARD);
+  },
+
+  async getSmartOffice(signal?: AbortSignal) {
+    return request<SmartOfficeResponse>("/api/smart-office", {
+      cache: "no-store",
+      signal,
+    });
+  },
+
+  async getSmartOfficeHistory(period: OfficePeriod, date: string, signal?: AbortSignal) {
+    const params = new URLSearchParams({ period, date });
+    return request<OfficeHistory>(`/api/smart-office/history?${params}`, {
+      cache: "no-store", signal, timeout: 15_000,
+    });
   },
 
   async getFloodStatus(location?: string) {

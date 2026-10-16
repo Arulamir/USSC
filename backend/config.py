@@ -24,6 +24,17 @@ class Config:
     DB_NAME = os.getenv("DB_NAME", "ussc_db")
     DB_PORT = int(os.getenv("DB_PORT", 3306))
 
+    # Snapshot Node-RED memakai database terpisah dari data kampus.
+    SMART_OFFICE_DB_HOST = os.getenv("SMART_OFFICE_DB_HOST") or DB_HOST
+    SMART_OFFICE_DB_USER = os.getenv("SMART_OFFICE_DB_USER") or DB_USER
+    SMART_OFFICE_DB_PASSWORD = os.getenv("SMART_OFFICE_DB_PASSWORD") or DB_PASSWORD
+    SMART_OFFICE_DB_NAME = os.getenv("SMART_OFFICE_DB_NAME") or "smart_office"
+    SMART_OFFICE_DB_PORT = int(os.getenv("SMART_OFFICE_DB_PORT") or DB_PORT)
+    SMART_OFFICE_SOURCE_ID = os.getenv("SMART_OFFICE_SOURCE_ID") or "ug65-ussc"
+    SMART_OFFICE_CONTROL_URL = os.getenv("SMART_OFFICE_CONTROL_URL") or "http://100.97.64.86:1880/office1/control"
+    OFFICE_CONTROL_KEY = os.getenv("OFFICE_CONTROL_KEY", "")
+    SMART_OFFICE_OPERATOR_KEY = os.getenv("SMART_OFFICE_OPERATOR_KEY", "")
+
     # Host & Port Server Flask
     HOST = os.getenv("HOST", os.getenv("BACKEND_HOST", "0.0.0.0"))
     PORT = int(os.getenv("PORT", os.getenv("BACKEND_PORT", 5000)))

@@ -38,6 +38,10 @@ const pageInfo: Record<string, { title: string; subtitle: string }> = {
     title: 'Riwayat & Ekspor Data',
     subtitle: 'Riwayat monitoring dan pengunduhan data',
   },
+  '/smart-office': {
+    title: 'Smart Office',
+    subtitle: 'Monitoring energi dan kontrol perangkat kantor',
+  },
   '/pju-lidah-wetan': {
     title: 'PJU Lidah Wetan',
     subtitle: 'Monitoring kondisi PJU Lidah Wetan',

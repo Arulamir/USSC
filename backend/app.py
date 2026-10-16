@@ -34,6 +34,10 @@ try:
     from backend.api.export import export_bp
     from backend.api.digital_twin import digital_twin_bp
     from backend.api.airquality_hourly import airquality_hourly_bp
+    from backend.api.smart_office import smart_office_bp
+    from backend.api.office_history import office_history_bp
+    from backend.api.office_export import office_export_bp
+    from backend.api.office_control import office_control_bp
 
 except ImportError:
     from api.traffic import traffic_bp
@@ -46,6 +50,10 @@ except ImportError:
     from api.export import export_bp
     from api.digital_twin import digital_twin_bp
     from api.airquality_hourly import airquality_hourly_bp
+    from api.smart_office import smart_office_bp
+    from api.office_history import office_history_bp
+    from api.office_export import office_export_bp
+    from api.office_control import office_control_bp
 
 
 # =====================================================
@@ -101,6 +109,10 @@ app.register_blueprint(flood_bp)
 app.register_blueprint(export_bp)
 app.register_blueprint(digital_twin_bp)
 app.register_blueprint(airquality_hourly_bp)
+app.register_blueprint(smart_office_bp)
+app.register_blueprint(office_history_bp)
+app.register_blueprint(office_export_bp)
+app.register_blueprint(office_control_bp)
 
 
 
