@@ -10,7 +10,7 @@ function formatValue(value: number | null | undefined, unit: string) {
   return `${value.toLocaleString("id-ID", { maximumFractionDigits: 1 })} ${unit}`;
 }
 
-function formatTime(timestamp: string | undefined) {
+function formatTime(timestamp: string | null | undefined) {
   if (!timestamp) return null;
   const date = new Date(timestamp);
   if (Number.isNaN(date.getTime())) return null;
@@ -43,7 +43,7 @@ export default function SmartOfficeMonitoring() {
       } finally {
         if (!cancelled) {
           setLoading(false);
-          timer = setTimeout(refresh, 60_000);
+          timer = setTimeout(refresh, 15_000);
         }
       }
     };
@@ -57,10 +57,13 @@ export default function SmartOfficeMonitoring() {
   }, []);
 
   const updatedAt = formatTime(data?.sampled_at_utc);
+  const powerUpdatedAt = formatTime(data?.power_observed_at_utc);
   const status = loading ? "Memuat data..."
     : failed ? "Koneksi terputus"
     : !data ? "Belum ada data"
+    : data.power_stale ? "Daya belum terbaru"
     : data.stale ? "Data terlambat"
+    : data.power_interval_minutes === 1 ? "Daya 1 menit"
     : `Snapshot ${data.interval_minutes} menit`;
   const metrics = [
     { label: "Daya AC", icon: "bi-snow", value: formatValue(data?.ac_power_w, "W") },
@@ -95,7 +98,9 @@ export default function SmartOfficeMonitoring() {
         </div>
         <p className="smart-office-updated">
           <i className="bi bi-clock-history" aria-hidden="true" />
-          {updatedAt ? `Data terakhir: ${updatedAt}` : "Menunggu data Smart Office"}
+          {data?.power_interval_minutes === 1
+            ? `Daya: ${powerUpdatedAt ?? "menunggu pembacaan meter"} · Lingkungan: ${updatedAt ?? "menunggu data"}`
+            : updatedAt ? `Data terakhir: ${updatedAt}` : "Menunggu data Smart Office"}
           {failed && (data ? " · Menampilkan data terakhir yang berhasil dimuat."
             : " · Data belum dapat dimuat.")}
           {!failed && data?.stale && " · Belum ada snapshot terbaru."}

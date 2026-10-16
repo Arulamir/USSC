@@ -1,0 +1,89 @@
+[
+  {
+    "id": "a10e002000000001",
+    "type": "mqtt in",
+    "z": "d0f8a0d4561cc9e8",
+    "name": "Daya W dari UG65",
+    "topic": "office1/monitoring/power",
+    "qos": "0",
+    "datatype": "utf8",
+    "broker": "a3274785ec3a83ad",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 230,
+    "y": 620,
+    "wires": [
+      [
+        "a10e002000000002"
+      ]
+    ]
+  },
+  {
+    "id": "a10e002000000002",
+    "type": "function",
+    "z": "d0f8a0d4561cc9e8",
+    "name": "Daya W: cache terbaru tanpa SQL",
+    "func": "// Latest power lives only in the telemetryRuntime memory store, outside MySQL.\nvar packet;\ntry{var raw=Buffer.isBuffer(msg.payload)?msg.payload.toString():String(msg.payload);if(raw.length>32768)return null;packet=JSON.parse(raw);}catch(e){return null;}\nif(!packet||packet.type!=='office_power'||packet.version!==1||packet.source_id!=='ug65-ussc'||packet.interval_minutes!==1||!Array.isArray(packet.records)||packet.records.length>8)return null;\nvar now=Date.now(),sampled=Date.parse(packet.sampled_at_utc);\nif(!Number.isFinite(sampled)||sampled>now+5000)return null;\nvar previous=flow.get('office_power_latest_v1','telemetryRuntime');\nif(previous&&previous.sampled<=now&&sampled<previous.sampled)return null;\nvar allowed=[\"24E124148060C6A0\",\"24E12414806031FC\",\"24E124148060D73E\",\"24E1241480609886\",\"24E1247710630110\",\"24E124771063F466\",\"24E1247710633F88\",\"24E1247710638799\"],seen={};\nvar records=packet.records.filter(function(r){return r&&typeof r.device_eui==='string'&&allowed.indexOf(r.device_eui)!==-1;});\nif(records.some(function(r){if(seen[r.device_eui])return true;seen[r.device_eui]=true;return false;}))return null;\nrecords=records.map(function(r){\n    var value=typeof r.power_w==='number'&&Number.isFinite(r.power_w)&&r.power_w>=0&&r.power_w<=4294967295?r.power_w:null;\n    var observed=Date.parse(r.power_w_at);\n    return {device_eui:r.device_eui,power_w:value,power_w_at:Number.isFinite(observed)?new Date(observed).toISOString():null};\n});\nflow.set('office_power_latest_v1',{sampled:sampled,data:{type:'office_power',version:1,source_id:packet.source_id,sampled_at_utc:new Date(sampled).toISOString(),interval_minutes:1,records:records}},'telemetryRuntime');\nnode.status({fill:'green',shape:'dot',text:'daya diterima '+new Date(now).toLocaleTimeString()});\nreturn null;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 540,
+    "y": 620,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "a10e002000000003",
+    "type": "http in",
+    "z": "d0f8a0d4561cc9e8",
+    "name": "GET daya W terbaru",
+    "url": "/office1/power",
+    "method": "get",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 220,
+    "y": 720,
+    "wires": [
+      [
+        "a10e002000000004"
+      ]
+    ]
+  },
+  {
+    "id": "a10e002000000004",
+    "type": "function",
+    "z": "d0f8a0d4561cc9e8",
+    "name": "API daya W: akses baca",
+    "func": "// Read-only HTTP endpoint; uses the existing control key and source-IP policy.\nif(!msg.req||!msg.res)return null;\nmsg.headers={'Content-Type':'application/json','Cache-Control':'no-store'};\nfunction reply(code,body){msg.statusCode=code;msg.payload=body;return msg;}\nvar address=String(msg.req.socket&&msg.req.socket.remoteAddress||'').replace(/^::ffff:/,'');\nif(['100.86.6.76','127.0.0.1','::1'].indexOf(address)===-1)return reply(403,{status:'error',message:'Sumber permintaan tidak diizinkan'});\nvar key=String(env.get('OFFICE_CONTROL_KEY')||'');\nif(key.length<32)return reply(503,{status:'error',message:'OFFICE_CONTROL_KEY belum diatur'});\nif(String(msg.req.headers.authorization||'')!=='Bearer '+key)return reply(401,{status:'error',message:'Token tidak valid'});\nvar cached=flow.get('office_power_latest_v1','telemetryRuntime');\nif(!cached)return reply(503,{status:'error',message:'Menunggu data daya dari UG65'});\nreturn reply(200,{status:'success',data:cached.data});",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 530,
+    "y": 720,
+    "wires": [
+      [
+        "a10e002000000005"
+      ]
+    ]
+  },
+  {
+    "id": "a10e002000000005",
+    "type": "http response",
+    "z": "d0f8a0d4561cc9e8",
+    "name": "Respons daya W",
+    "statusCode": "",
+    "headers": {},
+    "x": 810,
+    "y": 720,
+    "wires": []
+  }
+]

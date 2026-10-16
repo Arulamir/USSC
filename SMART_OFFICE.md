@@ -46,7 +46,7 @@ yang sudah ada. Nama database default tetap `smart_office`, terpisah dari
 database USSC. Gunakan akun yang memiliki akses SELECT ke tabel `office1`.
 Jangan menyimpan kredensial pada frontend atau Git.
 
-Panel memeriksa endpoint setiap 60 detik; data sensor mengikuti interval
+Panel memeriksa endpoint setiap 15 detik; data sensor mengikuti interval
 snapshot dari gateway (paket yang diberikan memakai 10 menit). Waktu data
 ditampilkan dalam WIB. Snapshot lebih dari 30 menit atau bertanggal di masa
 depan ditandai “Data terlambat”.
@@ -58,10 +58,60 @@ yang sudah berhasil dimuat tetap disertai waktu pembacaannya.
 Perubahan ini disiapkan pada salinan project lokal. Untuk menayangkannya di
 website, terapkan file yang berubah, lengkapi konfigurasi database di server,
 build frontend, lalu restart layanan frontend dan backend sesuai pengelola
-proses yang digunakan. Tidak ada perubahan tabel atau flow Node-RED yang diperlukan.
+proses yang digunakan. Pembacaan snapshot lama tidak memerlukan perubahan tabel.
+Untuk pembaruan daya 1 menit, pasang tambahan flow Node-RED di bawah.
 
 Koneksi MariaDB dan pembacaan perangkat langsung perlu diverifikasi di
 server yang memiliki akses ke `smart_office.office1`.
+
+## Daya AC/lampu setiap 1 menit
+
+Jalur opsional ini hanya memperbarui dua nilai **W**. UG65 membaca cache meter
+yang sudah ada setiap 60 detik, menerbitkan `office1/monitoring/power`, lalu
+mini PC menyimpan pembacaan terbaru di RAM. Backend membaca endpoint privat
+`GET /office1/power` menggunakan `OFFICE_CONTROL_KEY` yang sama dengan kontrol.
+Key tetap di backend dan Node-RED; tidak dikirim ke browser.
+
+Pasang tambahan pada tab yang sama dengan flow lama:
+
+- UG65: `nodered/smart-office-power/UG65_tambahan_daya_1menit.json`, import
+  ke **current flow automasi_system** agar dapat membaca cache di tab tersebut.
+- Mini PC: `nodered/smart-office-power/MiniPC_tambahan_daya_1menit.json`, import
+  ke **current flow Office1 kontrol web** agar memakai environment key dan
+  broker yang sudah berjalan. Gunakan store RAM `telemetryRuntime` yang sama
+  dengan API kontrol. Pilih ulang broker lama jika diperlukan setelah import.
+
+Kemudian tambahkan pada `.env` server yang benar-benar dibaca backend:
+
+```dotenv
+SMART_OFFICE_POWER_URL=http://100.97.64.86:1880/office1/power
+```
+
+Restart backend dan build/restart frontend setelah menerapkan perubahan kode.
+Biarkan variabel kosong bila flow tambahan belum dipasang; perilaku lama tetap
+membaca W dari snapshot database. Jika diaktifkan tetapi feed terputus, W menjadi
+`null`/“—” dengan status terlambat, sementara energi dan lingkungan tetap tersedia.
+Tidak ada pengalihan diam-diam ke snapshot lama untuk mengklaim daya terbaru.
+
+**Meter WS502 dan empat WS523 AC harus mengirim pembacaan daya setiap 1 menit
+agar pembacaan fisiknya benar-benar diperbarui per menit.** Sesuaikan Reporting
+Interval pada perangkat melalui ToolBox atau konfigurasi downlink yang sesuai.
+Fitur ini tidak otomatis mengubah konfigurasi meter atau mengirim ON/OFF.
+Menyalin cache tiap menit tidak menciptakan pengukuran baru.
+
+Timestamp `power_w_at` asli dipertahankan. Packet lebih dari 150 detik atau
+pembacaan meter lebih dari 3 menit tidak dipakai untuk jalur ini. Nilai nol valid;
+meter hilang tidak diubah menjadi nol; meter duplikat ditolak dan meter ATAS_PINTU
+tetap dikecualikan. Browser memeriksa setiap 15 detik, sehingga tampilan juga
+bergantung pada interval uplink dan keterlambatan jaringan, bukan jaminan tepat
+60 detik. Jam UG65, mini PC, dan server harus sinkron.
+
+Snapshot database **10 menit**, energi Wh, grafik, Excel, occupancy, suhu,
+kelembapan, illumination, dan kontrol ON/OFF tetap memakai jalur semula. Tidak ada
+tabel baru, perubahan SQL, atau penambahan baris daya 1 menit di `office1`.
+
+Referensi perangkat: [WS50x Reporting Interval](https://www.milesight.com/products/docs/en/ws50x/steps/ws50x/general-settings.html)
+dan [WS523 User Guide](https://resource.milesight.com/milesight/iot/document/ws52x-user-guide-en.pdf).
 
 ## Halaman Smart Office
 

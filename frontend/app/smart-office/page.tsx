@@ -28,7 +28,7 @@ function number(value: number | null | undefined, unit: string) {
     : `${value.toLocaleString("id-ID", { maximumFractionDigits: 2 })} ${unit}`;
 }
 
-function dateTime(value: string | undefined, withTime = false) {
+function dateTime(value: string | null | undefined, withTime = false) {
   if (!value) return "—";
   const date = new Date(value.length === 10 ? `${value}T00:00:00+07:00` : value);
   if (Number.isNaN(date.getTime())) return "—";
@@ -78,7 +78,7 @@ export default function SmartOfficePage() {
       } catch {
         if (!stopped) setSnapshotError(true);
       } finally {
-        if (!stopped) { setSnapshotLoading(false); timer = setTimeout(refresh, 60_000); }
+        if (!stopped) { setSnapshotLoading(false); timer = setTimeout(refresh, 15_000); }
       }
     };
     refresh();
@@ -210,6 +210,9 @@ export default function SmartOfficePage() {
         <p className="office-snapshot-status" role="status">
           {snapshotLoading ? "Memuat data kantor..." : snapshotError ? "Koneksi data terputus." : !snapshot ? "Belum ada snapshot kantor." : snapshot.stale ? "Data terlambat." : "Data terakhir tersedia."}
           {snapshot && ` Snapshot: ${dateTime(snapshot.sampled_at_utc, true)}. Energi harian tanggal ${dateTime(snapshot.energy_date_wib)}.`}
+          {snapshot?.power_interval_minutes === 1 && (snapshot.power_stale
+            ? " Daya belum mendapat pembacaan meter terbaru."
+            : ` Daya diperbarui tiap 1 menit; pembacaan: ${dateTime(snapshot.power_observed_at_utc, true)}.`)}
         </p>
 
         <section aria-labelledby="office-energy-title">

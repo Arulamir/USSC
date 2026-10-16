@@ -32,6 +32,8 @@ class Config:
     SMART_OFFICE_DB_PORT = int(os.getenv("SMART_OFFICE_DB_PORT") or DB_PORT)
     SMART_OFFICE_SOURCE_ID = os.getenv("SMART_OFFICE_SOURCE_ID") or "ug65-ussc"
     SMART_OFFICE_CONTROL_URL = os.getenv("SMART_OFFICE_CONTROL_URL") or "http://100.97.64.86:1880/office1/control"
+    # Opt-in until the Node-RED minute power feed has been installed.
+    SMART_OFFICE_POWER_URL = os.getenv("SMART_OFFICE_POWER_URL", "")
     OFFICE_CONTROL_KEY = os.getenv("OFFICE_CONTROL_KEY", "")
     SMART_OFFICE_OPERATOR_KEY = os.getenv("SMART_OFFICE_OPERATOR_KEY", "")
 

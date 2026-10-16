@@ -3,9 +3,13 @@
 import json
 import math
 from datetime import datetime, timedelta, timezone
+from urllib.parse import urlsplit
 
 import mysql.connector
+import requests
 from flask import Blueprint, current_app, jsonify
+
+from .office_control import _valid_key, valid_control_url
 
 
 smart_office_bp = Blueprint("smart_office", __name__, url_prefix="/api")
@@ -19,6 +23,8 @@ LAMP_METERS = frozenset((
 ))
 ENV_SENSOR = "24E124443F431957"
 MAX_AGE = timedelta(minutes=30)
+POWER_MAX_AGE = timedelta(minutes=3)
+POWER_PACKET_MAX_AGE = timedelta(seconds=150)
 
 
 def _utc(value):
@@ -59,7 +65,7 @@ def _eui(record):
     return value.upper() if isinstance(value, str) else ""
 
 
-def _power(records, allowed, sampled_at):
+def _power(records, allowed, sampled_at, max_age=MAX_AGE):
     values = []
     for eui in allowed:
         # A duplicate meter is ambiguous; never count it twice or pick arbitrarily.
@@ -68,7 +74,7 @@ def _power(records, allowed, sampled_at):
             continue
         record = matches[0]
         value = _number(record.get("power_w"), maximum=4294967295)
-        if value is not None and _fresh(record, "power_w", sampled_at):
+        if value is not None and _fresh(record, "power_w", sampled_at, max_age):
             values.append(value)
     return (round(sum(values), 3) if values else None,
             {"meter_used": len(values), "meter_expected": len(allowed)})
@@ -121,6 +127,78 @@ def snapshot_data(row, now=None):
     return data
 
 
+def minute_power_data(packet, now=None):
+    """Use genuine meter observation times, never the minute publish time as age."""
+    now = _utc(now) if now is not None else datetime.now(timezone.utc)
+    data = {
+        "ac_power_w": None, "lamp_power_w": None,
+        "power_quality": {group: {"meter_used": 0, "meter_expected": 4}
+                          for group in ("ac", "lamp")},
+        "power_interval_minutes": 1, "power_stale": True,
+        "power_sampled_at_utc": None, "power_observed_at_utc": None,
+    }
+    if not isinstance(packet, dict):
+        return data
+    sampled_at = _utc(packet.get("sampled_at_utc"))
+    records = packet.get("records")
+    if (packet.get("type") != "office_power" or packet.get("version") != 1
+            or packet.get("source_id") != current_app.config.get("SMART_OFFICE_SOURCE_ID", "ug65-ussc")
+            or packet.get("interval_minutes") != 1 or sampled_at is None
+            or not timedelta(0) <= now - sampled_at <= POWER_PACKET_MAX_AGE
+            or not isinstance(records, list) or len(records) > 8):
+        return data
+    records = [record for record in records if isinstance(record, dict)]
+    # Both checks matter: a retained MQTT packet and a cached meter reading can
+    # independently be stale. Re-publishing never renews power_w_at.
+    duplicates = {_eui(record) for record in records
+                  if sum(_eui(other) == _eui(record) for other in records) > 1}
+    records = [record for record in records if _eui(record) not in duplicates
+               and _fresh(record, "power_w", sampled_at, POWER_MAX_AGE)]
+    ac, ac_quality = _power(records, AC_METERS, now, POWER_MAX_AGE)
+    lamp, lamp_quality = _power(records, LAMP_METERS, now, POWER_MAX_AGE)
+    observed = [_utc(record.get("power_w_at")) for record in records
+                if _eui(record) in AC_METERS | LAMP_METERS
+                and _number(record.get("power_w"), maximum=4294967295) is not None
+                and _fresh(record, "power_w", now, POWER_MAX_AGE)]
+    data.update(
+        ac_power_w=ac, lamp_power_w=lamp,
+        power_quality={"ac": ac_quality, "lamp": lamp_quality},
+        power_stale=ac is None and lamp is None,
+        power_sampled_at_utc=sampled_at.isoformat(timespec="milliseconds").replace("+00:00", "Z"),
+        power_observed_at_utc=min(observed).isoformat(timespec="milliseconds").replace("+00:00", "Z") if observed else None,
+    )
+    return data
+
+
+def merge_minute_power(data):
+    """Optional read-only Tailscale feed; never write minute rows into office1."""
+    url = current_app.config.get("SMART_OFFICE_POWER_URL", "")
+    if data is None or not url:
+        return data
+    packet = None
+    key = current_app.config.get("OFFICE_CONTROL_KEY", "")
+    try:
+        parsed = urlsplit(url)
+        allowed = (parsed.path == "/office1/power" and valid_control_url(
+            parsed._replace(path="/office1/control").geturl()))
+        if allowed and _valid_key(key):
+            with requests.Session() as session:
+                session.trust_env = False
+                response = session.get(
+                    url, headers={"Authorization": "Bearer " + key},
+                    timeout=(2, 2), allow_redirects=False,
+                )
+                if response.status_code == 200 and len(response.content) <= 32768:
+                    body = response.json()
+                    if isinstance(body, dict) and body.get("status") == "success":
+                        packet = body.get("data")
+    except (requests.RequestException, ValueError, TypeError):
+        current_app.logger.warning("Smart office minute power could not be read")
+    # If the minute feed is enabled but unavailable, do not disguise an old
+    # database snapshot as a fresh minute reading. Environment/Wh stay intact.
+    return {**data, **minute_power_data(packet)}
+
+
 def get_connection():
     config = current_app.config
     return mysql.connector.connect(
@@ -148,7 +226,10 @@ def get_smart_office():
             LIMIT 1
         """, (current_app.config.get("SMART_OFFICE_SOURCE_ID", "ug65-ussc"),))
         row = cursor.fetchone()
-        return jsonify(status="success", data=snapshot_data(row) if row else None)
+        data = snapshot_data(row) if row else None
+        response = jsonify(status="success", data=merge_minute_power(data))
+        response.headers["Cache-Control"] = "no-store"
+        return response
     except (mysql.connector.Error, ValueError, TypeError, OverflowError):
         # Never put connection exceptions (host, account, SQL) in the response.
         current_app.logger.warning("Smart office snapshot could not be read")

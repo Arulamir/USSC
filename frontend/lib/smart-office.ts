@@ -9,6 +9,10 @@ export type SmartOfficeSnapshot = {
   stale: boolean;
   ac_power_w: number | null;
   lamp_power_w: number | null;
+  power_interval_minutes?: number;
+  power_stale?: boolean;
+  power_sampled_at_utc?: string | null;
+  power_observed_at_utc?: string | null;
   ac_day_wh?: number | null;
   lamp_day_wh?: number | null;
   energy_date_wib?: string;

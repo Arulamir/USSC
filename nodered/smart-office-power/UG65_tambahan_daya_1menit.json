@@ -1,0 +1,64 @@
+[
+  {
+    "id": "a10e001000000001",
+    "type": "inject",
+    "z": "4dc7bb15ea87ccc3",
+    "name": "Daya W: kirim tiap 1 menit",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "repeat": "60",
+    "crontab": "",
+    "once": true,
+    "onceDelay": 5,
+    "topic": "power_tick",
+    "payload": "",
+    "payloadType": "date",
+    "x": 230,
+    "y": 3350,
+    "wires": [
+      [
+        "a10e001000000002"
+      ]
+    ]
+  },
+  {
+    "id": "a10e001000000002",
+    "type": "function",
+    "z": "4dc7bb15ea87ccc3",
+    "name": "Daya W: baca cache meter",
+    "func": "// Read the existing cache only. No SQL, control command, or energy calculation.\nvar now=Date.now(),cache=flow.get('telemetry_latest_v1')||{};\nvar meters=[\"24E124148060C6A0\",\"24E12414806031FC\",\"24E124148060D73E\",\"24E1241480609886\",\"24E1247710630110\",\"24E124771063F466\",\"24E1247710633F88\",\"24E1247710638799\"];\nvar records=meters.map(function(eui){\n    var entry=(cache[eui]||{}).power_w;\n    var valid=entry&&typeof entry.value==='number'&&Number.isFinite(entry.value)&&entry.value>=0&&entry.value<=4294967295&&Number.isFinite(entry.receivedAt)&&entry.receivedAt<=now&&now-entry.receivedAt<=180000;\n    return {device_eui:eui,power_w:valid?entry.value:null,power_w_at:entry&&Number.isFinite(entry.receivedAt)&&Number.isFinite(new Date(entry.receivedAt).getTime())?new Date(entry.receivedAt).toISOString():null};\n});\nreturn {topic:'office1/monitoring/power',qos:'0',retain:true,payload:JSON.stringify({type:'office_power',version:1,source_id:'ug65-ussc',sampled_at_utc:new Date(now).toISOString(),interval_minutes:1,records:records})};",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 530,
+    "y": 3350,
+    "wires": [
+      [
+        "a10e001000000003"
+      ]
+    ]
+  },
+  {
+    "id": "a10e001000000003",
+    "type": "mqtt out",
+    "z": "4dc7bb15ea87ccc3",
+    "name": "MQTT daya W setiap 1 menit",
+    "topic": "office1/monitoring/power",
+    "qos": "0",
+    "retain": "true",
+    "broker": "5022b98a499a9a81",
+    "x": 850,
+    "y": 3350,
+    "wires": []
+  }
+]
