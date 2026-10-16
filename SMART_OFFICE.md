@@ -89,9 +89,13 @@ SMART_OFFICE_POWER_URL=http://100.97.64.86:1880/office1/power
 
 Restart backend dan build/restart frontend setelah menerapkan perubahan kode.
 Biarkan variabel kosong bila flow tambahan belum dipasang; perilaku lama tetap
-membaca W dari snapshot database. Jika diaktifkan tetapi feed terputus, W menjadi
-`null`/“—” dengan status terlambat, sementara energi dan lingkungan tetap tersedia.
-Tidak ada pengalihan diam-diam ke snapshot lama untuk mengklaim daya terbaru.
+membaca W dari snapshot database. Jika feed terlambat atau terputus, nilai daya
+terakhir tetap ditampilkan per kelompok AC/lampu dengan penanda **Menampilkan
+data sebelumnya** dan waktu observasi aslinya. Nilai nol tetap dipertahankan.
+Backend memilih nilai terakhir yang tersedia dari feed, cache proses, atau
+snapshot database. Cache dipisahkan per sumber dan diisi kembali dari database
+setelah restart. Jika belum pernah ada nilai yang valid, tampilan tetap “—”.
+Respons kosong juga mempertahankan data yang sudah ditampilkan di browser.
 
 **Meter WS502 dan empat WS523 AC harus mengirim pembacaan daya setiap 1 menit
 agar pembacaan fisiknya benar-benar diperbarui per menit.** Sesuaikan Reporting
@@ -100,7 +104,7 @@ Fitur ini tidak otomatis mengubah konfigurasi meter atau mengirim ON/OFF.
 Menyalin cache tiap menit tidak menciptakan pengukuran baru.
 
 Timestamp `power_w_at` asli dipertahankan. Packet lebih dari 150 detik atau
-pembacaan meter lebih dari 3 menit tidak dipakai untuk jalur ini. Nilai nol valid;
+pembacaan meter lebih dari 3 menit ditandai sebagai data sebelumnya. Nilai nol valid;
 meter hilang tidak diubah menjadi nol; meter duplikat ditolak dan meter ATAS_PINTU
 tetap dikecualikan. Browser memeriksa setiap 15 detik, sehingga tampilan juga
 bergantung pada interval uplink dan keterlambatan jaringan, bukan jaminan tepat

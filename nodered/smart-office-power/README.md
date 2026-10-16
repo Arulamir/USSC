@@ -31,7 +31,8 @@ source_id di kedua Function tambahan dan `SMART_OFFICE_SOURCE_ID` backend.
 Snapshot 10 menit, Wh/grafik/Excel, environment, dan kontrol tetap berjalan
 seperti sebelumnya. Feed power tidak menulis MySQL atau mengubah umur pengukuran.
 Packet lebih dari 150 detik dan pembacaan meter lebih dari 3 menit tidak dianggap
-daya terbaru. Nilai nol dibedakan dari data hilang.
+daya terbaru. Website tetap menampilkan nilai daya terakhir dengan penanda data
+sebelumnya dan timestamp asli. Nilai nol dibedakan dari data hilang.
 
 JSON lengkap khusus pengguna disediakan terpisah karena memuat key asli dari
 export. Untuk sistem yang sudah aktif, fragment tambahan di atas menghindari

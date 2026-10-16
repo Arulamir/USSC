@@ -74,7 +74,11 @@ export default function SmartOfficePage() {
       controller = new AbortController();
       try {
         const response = await ApiService.getSmartOffice(controller.signal);
-        if (!stopped) { setSnapshot(response.data); setSnapshotError(false); }
+        if (!stopped) {
+          setSnapshot(previous => response.data ?? (previous
+            ? { ...previous, stale: true, power_stale: true, power_previous: true } : null));
+          setSnapshotError(false);
+        }
       } catch {
         if (!stopped) setSnapshotError(true);
       } finally {
@@ -210,7 +214,9 @@ export default function SmartOfficePage() {
         <p className="office-snapshot-status" role="status">
           {snapshotLoading ? "Memuat data kantor..." : snapshotError ? "Koneksi data terputus." : !snapshot ? "Belum ada snapshot kantor." : snapshot.stale ? "Data terlambat." : "Data terakhir tersedia."}
           {snapshot && ` Snapshot: ${dateTime(snapshot.sampled_at_utc, true)}. Energi harian tanggal ${dateTime(snapshot.energy_date_wib)}.`}
-          {snapshot?.power_interval_minutes === 1 && (snapshot.power_stale
+          {snapshot?.power_interval_minutes === 1 && (snapshot.power_previous
+            ? ` Menampilkan daya sebelumnya; pembacaan: ${dateTime(snapshot.power_observed_at_utc, true)}.`
+            : snapshot.power_stale
             ? " Daya belum mendapat pembacaan meter terbaru."
             : ` Daya diperbarui tiap 1 menit; pembacaan: ${dateTime(snapshot.power_observed_at_utc, true)}.`)}
         </p>

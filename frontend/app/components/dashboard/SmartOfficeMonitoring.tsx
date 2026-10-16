@@ -35,7 +35,8 @@ export default function SmartOfficeMonitoring() {
       try {
         const response = await ApiService.getSmartOffice(controller.signal);
         if (!cancelled) {
-          setData(response.data);
+          setData(previous => response.data ?? (previous
+            ? { ...previous, stale: true, power_stale: true, power_previous: true } : null));
           setFailed(false);
         }
       } catch {
@@ -61,6 +62,7 @@ export default function SmartOfficeMonitoring() {
   const status = loading ? "Memuat data..."
     : failed ? "Koneksi terputus"
     : !data ? "Belum ada data"
+    : data.power_previous ? "Menampilkan data sebelumnya"
     : data.power_stale ? "Daya belum terbaru"
     : data.stale ? "Data terlambat"
     : data.power_interval_minutes === 1 ? "Daya 1 menit"

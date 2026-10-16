@@ -3,6 +3,7 @@
 import json
 import math
 from datetime import datetime, timedelta, timezone
+from threading import Lock
 from urllib.parse import urlsplit
 
 import mysql.connector
@@ -25,6 +26,7 @@ ENV_SENSOR = "24E124443F431957"
 MAX_AGE = timedelta(minutes=30)
 POWER_MAX_AGE = timedelta(minutes=3)
 POWER_PACKET_MAX_AGE = timedelta(seconds=150)
+LAST_POWER_LOCK = Lock()
 
 
 def _utc(value):
@@ -57,7 +59,10 @@ def _number(value, minimum=0, maximum=None):
 
 def _fresh(record, field, sampled_at, max_age=MAX_AGE):
     observed_at = _utc(record.get(field + "_at"))
-    return observed_at is not None and timedelta(0) <= sampled_at - observed_at <= max_age
+    if observed_at is None:
+        return False
+    age = sampled_at - observed_at
+    return age >= timedelta(0) and (max_age is None or age <= max_age)
 
 
 def _eui(record):
@@ -78,6 +83,19 @@ def _power(records, allowed, sampled_at, max_age=MAX_AGE):
             values.append(value)
     return (round(sum(values), 3) if values else None,
             {"meter_used": len(values), "meter_expected": len(allowed)})
+
+
+def _power_observed_at(records, allowed, sampled_at, max_age=MAX_AGE):
+    times = []
+    for eui in allowed:
+        matches = [record for record in records if _eui(record) == eui]
+        if len(matches) != 1:
+            continue
+        record = matches[0]
+        if (_number(record.get("power_w"), maximum=4294967295) is not None
+                and _fresh(record, "power_w", sampled_at, max_age)):
+            times.append(_utc(record["power_w_at"]))
+    return min(times).isoformat(timespec="milliseconds").replace("+00:00", "Z") if times else None
 
 
 def snapshot_data(row, now=None):
@@ -106,6 +124,10 @@ def snapshot_data(row, now=None):
         "lamp_day_wh": _number(row.get("lampu_hari_wh")),
         "energy_date_wib": (sampled_at + timedelta(hours=7)).date().isoformat(),
         "power_quality": {"ac": ac_quality, "lamp": lamp_quality},
+        "power_observed_at_by_group": {
+            "ac": _power_observed_at(records, AC_METERS, sampled_at),
+            "lamp": _power_observed_at(records, LAMP_METERS, sampled_at),
+        },
     }
     # The writer has already validated occupancy and environment values. Verify
     # observation times as well, so migration-pending rows cannot revive old data.
@@ -135,7 +157,9 @@ def minute_power_data(packet, now=None):
         "power_quality": {group: {"meter_used": 0, "meter_expected": 4}
                           for group in ("ac", "lamp")},
         "power_interval_minutes": 1, "power_stale": True,
+        "power_previous": False,
         "power_sampled_at_utc": None, "power_observed_at_utc": None,
+        "power_observed_at_by_group": {"ac": None, "lamp": None},
     }
     if not isinstance(packet, dict):
         return data
@@ -144,28 +168,34 @@ def minute_power_data(packet, now=None):
     if (packet.get("type") != "office_power" or packet.get("version") != 1
             or packet.get("source_id") != current_app.config.get("SMART_OFFICE_SOURCE_ID", "ug65-ussc")
             or packet.get("interval_minutes") != 1 or sampled_at is None
-            or not timedelta(0) <= now - sampled_at <= POWER_PACKET_MAX_AGE
+            or sampled_at > now
             or not isinstance(records, list) or len(records) > 8):
         return data
     records = [record for record in records if isinstance(record, dict)]
-    # Both checks matter: a retained MQTT packet and a cached meter reading can
-    # independently be stale. Re-publishing never renews power_w_at.
+    # Keep valid old readings, but never renew their original observation time.
     duplicates = {_eui(record) for record in records
                   if sum(_eui(other) == _eui(record) for other in records) > 1}
     records = [record for record in records if _eui(record) not in duplicates
-               and _fresh(record, "power_w", sampled_at, POWER_MAX_AGE)]
-    ac, ac_quality = _power(records, AC_METERS, now, POWER_MAX_AGE)
-    lamp, lamp_quality = _power(records, LAMP_METERS, now, POWER_MAX_AGE)
+               and _fresh(record, "power_w", sampled_at, None)]
+    ac, ac_quality = _power(records, AC_METERS, now, None)
+    lamp, lamp_quality = _power(records, LAMP_METERS, now, None)
     observed = [_utc(record.get("power_w_at")) for record in records
                 if _eui(record) in AC_METERS | LAMP_METERS
                 and _number(record.get("power_w"), maximum=4294967295) is not None
-                and _fresh(record, "power_w", now, POWER_MAX_AGE)]
+                and _fresh(record, "power_w", now, None)]
+    previous = (now - sampled_at > POWER_PACKET_MAX_AGE
+                or any(now - stamp > POWER_MAX_AGE for stamp in observed))
     data.update(
         ac_power_w=ac, lamp_power_w=lamp,
         power_quality={"ac": ac_quality, "lamp": lamp_quality},
-        power_stale=ac is None and lamp is None,
+        power_stale=previous or ac is None or lamp is None,
+        power_previous=previous and bool(observed),
         power_sampled_at_utc=sampled_at.isoformat(timespec="milliseconds").replace("+00:00", "Z"),
         power_observed_at_utc=min(observed).isoformat(timespec="milliseconds").replace("+00:00", "Z") if observed else None,
+        power_observed_at_by_group={
+            "ac": _power_observed_at(records, AC_METERS, now, None),
+            "lamp": _power_observed_at(records, LAMP_METERS, now, None),
+        },
     )
     return data
 
@@ -194,9 +224,43 @@ def merge_minute_power(data):
                         packet = body.get("data")
     except (requests.RequestException, ValueError, TypeError):
         current_app.logger.warning("Smart office minute power could not be read")
-    # If the minute feed is enabled but unavailable, do not disguise an old
-    # database snapshot as a fresh minute reading. Environment/Wh stay intact.
-    return {**data, **minute_power_data(packet)}
+    minute = minute_power_data(packet)
+    result = {**data, **minute}
+    now = datetime.now(timezone.utc)
+    scope = (current_app.config.get("SMART_OFFICE_SOURCE_ID", "ug65-ussc"),
+             current_app.config.get("SMART_OFFICE_DB_HOST"),
+             current_app.config.get("SMART_OFFICE_DB_NAME"))
+    # Separate AC/lamp values so one missing group cannot erase the other.
+    # The database seeds a new process; this cache bridges later feed failures.
+    with LAST_POWER_LOCK:
+        cache = current_app.extensions.setdefault("smart_office_last_power", {}).setdefault(scope, {})
+        for group in ("ac", "lamp"):
+            field = group + "_power_w"
+            candidates = []
+            for priority, (source, reading) in enumerate((
+                    ("snapshot", data), ("previous", cache.get(group, {})), ("minute", minute))):
+                value = _number(reading.get(field), maximum=4294967295)
+                stamp = (reading.get("power_observed_at_by_group") or {}).get(group)
+                if source == "snapshot" and "power_observed_at_by_group" not in reading:
+                    stamp = reading.get("sampled_at_utc")
+                observed_at = _utc(stamp)
+                if value is not None and observed_at is not None and observed_at <= now:
+                    quality = (reading.get("power_quality") or {}).get(group, {"meter_used": 0, "meter_expected": 4})
+                    candidates.append((observed_at, priority, source, value, stamp, quality))
+            if not candidates:
+                continue
+            _, _, source, value, stamp, quality = max(candidates, key=lambda item: item[:2])
+            result[field] = value
+            result["power_quality"][group] = dict(quality)
+            result["power_observed_at_by_group"][group] = stamp
+            if source != "minute":
+                result["power_previous"] = True
+                result["power_stale"] = True
+            cache[group] = {field: value, "power_quality": {group: dict(quality)},
+                            "power_observed_at_by_group": {group: stamp}}
+    stamps = [_utc(stamp) for stamp in result["power_observed_at_by_group"].values() if _utc(stamp)]
+    result["power_observed_at_utc"] = min(stamps).isoformat(timespec="milliseconds").replace("+00:00", "Z") if stamps else None
+    return result
 
 
 def get_connection():
