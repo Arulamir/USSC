@@ -132,12 +132,12 @@ export default function LidahWetanPage() {
 
   const statusDescription =
     currentStatus === "BAHAYA"
-      ? "Peringatan! Ketinggian air telah mencapai level kritis (≥ 65 cm). Waspada potensi banjir!"
+      ? "Level kritis, waspada potensi banjir."
       : currentStatus === "WASPADA"
-        ? "Perhatian! Ketinggian air meningkat (≥ 40 cm). Pantau saluran air secara berkala."
+        ? "Air meningkat, pantau berkala."
         : currentStatus === "AMAN"
-          ? "Kondisi lingkungan dalam keadaan aman."
-          : "Menunggu koneksi sensor...";
+          ? "Kondisi normal dan aman."
+          : "Menunggu data sensor...";
 
   // 1. Ambil 10 data grafik terakhir langsung dari Database
   const fetchRecentChartData = useCallback(async () => {
@@ -643,7 +643,7 @@ export default function LidahWetanPage() {
                 <i className="bi bi-droplet-half"></i>
               </div>
               <span>Sensor pH</span>
-              <strong id="lidahPhStatus" style={{ color: phTextColor }}>
+              <strong id="lidahPhStatus">
                 {phValueDisplay}
               </strong>
               <small id="lidahPhDesc">{phDesc}</small>
@@ -669,28 +669,6 @@ export default function LidahWetanPage() {
                 {formatSensor(data?.rain, "mm/jam")}
               </strong>
               <small>Sensor Tipping Bucket</small>
-            </div>
-
-            <div className="monitor-card">
-              <div className="monitor-icon">
-                <i className="bi bi-cpu"></i>
-              </div>
-              <span>Suhu Panel</span>
-              <strong id="lidahPanelTemp">
-                {formatSensor(data?.temp_panel, "°C")}
-              </strong>
-              <small>Sensor DHT11</small>
-            </div>
-
-            <div className="monitor-card">
-              <div className="monitor-icon">
-                <i className="bi bi-droplet-half"></i>
-              </div>
-              <span>Kelembaban Panel</span>
-              <strong id="lidahPanelHumidity">
-                {formatSensor(data?.hum_panel, "%")}
-              </strong>
-              <small>Sensor DHT11</small>
             </div>
 
             <div className="monitor-card">
@@ -898,6 +876,57 @@ export default function LidahWetanPage() {
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+
+          {/* =================================================
+               KONDISI BOX PANEL (SUB BAB BARU)
+          ================================================== */}
+          <div className="section-title panel-section-title">
+            <h3>Kondisi Box Panel</h3>
+            <span>Internal ESP32</span>
+          </div>
+
+          <div className="panel-box-card">
+            <div className="panel-box-header">
+              <div className="panel-box-title">
+                <i className="bi bi-hdd-network"></i>
+                <span>Monitoring Box Panel Kontrol</span>
+              </div>
+              <span className="panel-box-badge">ESP32 &bull; DHT11</span>
+            </div>
+            <div className="panel-box-content">
+              <div className="panel-box-item">
+                <div className="panel-box-item-left">
+                  <div className="panel-icon cpu">
+                    <i className="bi bi-cpu"></i>
+                  </div>
+                  <div>
+                    <span className="panel-item-label">Suhu Panel</span>
+                    <small className="panel-item-sensor">Sensor DHT11</small>
+                  </div>
+                </div>
+                <strong className="panel-item-value" id="lidahPanelTemp">
+                  {formatSensor(data?.temp_panel, "°C")}
+                </strong>
+              </div>
+
+              <div className="panel-box-divider"></div>
+
+              <div className="panel-box-item">
+                <div className="panel-box-item-left">
+                  <div className="panel-icon moisture">
+                    <i className="bi bi-droplet-half"></i>
+                  </div>
+                  <div>
+                    <span className="panel-item-label">Kelembaban Panel</span>
+                    <small className="panel-item-sensor">Sensor DHT11</small>
+                  </div>
+                </div>
+                <strong className="panel-item-value" id="lidahPanelHumidity">
+                  {formatSensor(data?.hum_panel, "%")}
+                </strong>
+              </div>
             </div>
           </div>
         </section>

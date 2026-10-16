@@ -153,7 +153,7 @@ export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
       <aside className={`sidebar ${mobileOpen ? 'mobile-open' : ''}`} id="sidebar">
         <div className="sidebar-header">
           <div className="brand-logo">
-            <img src="/assets/img/lo.png" alt="Logo" style={{ width: '100%', height: 'auto', objectFit: 'contain' }} />
+            <img src="/assets/img/lo.png" alt="Logo" loading="lazy" style={{ width: '100%', height: 'auto', objectFit: 'contain' }} />
           </div>
 
           <div className="brand-text">

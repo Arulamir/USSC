@@ -1,4 +1,4 @@
-# Backup USSC — 13 Oktober 2026
+# Backup USSC — 16 Oktober 2026
 
 Snapshot kode dari `/home/cctvpro/USSC`, disiapkan untuk
 `https://github.com/Arulamir/USSC`.
@@ -75,7 +75,8 @@ sebelum upload, periksa perubahan remote terlebih dahulu; jangan force-push.
 ## Pemeriksaan snapshot
 
 - Pemindaian Gitleaks dan pencarian nilai kredensial asli dalam source: lulus.
-- Sintaks 47 modul Python: lulus. `backend/database/model.py` berisi
+- Sintaks 50 modul Python: lulus. `backend/database/model.py` berisi
   catatan struktur direktori, bukan modul Python; file asli dipertahankan.
+- Sintaks 13 file TypeScript/TSX yang berubah: lulus.
 - Aplikasi tidak dibuild atau direstart karena perubahan hanya dilakukan
   pada salinan backup. Konfigurasi privat wajib dilengkapi sebelum restore.

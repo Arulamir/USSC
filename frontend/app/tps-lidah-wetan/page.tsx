@@ -222,7 +222,7 @@ function importSampahExcel(file: File): Promise<SampahRow[]> {
 }
 
 function ChartPanel({ title, unit, records, series }: { title: string; unit: string; records: EnergyRecord[]; series: ChartSeries[] }) {
-  const chronological = records.slice(0, 50).reverse()
+  const chronological = [...records].sort((a, b) => a.timestamp.localeCompare(b.timestamp))
   const data: ChartData<'line', number[], string> = {
     labels: chronological.map((record) => chartTimestamp(record.timestamp)),
     datasets: series.map((item) => ({
@@ -266,7 +266,6 @@ export default function TpsLidahWetanPage() {
   const [endDate, setEndDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [limit, setLimit] = useState(25)
   const [records, setRecords] = useState<EnergyRecord[]>([])
-  const [weeklyEnergyRecords, setWeeklyEnergyRecords] = useState<EnergyRecord[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [status, setStatus] = useState('Menunggu pembaruan')
@@ -279,30 +278,12 @@ export default function TpsLidahWetanPage() {
     }
 
     refreshLoginState()
+    // Re-check briefly in case the session cookie is restored after initial hydration.
+    const retryTimer = window.setTimeout(refreshLoginState, 250)
     window.addEventListener('unesa-auth-changed', refreshLoginState)
-    return () => window.removeEventListener('unesa-auth-changed', refreshLoginState)
-  }, [])
-
-  const loadWeeklyEnergyData = useCallback(async () => {
-    const today = new Date()
-    const dates = Array.from({ length: 7 }, (_, index) => {
-      const date = new Date(today)
-      date.setDate(today.getDate() - index)
-      return localDateString(date)
-    })
-
-    try {
-      const results = await Promise.all(dates.map(async (date) => {
-        const params = new URLSearchParams({ tanggal: date, limit: '100' })
-        const response = await fetch(`/admin/tps/energy?${params}`, { cache: 'no-store' })
-        if (!response.ok) throw new Error(`API Monacolisa merespons ${response.status}.`)
-        const result = (await response.json()) as EnergyResponse
-        if (result.status !== 'success') throw new Error(result.message || 'Gagal mengambil data energi mingguan.')
-        return Array.isArray(result.data) ? result.data : []
-      }))
-      setWeeklyEnergyRecords(results.flat().sort((a, b) => b.timestamp.localeCompare(a.timestamp)))
-    } catch (requestError) {
-      console.error('[TPS WEEKLY ENERGY ERROR]', requestError)
+    return () => {
+      window.clearTimeout(retryTimer)
+      window.removeEventListener('unesa-auth-changed', refreshLoginState)
     }
   }, [])
 
@@ -357,21 +338,20 @@ export default function TpsLidahWetanPage() {
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      void loadEnergyData(startDate, endDate, 25)
-      void loadWeeklyEnergyData()
+      void loadEnergyData(startDate, endDate, limit)
     }, 0)
     return () => {
       window.clearTimeout(timer)
       requestController.current?.abort()
     }
-  }, [endDate, loadEnergyData, loadWeeklyEnergyData, startDate])
+  }, [endDate, limit, loadEnergyData, startDate])
 
   const latest = records[0]?.measurement
   const voltage = averagePhase(latest?.voltage_v)
   const current = averagePhase(latest?.current_a)
   const thdVoltage = averageAcrossRecords(records, 'thd_voltage_pct')
   const thdCurrent = averageAcrossRecords(records, 'thd_current_pct')
-  const chartRecords = records.slice(0, 50)
+  const chartRecords = records
   const phaseSeries = (field: 'voltage_v' | 'current_a' | 'active_power_w' | 'thd_voltage_pct' | 'thd_current_pct'): ChartSeries[] =>
     (['a', 'b', 'c'] as const).map((phase, index) => ({
       label: `Fasa ${['R', 'S', 'T'][index]}`,
@@ -578,7 +558,7 @@ export default function TpsLidahWetanPage() {
                   onChange={(event) => setLimit(Number(event.target.value))}
                   className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:ring-teal-900"
                 >
-                  {[10, 25, 50, 100].map((size) => (
+                  {[10, 25, 50, 100, 200, 500].map((size) => (
                     <option key={size} value={size}>
                       {size}
                     </option>

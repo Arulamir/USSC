@@ -82,6 +82,24 @@ export const ApiService = {
     return request(endpoint);
   },
 
+
+  async getAirQualityHourly(date = "") {
+    const params = new URLSearchParams();
+
+    if (date) {
+      params.append("date", date);
+    }
+
+    const queryString = params.toString();
+
+    const endpoint = queryString
+      ? `/api/air-quality/hourly?${queryString}`
+      : "/api/air-quality/hourly";
+
+    return request(endpoint);
+  },
+
+
   async getTrafficData(
     date = "",
     startTime = "",

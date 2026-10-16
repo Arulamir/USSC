@@ -294,7 +294,7 @@
 /* 6. METRIC / MONITOR CARDS */
 .flood-page-container .monitor-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 13px;
   margin-bottom: 25px;
 }
@@ -837,8 +837,6 @@
   color: #6ee7b7;
 }
 
-/* 10. RESPONSIVE MEDIA QUERIES */
-@media (max-width: 1100px) {
 .realtime-table-wrapper {
   overflow-x: auto;
   border-radius: 8px;
@@ -991,10 +989,7 @@
   border-color: rgba(148, 163, 184, 0.3);
 }
 
-  .flood-page-container .monitor-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
+@media (max-width: 1100px) {
   .flood-page-container .charts-grid {
     grid-template-columns: 1fr;
   }
@@ -1033,7 +1028,200 @@
   }
 }
 
-/* 11. MODAL UNDUH LAPORAN */
+/* 11. SUB BAB KONDISI BOX PANEL (UNIFIED CARD) */
+.flood-page-container .panel-section-title {
+  margin-top: 30px;
+}
+
+.flood-page-container .panel-box-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid #cbd5e1;
+  border-radius: 18px;
+  padding: 20px 24px;
+  margin-bottom: 25px;
+  box-shadow: 0 4px 16px rgba(2, 44, 34, 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+:where(.dark, .dark *) .flood-page-container .panel-box-card {
+  background: rgba(30, 41, 59, 0.7);
+  border-color: #334155;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.flood-page-container .panel-box-card:hover {
+  box-shadow: 0 8px 24px rgba(2, 44, 34, 0.08);
+}
+
+:where(.dark, .dark *) .flood-page-container .panel-box-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.flood-page-container .panel-box-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+:where(.dark, .dark *) .flood-page-container .panel-box-header {
+  border-bottom-color: #334155;
+}
+
+.flood-page-container .panel-box-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+:where(.dark, .dark *) .flood-page-container .panel-box-title {
+  color: #f1f5f9;
+}
+
+.flood-page-container .panel-box-title i {
+  font-size: 18px;
+  color: #0d9488;
+}
+
+:where(.dark, .dark *) .flood-page-container .panel-box-title i {
+  color: #2dd4bf;
+}
+
+.flood-page-container .panel-box-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #047857;
+  background: #ecfdf5;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid #a7f3d0;
+}
+
+:where(.dark, .dark *) .flood-page-container .panel-box-badge {
+  color: #6ee7b7;
+  background: rgba(6, 78, 59, 0.4);
+  border-color: #065f46;
+}
+
+.flood-page-container .panel-box-content {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 24px;
+}
+
+.flood-page-container .panel-box-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 12px;
+}
+
+.flood-page-container .panel-box-item-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.flood-page-container .panel-box-divider {
+  width: 1px;
+  height: 50px;
+  background: #e2e8f0;
+}
+
+:where(.dark, .dark *) .flood-page-container .panel-box-divider {
+  background: #334155;
+}
+
+.flood-page-container .panel-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.flood-page-container .panel-icon.cpu {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+:where(.dark, .dark *) .flood-page-container .panel-icon.cpu {
+  background: rgba(14, 165, 233, 0.18);
+  color: #38bdf8;
+}
+
+.flood-page-container .panel-icon.moisture {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+:where(.dark, .dark *) .flood-page-container .panel-icon.moisture {
+  background: rgba(16, 185, 129, 0.18);
+  color: #34d399;
+}
+
+.flood-page-container .panel-item-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  line-height: 1.2;
+}
+
+:where(.dark, .dark *) .flood-page-container .panel-item-label {
+  color: #f1f5f9;
+}
+
+.flood-page-container .panel-item-sensor {
+  display: block;
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 3px;
+}
+
+:where(.dark, .dark *) .flood-page-container .panel-item-sensor {
+  color: #64748b;
+}
+
+.flood-page-container .panel-item-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+:where(.dark, .dark *) .flood-page-container .panel-item-value {
+  color: #f8fafc;
+}
+
+@media (max-width: 640px) {
+  .flood-page-container .panel-box-content {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .flood-page-container .panel-box-divider {
+    width: 100%;
+    height: 1px;
+  }
+
+  .flood-page-container .panel-box-item {
+    padding: 4px 0;
+  }
+}
+
+/* 12. MODAL UNDUH LAPORAN */
 .flood-modal-backdrop {
   position: fixed;
   inset: 0;

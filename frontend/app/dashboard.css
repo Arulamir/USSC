@@ -53,6 +53,573 @@
   color: #f8fafc;
 }
 
+
+/* KARTU KUALITAS UDARA */
+/* .air-summary-card {
+  width: 100%;
+  position: relative;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  transition: transform 0.2s ease;
+} */
+
+
+/* Kartu ringkasan kualitas udara */
+.air-summary-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+}
+
+/* Bagian teks: disusun vertikal */
+.air-summary-card > div:not(.summary-icon) {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Judul Kualitas Udara */
+.air-summary-card > div:not(.summary-icon) > span {
+  display: block;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Status BAIK, SEDANG, dan sebagainya */
+.air-summary-card > div:not(.summary-icon) > strong {
+  display: block;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Tulisan petunjuk di bawah status */
+.air-summary-card > div:not(.summary-icon) > small {
+  display: block;
+  line-height: 1.4;
+  margin: 0;
+  white-space: normal;
+}
+
+/* Ikon panah di sebelah kanan */
+.air-card-arrow {
+  flex-shrink: 0;
+}
+
+
+.air-summary-card:hover {
+  transform: translateY(-2px);
+}
+
+/* .air-card-arrow {
+  margin-left: auto;
+  color: #94a3b8;
+} */
+
+/* POPUP */
+
+
+.air-popup-subtitle {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+
+
+.air-popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(5px);
+}
+
+/* POPUP */
+
+.air-popup {
+  --popup-bg: #ffffff;
+  --popup-text: #1e293b;
+  --popup-heading: #0f172a;
+  --popup-muted: #64748b;
+  --popup-border: #e2e8f0;
+  --popup-panel: #f8fafc;
+  --popup-button: #f1f5f9;
+  --popup-button-hover: #e2e8f0;
+  --popup-chart-grid: #e2e8f0;
+  --popup-bar-track: #f1f5f9;
+  --popup-bar-label: #334155;
+  --popup-value: #475569;
+
+  width: 100%;
+  max-width: 850px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  padding: 26px;
+  border-radius: 20px;
+  background: var(--popup-bg);
+  color: var(--popup-text);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.25);
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease;
+}
+
+/* Tema gelap khusus popup */
+/* Tema gelap popup mengikuti dashboard */
+:where(.dark, .dark *) .air-popup {
+  --popup-bg: #0f2747;
+  --popup-text: #e2e8f0;
+  --popup-heading: #f8fafc;
+  --popup-muted: #a8bfdc;
+  --popup-border: #29486c;
+  --popup-panel: #163354;
+  --popup-button: #1e4168;
+  --popup-button-hover: #28527f;
+  --popup-chart-grid: #29486c;
+  --popup-bar-track: #1e4168;
+  --popup-bar-label: #dbeafe;
+  --popup-value: #dbeafe;
+}
+
+/* Header popup */
+.air-popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+}
+
+.air-popup-title {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  color: var(--popup-heading);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.air-popup-eyebrow {
+  color: var(--popup-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+
+
+
+.air-popup-status-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.air-popup-header h2 {
+  margin: 8px 0;
+  font-size: 23px;
+  color: var(--popup-heading);
+}
+
+.air-popup-header p {
+  margin: 0;
+  color: var(--popup-muted);
+  font-size: 13px;
+}
+
+.air-popup-subtitle {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+
+
+
+/* Tombol tutup */
+.air-popup-close {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--popup-button);
+  color: var(--popup-heading);
+  cursor: pointer;
+}
+
+.air-popup-close:hover {
+  background: var(--popup-button-hover);
+}
+
+/* Tombol toggle tema */
+.air-popup-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 1px solid var(--popup-border);
+  border-radius: 10px;
+  background: var(--popup-button);
+  color: var(--popup-heading);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.air-popup-theme-toggle:hover {
+  background: var(--popup-button-hover);
+}
+
+
+/* PANEL STATUS KUALITAS UDARA */
+.air-popup-status {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin: 24px 0;
+  padding: 18px;
+  border: 1px solid var(--popup-border);
+  border-radius: 14px;
+  background: var(--popup-panel);
+  box-sizing: border-box;
+}
+
+/* Area teks mengambil ruang yang tersedia */
+.air-popup-status-content {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* Baris judul dan waktu */
+.air-popup-status-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+/* Judul di sebelah kiri */
+.air-popup-status-heading .air-popup-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  color: var(--popup-heading);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+}
+
+/* Waktu di sebelah kanan */
+.air-popup-status-heading .air-popup-updated {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  gap: 6px;
+  margin-left: auto;
+  color: var(--popup-heading);
+  font-size: 11px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Jarak antara kondisi dan skor sensor */
+.air-popup-status-content > strong {
+  display: block;
+  margin: 4px 0;
+  font-size: 24px;
+  line-height: 1.4;
+}
+
+/* Skor sensor */
+.air-popup-status-content > small {
+  display: block;
+  margin-top: 2px;
+  color: var(--popup-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Ikon tetap menggunakan warna semula */
+.air-popup-status-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #dcfce7;
+  color: #16a34a;
+  font-size: 24px;
+}
+
+
+
+
+
+.air-popup-status strong {
+  font-size: 24px;
+  color: var(--popup-heading);
+}
+
+/* Jangan mengubah warna indikator status */
+.air-popup-status-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #dcfce7;
+  color: #16a34a;
+  font-size: 24px;
+}
+
+/* Grafik */
+.air-vertical-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 235px;
+  gap: 24px;
+  align-items: stretch;
+}
+
+.air-vertical-chart h3,
+.air-quality-scale h3 {
+  margin: 0;
+  font-size: 15px;
+  color: var(--popup-heading);
+}
+
+.air-chart-subtitle {
+  margin: 6px 0 18px;
+  color: var(--popup-muted);
+  font-size: 12px;
+}
+
+.air-vertical-bars {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-around;
+  gap: 10px;
+  height: 275px;
+  padding: 12px 8px 0;
+  border-bottom: 1px solid var(--popup-border);
+  background-image: linear-gradient(
+    to top,
+    var(--popup-chart-grid) 1px,
+    transparent 1px
+  );
+  background-size: 100% 25%;
+}
+
+.air-vertical-item {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+}
+
+.air-vertical-value {
+  min-height: 18px;
+  margin-bottom: 8px;
+  color: var(--popup-value);
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.air-vertical-track {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: min(100%, 34px);
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 7px 7px 0 0;
+  background: var(--popup-bar-track);
+}
+
+.air-vertical-fill {
+  width: 100%;
+  min-height: 0;
+  border-radius: 7px 7px 0 0;
+  transition: height 0.4s ease;
+}
+
+.air-vertical-name {
+  margin-top: 10px;
+  color: var(--popup-bar-label);
+  font-size: 11px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.air-vertical-unit {
+  margin-top: 4px;
+  color: var(--popup-muted);
+  font-size: 9px;
+  text-align: center;
+}
+
+/* Skala kualitas udara */
+.air-quality-scale {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-left: 18px;
+  border-left: 1px solid var(--popup-border);
+}
+
+.air-quality-scale h3 {
+  margin-bottom: 8px;
+}
+
+.air-scale-level {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 43px;
+  padding: 7px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  transition: background 0.2s ease;
+}
+
+.air-scale-level.active {
+  border-color: var(--popup-border);
+  background: var(--popup-button);
+}
+
+/* Warna level kualitas udara tidak diubah */
+.air-scale-color {
+  width: 12px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 4px;
+}
+
+.air-scale-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.air-scale-text strong {
+  color: var(--popup-heading);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.air-scale-text small {
+  color: #16a34a;
+  font-size: 10px;
+}
+
+/* Footer */
+.air-popup-footer {
+  display: flex;
+  gap: 9px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--popup-border);
+  color: var(--popup-muted);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+
+
+/* RESPONSIVE */
+@media (max-width: 600px) {
+  .air-popup-overlay {
+    padding: 10px;
+  }
+
+  .air-popup {
+    max-height: calc(100vh - 20px);
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .air-popup-header h2 {
+    font-size: 19px;
+  }
+
+  .air-vertical-layout {
+    grid-template-columns: minmax(0, 1fr) 125px;
+    gap: 10px;
+  }
+
+  .air-vertical-bars {
+    height: 230px;
+    gap: 4px;
+    padding-right: 2px;
+    padding-left: 2px;
+  }
+
+  .air-vertical-track {
+    width: min(100%, 25px);
+  }
+
+  .air-vertical-name {
+    font-size: 9px;
+  }
+
+  .air-vertical-unit {
+    font-size: 8px;
+  }
+
+  .air-vertical-value {
+    font-size: 9px;
+  }
+
+  .air-quality-scale {
+    padding-left: 8px;
+    gap: 7px;
+  }
+
+  .air-scale-level {
+    gap: 5px;
+    padding: 5px 2px;
+  }
+
+  .air-scale-text strong {
+    font-size: 8px;
+  }
+
+  .air-scale-text small {
+    font-size: 9px;
+  }
+}
+
+
 .dashboard-page-container .page-heading p {
   color: #64748b;
   font-size: 12px;
@@ -83,10 +650,10 @@
   color: #94a3b8;
 }
 
-/* 3. SUMMARY GRID (Desktop: 1 Baris 5 Kartu) */
+/* 3. SUMMARY GRID (Desktop: 1 Baris 4 Kartu) */
 .dashboard-page-container .summary-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 14px;
   margin-bottom: 28px;
 }
@@ -538,11 +1105,6 @@
     gap: 12px;
   }
 
-  /* Tampilan Mobile/Tablet Opsi 2: Card Sensor pH membentang 2 kolom penuh */
-  .dashboard-page-container .summary-grid .summary-card.summary-card-ph {
-    grid-column: span 2;
-  }
-
   .dashboard-page-container .environment-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -561,15 +1123,11 @@
     font-size: 22px;
   }
 
-  /* Tablet & Mobile: Banjir & Kualitas Udara (2 kol), pH Full (span 2), Kendaraan & Emisi (2 kol) */
+  /* Tablet & Mobile: Banjir & Kualitas Udara (2 kol), Kendaraan & Emisi (2 kol) */
   .dashboard-page-container .summary-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
     margin-bottom: 20px;
-  }
-
-  .dashboard-page-container .summary-grid .summary-card.summary-card-ph {
-    grid-column: span 2;
   }
 
   .dashboard-page-container .summary-card {
@@ -656,14 +1214,10 @@
 }
 
 @media (max-width: 480px) {
-  /* Di Mobile kecil tetap: Baris 1 (2 kol), Baris 2 pH Full (span 2), Baris 3 (2 kol) */
+  /* Di Mobile kecil: 2 kolom x 2 baris simetris */
   .dashboard-page-container .summary-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;
-  }
-
-  .dashboard-page-container .summary-grid .summary-card.summary-card-ph {
-    grid-column: span 2;
   }
 
   .dashboard-page-container .summary-card {

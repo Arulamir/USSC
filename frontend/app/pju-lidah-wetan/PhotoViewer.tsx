@@ -21,10 +21,6 @@ const toProxiedImageUrl = (value: string, base: string | URL): string => {
   if (url.pathname.startsWith('/admin/img/')) {
     return `${url.pathname}${url.search}${url.hash}`
   }
-  if (url.pathname.startsWith('/api/admin/img/')) {
-    url.pathname = url.pathname.replace(/^\/api\/admin/, '/admin')
-    return `${url.pathname}${url.search}${url.hash}`
-  }
   if (url.pathname.startsWith('/img/')) {
     url.pathname = `/admin${url.pathname}`
     return `${url.pathname}${url.search}${url.hash}`

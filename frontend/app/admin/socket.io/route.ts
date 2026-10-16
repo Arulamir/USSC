@@ -7,17 +7,22 @@ async function proxySocket(request: Request) {
   const headers = new Headers(request.headers)
   headers.delete('host')
   headers.delete('content-length')
-  const response = await fetch(target, {
-    method: request.method,
-    headers,
-    body: ['GET', 'HEAD'].includes(request.method) ? undefined : await request.arrayBuffer(),
-    cache: 'no-store',
-    redirect: 'manual',
-  })
-  const responseHeaders = new Headers(response.headers)
-  responseHeaders.delete('content-encoding')
-  responseHeaders.delete('content-length')
-  return new Response(response.body, { status: response.status, statusText: response.statusText, headers: responseHeaders })
+  try {
+    const response = await fetch(target, {
+      method: request.method,
+      headers,
+      body: ['GET', 'HEAD'].includes(request.method) ? undefined : await request.arrayBuffer(),
+      cache: 'no-store',
+      redirect: 'manual',
+    })
+    const responseHeaders = new Headers(response.headers)
+    responseHeaders.delete('content-encoding')
+    responseHeaders.delete('content-length')
+    return new Response(response.body, { status: response.status, statusText: response.statusText, headers: responseHeaders })
+  } catch (error) {
+    console.error('[SOCKET.IO PROXY ERROR]', error)
+    return Response.json({ error: 'Socket.IO backend unavailable' }, { status: 502 })
+  }
 }
 
 export const GET = proxySocket

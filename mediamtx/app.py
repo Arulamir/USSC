@@ -1283,20 +1283,6 @@ def start_camera(public_code):
 
             db.close()
 
-
-# ============================================================
-# WHEP PROXY
-#
-# Browser
-#    ↓
-# Next.js
-#    ↓
-# Flask /api/whep/...
-#    ↓ Basic Auth
-# MediaMTX :8889
-#
-# ============================================================
-
 @app.route("/api/whep/<path:camera_path>",methods=["POST"])
 def whep_proxy(camera_path):
 

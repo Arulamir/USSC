@@ -47,4 +47,4 @@ class Config:
     MQTT_USERNAME = os.getenv("MQTT_USERNAME", os.getenv("EMQX_USERNAME", "esp32unesa"))
     MQTT_PASSWORD = os.getenv("MQTT_PASSWORD", os.getenv("EMQX_PASSWORD", ""))
     MQTT_TOPIC_MONITORING = os.getenv("MQTT_TOPIC_MONITORING", os.getenv("EMQX_TOPIC", "unesa/monitoring"))
-    MQTT_TOPIC_AIR = os.getenv("MQTT_TOPIC_AIR", "unesa/airquality")
+    MQTT_TOPIC_AIR = os.getenv("MQTT_TOPIC_AIR", "unesa/airquality")

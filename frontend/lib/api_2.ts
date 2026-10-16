@@ -43,7 +43,9 @@ export class SocketConnection {
   constructor() {
     this.client = io(SocketConnection.BASE_URL, {
       path: '/admin/socket.io',
-      transports: ['websocket', 'polling'],
+      // Next.js route handlers cannot proxy the WebSocket upgrade; connect via
+      // HTTP long-polling through the existing route instead.
+      transports: ['polling'],
     })
   }
   on(event: string, handler: (...args: any[]) => void): () => void {

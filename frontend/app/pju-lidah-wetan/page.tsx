@@ -1,7 +1,7 @@
 'use client'
 
-import {useCallback, useEffect, useMemo, useRef, useState,} from "react";
-import "./digital.css";
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import './digital.css'
 import type L from 'leaflet'
 import { Chart as ChartJS, LinearScale, PointElement, LineElement, LineController, Tooltip, Legend, LogarithmicScale } from 'chart.js'
 import { Line } from 'react-chartjs-2'
@@ -24,8 +24,6 @@ const CENTER_LAT = -7.301062
 const CENTER_LON = 112.670743
 const CENTER_ZOOM = 17
 const LUX_BUCKET_SIZE = 5
-const LUX_BUCKET_COUNT = 201
-const MAX_LUX = 200
 
 ChartJS.register(LinearScale, LogarithmicScale, PointElement, LineElement, LineController, Tooltip, Legend)
 
@@ -35,6 +33,11 @@ const toImageProxyUrl = (value: string, base = BASE_IMAGE_URL): string => {
   if (url.pathname.startsWith('/admin/img/')) return `${url.pathname}${url.search}${url.hash}`
   if (url.pathname.startsWith('/img/')) return `/admin${url.pathname}${url.search}${url.hash}`
   return url.toString()
+}
+const withThumbnail = (value: string): string => {
+  const url = new URL(value, BASE_IMAGE_URL)
+  url.searchParams.set('thumb', '50')
+  return `${url.pathname}${url.search}${url.hash}`
 }
 
 const getImageUrl = (path: string) => toImageProxyUrl(path)
@@ -111,15 +114,10 @@ function PanoramaThumbnail({ imageUrl, alt }: { imageUrl: string; alt: string })
   }, [imageUrl])
 
   return <img src={src} alt={alt} />
-
-  
 }
 
-
-
-
-const getLuxColor = (lux: number) => {
-  const intensity = Math.min(1, Math.log2(Math.max(0, lux) + 1) / Math.log2(MAX_LUX + 1))
+const getLuxColor = (lux: number, maxLux: number) => {
+  const intensity = maxLux > 0 ? Math.min(1, Math.max(0, lux) / maxLux) : 0
   return `hsl(${Math.round(intensity * 120)} 78% 45%)`
 }
 
@@ -153,375 +151,285 @@ const calculateStatistics = (pjus: Marker[]) => {
 // ============================================================
 
 type Vehicle = {
-    id: string | number;
+  id: string | number
 
-    lat?: number | string;
-    latitude?: number | string;
+  lat?: number | string
+  latitude?: number | string
 
-    lon?: number | string;
-    lng?: number | string;
-    longitude?: number | string;
+  lon?: number | string
+  lng?: number | string
+  longitude?: number | string
 
-    type?: string;
-    class?: string;
-    class_name?: string;
-    vehicle_type?: string;
+  type?: string
+  class?: string
+  class_name?: string
+  vehicle_type?: string
 
-    speed?: number | string;
-    heading?: number | string;
-};
+  speed?: number | string
+  heading?: number | string
+}
 
 type CameraData = {
-    camera_id?: string;
-    timestamp?: string;
-    vehicles?: Vehicle[];
-};
+  camera_id?: string
+  timestamp?: string
+  vehicles?: Vehicle[]
+}
 
 type VehicleStats = {
-    motor: number;
-    car: number;
-    bus: number;
-    truck: number;
-    total: number;
-};
+  motor: number
+  car: number
+  bus: number
+  truck: number
+  total: number
+}
 
 type TrafficTableRow = {
-  timestamp: string;
-  motor: number;
-  mobil: number;
-  bus: number;
-  truck: number;
-  total: number;
-};
+  timestamp: string
+  motor: number
+  mobil: number
+  bus: number
+  truck: number
+  total: number
+}
 
-type LeafletModule = typeof import("leaflet");
+type LeafletModule = typeof import('leaflet')
 
 type AdminCamera = {
-  id: number;
-  public_code: string;
-  public_name: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  status: string;
-  enabled: number | boolean;
-};
-
+  id: number
+  public_code: string
+  public_name: string | null
+  latitude: number | null
+  longitude: number | null
+  status: string
+  enabled: number | boolean
+}
 
 // ============================================================
 // CAMERA CONFIGURATION
 // ============================================================
 
-const ALLOWED_CAMERA_NAMES = [
-  "CCTV GERBANG UTAMA LIDAH 2",
-  "CCTV GERBANG UTAMA KETINTANG 1",
-] as const;
-
+const ALLOWED_CAMERA_NAMES = ['CCTV GERBANG UTAMA LIDAH 2', 'CCTV GERBANG UTAMA KETINTANG 1'] as const
 
 const PUBLIC_CAMERA_STREAMS: Record<string, string> = {
-  "CCTV GERBANG UTAMA LIDAH 2": "CTV_GL1_01_00_02",
-  "CCTV GERBANG UTAMA KETINTANG 1": "CCTV_GK_1_01_02_01",
-};
+  'CCTV GERBANG UTAMA LIDAH 2': 'CTV_GL1_01_00_02',
+  'CCTV GERBANG UTAMA KETINTANG 1': 'CCTV_GK_1_01_02_01',
+}
 
-const API_URL = "/api/traffic-grafik";
-const CAMERAS_API_URL = "/api/cctv/public/cameras";
-const REFRESH_INTERVAL = 2000;
+const API_URL = '/api/traffic-grafik'
+const CAMERAS_API_URL = '/api/cctv/public/cameras'
+const REFRESH_INTERVAL = 2000
 
 // ============================================================
 // VEHICLE HELPER
 // ============================================================
 
 function getVehicleType(vehicle: Vehicle): string {
-    return String(
-        vehicle.type ??
-        vehicle.class ??
-        vehicle.class_name ??
-        vehicle.vehicle_type ??
-        "car"
-    ).toLowerCase();
+  return String(vehicle.type ?? vehicle.class ?? vehicle.class_name ?? vehicle.vehicle_type ?? 'car').toLowerCase()
 }
 
 type TrafficData = {
-  status: string;
-  selected_date?: string | null;
-  available_dates?: string[];
+  status: string
+  selected_date?: string | null
+  available_dates?: string[]
 
-  start_time?: string | null;
-  end_time?: string | null;
+  start_time?: string | null
+  end_time?: string | null
 
   vehicle: {
     summary: {
-      motor: number;
-      mobil: number;
-      bus: number;
-      truck: number;
-      total: number;
-    };
+      motor: number
+      mobil: number
+      bus: number
+      truck: number
+      total: number
+    }
 
     hourly: Array<{
-      jam: number;
-      total: number;
-    }>;
+      jam: number
+      total: number
+    }>
 
-    table: TrafficTableRow[];
-  };
+    table: TrafficTableRow[]
+  }
 
   emission: {
     summary: {
-      motor: number;
-      mobil: number;
-      bus: number;
-      truck: number;
-      total: number;
-    };
+      motor: number
+      mobil: number
+      bus: number
+      truck: number
+      total: number
+    }
 
     hourly: Array<{
-      jam: number;
-      total: number;
-    }>;
+      jam: number
+      total: number
+    }>
 
-    table: TrafficTableRow[];
-  };
-};
-
+    table: TrafficTableRow[]
+  }
+}
 
 function getVehicleName(vehicle: Vehicle): string {
-    const type = getVehicleType(vehicle);
+  const type = getVehicleType(vehicle)
 
-    if (
-        type === "motor" ||
-        type === "motorcycle" ||
-        type === "motorbike"
-    ) {
-        return "Motor";
-    }
+  if (type === 'motor' || type === 'motorcycle' || type === 'motorbike') {
+    return 'Motor'
+  }
 
-    if (type === "bus") {
-        return "Bus";
-    }
+  if (type === 'bus') {
+    return 'Bus'
+  }
 
-    if (
-        type === "truck" ||
-        type === "truk"
-    ) {
-        return "Truk";
-    }
+  if (type === 'truck' || type === 'truk') {
+    return 'Truk'
+  }
 
-    return "car";
+  return 'car'
 }
-
 
 function getVehicleEmoji(vehicle: Vehicle): string {
-    const type = getVehicleType(vehicle);
+  const type = getVehicleType(vehicle)
 
-    if (
-        type === "motor" ||
-        type === "motorcycle" ||
-        type === "motorbike"
-    ) {
-        return "🏍";
-    }
+  if (type === 'motor' || type === 'motorcycle' || type === 'motorbike') {
+    return '🏍'
+  }
 
-    if (type === "bus") {
-        return "🚌";
-    }
+  if (type === 'bus') {
+    return '🚌'
+  }
 
-    if (
-        type === "truck" ||
-        type === "truk"
-    ) {
-        return "🚛";
-    }
+  if (type === 'truck' || type === 'truk') {
+    return '🚛'
+  }
 
-    return "🚗";
+  return '🚗'
 }
-
 
 function getVehicleLat(vehicle: Vehicle): number {
-    return Number(
-        vehicle.lat ??
-        vehicle.latitude
-    );
+  return Number(vehicle.lat ?? vehicle.latitude)
 }
 
-
 function getVehicleLon(vehicle: Vehicle): number {
-    return Number(
-        vehicle.lon ??
-        vehicle.lng ??
-        vehicle.longitude);}
-
+  return Number(vehicle.lon ?? vehicle.lng ?? vehicle.longitude)
+}
 
 function getVehicleSpeed(vehicle: Vehicle): number {
-    const value = Number(
-        vehicle.speed ?? 0);
+  const value = Number(vehicle.speed ?? 0)
 
-    return Number.isFinite(value)
-        ? value
-        : 0;}
+  return Number.isFinite(value) ? value : 0
+}
 
 function getVehicleHeading(vehicle: Vehicle): number {
-    const value = Number(
-        vehicle.heading ?? 0);
-    return Number.isFinite(value)
-        ? value
-        : 0;}
-
+  const value = Number(vehicle.heading ?? 0)
+  return Number.isFinite(value) ? value : 0
+}
 
 // ============================================================
 // STATISTICS
 // ============================================================
 
-function calculateStatisticstraffic(
-    vehicles: Vehicle[]
-): VehicleStats {
+function calculateStatisticstraffic(vehicles: Vehicle[]): VehicleStats {
+  let motor = 0
+  let car = 0
+  let bus = 0
+  let truck = 0
 
-    let motor = 0;
-    let car = 0;
-    let bus = 0;
-    let truck = 0;
+  vehicles.forEach((vehicle) => {
+    const type = getVehicleType(vehicle)
 
-    vehicles.forEach((vehicle) => {
+    if (type === 'motor' || type === 'motorcycle' || type === 'motorbike') {
+      motor++
+    } else if (type === 'bus') {
+      bus++
+    } else if (type === 'truck' || type === 'truk') {
+      truck++
+    } else {
+      car++
+    }
+  })
 
-        const type =
-            getVehicleType(vehicle);
-
-        if (
-            type === "motor" ||
-            type === "motorcycle" ||
-            type === "motorbike"
-        ) {
-            motor++;
-        }
-
-        else if (type === "bus") {
-            bus++;
-        }
-
-        else if (
-            type === "truck" ||
-            type === "truk"
-        ) {
-            truck++;
-        }
-
-        else {
-            car++;
-        }
-    });
-
-    return {motor, car, bus, truck, total: motor + car + bus + truck,};
+  return { motor, car, bus, truck, total: motor + car + bus + truck }
 }
-
 
 // ============================================================
 // TIME FORMAT
 // ============================================================
 
-function formatTimeTraffic(
-    dateString?: string): string {
-    if (!dateString) {
-        return "-";}
-
-    const date =
-        new Date(dateString);
-    if (
-        Number.isNaN(date.getTime())
-    ) {return "-";}
-
-    return date.toLocaleTimeString(
-        "id-ID",
-        {
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-        }
-    );
-}
-
-function formatTimestampAMPM(
-  dateString?: string
-): string {
+function formatTimeTraffic(dateString?: string): string {
   if (!dateString) {
-    return "-";
+    return '-'
   }
 
-  const date = new Date(dateString);
+  const date = new Date(dateString)
+  if (Number.isNaN(date.getTime())) {
+    return '-'
+  }
+
+  return date.toLocaleTimeString('id-ID', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  })
+}
+
+function formatTimestampAMPM(dateString?: string): string {
+  if (!dateString) {
+    return '-'
+  }
+
+  const date = new Date(dateString)
 
   if (Number.isNaN(date.getTime())) {
-    return "-";
+    return '-'
   }
 
-  return date.toLocaleString("id-ID", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
+  return date.toLocaleString('id-ID', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
     hour12: true,
-  });
+  })
 }
 
-function downloadCSV(
-  data: TrafficTableRow[],
-  filename: string
-) {
-  if (!data || data.length === 0) return;
+function downloadCSV(data: TrafficTableRow[], filename: string) {
+  if (!data || data.length === 0) return
 
-  const headers = [
-    "No",
-    "Waktu",
-    "Motor",
-    "car",
-    "Bus",
-    "Truk",
-    "Total",
-  ];
+  const headers = ['No', 'Waktu', 'Motor', 'car', 'Bus', 'Truk', 'Total']
 
   const csvRows = [
-    headers.join(","),
+    headers.join(','),
     ...data.map((row, index) =>
-      [
-        index + 1,
-        formatTimestampAMPM(row.timestamp),
-        row.motor,
-        row.mobil,
-        row.bus,
-        row.truck,
-        row.total,
-      ]
+      [index + 1, formatTimestampAMPM(row.timestamp), row.motor, row.mobil, row.bus, row.truck, row.total]
         .map((value) => {
-          const escaped = String(value ?? "")
-            .replace(/"/g, '""');
+          const escaped = String(value ?? '').replace(/"/g, '""')
 
-          return `"${escaped}"`;
+          return `"${escaped}"`
         })
-        .join(",")
+        .join(',')
     ),
-  ];
+  ]
 
   // BOM agar karakter terbaca dengan benar di Excel
-  const csvContent =
-    "\uFEFF" + csvRows.join("\r\n");
+  const csvContent = '\uFEFF' + csvRows.join('\r\n')
 
-  const blob = new Blob(
-    [csvContent],
-    { type: "text/csv;charset=utf-8;" }
-  );
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
 
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
 
-  link.href = url;
-  link.download = filename;
+  link.href = url
+  link.download = filename
 
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
 
-  URL.revokeObjectURL(url);
+  URL.revokeObjectURL(url)
 }
-
 
 // ============================================================
 // PAGE
@@ -545,58 +453,68 @@ export default function PjuLiwetPage() {
   // ========================================================
   // STATE
   // ========================================================
-  
+
   // const [cameraId, setCameraId] = useState(CAMERA_ID);
-  const [serverTimestamp, setServerTimestamp] =useState<string | undefined>();
+  const [serverTimestamp, setServerTimestamp] = useState<string | undefined>()
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null)
   const [markers, setMarkers] = useState<Marker[]>([])
+  const [visibleMapBounds, setVisibleMapBounds] = useState<L.LatLngBounds | null>(null)
   const [lastUpdate, setLastUpdate] = useState('-:-:-')
   const [isOnline, setIsOnline] = useState(false)
   const [satelliteVisible, setSatelliteVisible] = useState(false)
   const [selectedType, setSelectedType] = useState<MODES>(MODES.PJU)
   const [photoViewer, setPhotoViewer] = useState<PhotoViewerState>(null)
-  const [vehicleVisible, setVehicleVisible] = useState(true);
-  const vehicleMarkersRef = useRef<Record<string, L.Marker>>({});
-  const [trafficVisible, setTrafficVisible] = useState(false);
-  const toggleTraffic = () => {setTrafficVisible((visible) => !visible);};
-  const [trafficData, setTrafficData] = useState<TrafficData | null>(null);
-  const [trafficLoading, setTrafficLoading] = useState(false);
-  const [trafficError, setTrafficError] = useState<string | null>(null);
-  const [cameras, setCameras] = useState<AdminCamera[]>([]);
-  const [selectedCameraCode, setSelectedCameraCode] = useState("");
-  const [cameraLoading, setCameraLoading] = useState(true);
-  const [cameraError, setCameraError] = useState<string | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
+  const [vehicleVisible, setVehicleVisible] = useState(true)
+  const vehicleMarkersRef = useRef<Record<string, L.Marker>>({})
+  const [trafficVisible, setTrafficVisible] = useState(false)
+  const toggleTraffic = () => {
+    setTrafficVisible((visible) => !visible)
+  }
+  const [trafficData, setTrafficData] = useState<TrafficData | null>(null)
+  const [trafficLoading, setTrafficLoading] = useState(false)
+  const [trafficError, setTrafficError] = useState<string | null>(null)
+  const [cameras, setCameras] = useState<AdminCamera[]>([])
+  const [selectedCameraCode, setSelectedCameraCode] = useState('')
+  const [cameraLoading, setCameraLoading] = useState(true)
+  const [cameraError, setCameraError] = useState<string | null>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const peerConnectionRef = useRef<RTCPeerConnection | null>(null)
 
-  const selectedCamera = cameras.find(
-  (camera) => camera.public_code === selectedCameraCode
-);
+  const selectedCamera = cameras.find((camera) => camera.public_code === selectedCameraCode)
 
-
-  const pjus = useMemo(() => markers?.filter((m) => m.marker_type === selectedType), [markers, selectedType])
+  const visibleMarkers = useMemo(() => {
+    if (!visibleMapBounds) return []
+    return markers.filter((marker) => {
+      const latitude = Number(marker.latitude)
+      const longitude = Number(marker.longitude)
+      return Number.isFinite(latitude) && Number.isFinite(longitude) && visibleMapBounds.contains([latitude, longitude])
+    })
+  }, [markers, visibleMapBounds])
+  const pjus = useMemo(() => markers.filter((m) => m.marker_type === selectedType), [markers, selectedType])
+  const visiblePjus = useMemo(() => visibleMarkers.filter((m) => m.marker_type === selectedType), [visibleMarkers, selectedType])
   const stats = useMemo(() => calculateStatistics(pjus), [pjus])
+  const maxLux = useMemo(
+    () => Math.max(0, ...pjus.map((marker) => Number(marker.lux) || 0)),
+    [pjus]
+  )
+  const luxBucketCount = Math.max(1, Math.ceil(maxLux / LUX_BUCKET_SIZE) + 1)
+  const luxChartMax = Math.max(LUX_BUCKET_SIZE, Math.ceil(maxLux / LUX_BUCKET_SIZE) * LUX_BUCKET_SIZE)
+  const luxTickStep = Math.max(LUX_BUCKET_SIZE, Math.ceil(luxChartMax / 10 / LUX_BUCKET_SIZE) * LUX_BUCKET_SIZE)
   const luxDistribution = useMemo(() => {
-    const buckets = Array.from({ length: LUX_BUCKET_COUNT }, () => 0)
-    pjus.forEach((pju) => {
-      const lux = Math.max(0, pju.lux ?? 0)
-      const bucketIndex = Math.min(Math.floor(lux / LUX_BUCKET_SIZE), LUX_BUCKET_COUNT - 1)
+    const buckets = Array.from({ length: luxBucketCount }, () => 0)
+    visiblePjus.forEach((pju) => {
+      const lux = Math.max(0, Number(pju.lux) || 0)
+      const bucketIndex = Math.min(Math.floor(lux / LUX_BUCKET_SIZE), luxBucketCount - 1)
       buckets[bucketIndex]++
     })
     return buckets
-  }, [pjus])
+  }, [visiblePjus, luxBucketCount])
   const maxLuxBucketCount = Math.max(1, ...luxDistribution)
-  const luxChartPoints = luxDistribution.flatMap((count, index) =>
-    count > 0
-      ? [
-          {
-            x: index === 0 ? 1 : index === LUX_BUCKET_COUNT - 1 ? MAX_LUX : index * LUX_BUCKET_SIZE + LUX_BUCKET_SIZE / 2,
-            y: count,
-            bucketIndex: index,
-          },
-        ]
-      : []
-  )
+  const luxChartPoints = luxDistribution.map((count, index) => ({
+    x: index === 0 ? 0 : index * LUX_BUCKET_SIZE + LUX_BUCKET_SIZE / 2,
+    y: count,
+    bucketIndex: index,
+  }))
   const luxChartData = {
     datasets: [
       {
@@ -607,6 +525,7 @@ export default function PjuLiwetPage() {
         borderWidth: 2,
         pointRadius: 0,
         pointHitRadius: 8,
+        spanGaps: true,
         tension: 0.35,
         cubicInterpolationMode: 'monotone' as const,
         fill: true,
@@ -624,22 +543,20 @@ export default function PjuLiwetPage() {
           title: (items: { dataIndex: number }[]) => {
             const bucketIndex = luxChartPoints[items[0]?.dataIndex ?? 0]?.bucketIndex ?? 0
             const bucketStart = bucketIndex * LUX_BUCKET_SIZE
-            return bucketIndex === LUX_BUCKET_COUNT - 1 ? `${bucketStart}+ lx` : `${bucketStart}–${bucketStart + LUX_BUCKET_SIZE - 1} lx`
+            return `${bucketStart}–${bucketStart + LUX_BUCKET_SIZE - 1} lx`
           },
         },
       },
     },
     scales: {
       x: {
-        type: 'logarithmic' as const,
-        min: 1,
+        type: 'linear' as const,
+        min: 0,
+        max: luxChartMax,
         title: { display: true, text: 'Intensitas cahaya (lx)' },
         ticks: {
-          callback: (value: string | number) => {
-            const lux = Number(value)
-            if (lux === 1) return '0 lx'
-            return Number.isInteger(lux) && lux % 2 === 0 ? `${lux.toLocaleString()} lx` : ''
-          },
+          stepSize: luxTickStep,
+          callback: (value: string | number) => `${Number(value).toLocaleString()} lx`,
         },
       },
       y: {
@@ -662,107 +579,78 @@ export default function PjuLiwetPage() {
 
   const fetchTrafficData = useCallback(async () => {
     try {
-        setTrafficLoading(true);
-        setTrafficError(null);
+      setTrafficLoading(true)
+      setTrafficError(null)
 
-        const response = await fetch(
-            API_URL,
-            {
-                cache: "no-store",
-            }
-        );
+      const response = await fetch(API_URL, {
+        cache: 'no-store',
+      })
 
-        if (!response.ok) {
-            throw new Error(
-                `HTTP ${response.status}`
-            );
-        }
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
 
-        const result: TrafficData =
-            await response.json();
+      const result: TrafficData = await response.json()
 
-        if (result.status !== "success") {
-            throw new Error(
-                "Gagal mengambil data traffic"
-            );
-        }
+      if (result.status !== 'success') {
+        throw new Error('Gagal mengambil data traffic')
+      }
 
-        setTrafficData(result);
-
+      setTrafficData(result)
     } catch (error) {
-        console.error(
-            "[TRAFFIC ERROR]",
-            error
-        );
+      console.error('[TRAFFIC ERROR]', error)
 
-        setTrafficError(
-            error instanceof Error
-                ? error.message
-                : "Gagal mengambil data traffic"
-        );
-
+      setTrafficError(error instanceof Error ? error.message : 'Gagal mengambil data traffic')
     } finally {
-        setTrafficLoading(false);
+      setTrafficLoading(false)
     }
-}, []);
+  }, [])
 
   // ========================================================
   // STATISTICS
   // ========================================================
-const trafficStats = useMemo(() => {
-  const summary = trafficData?.vehicle?.summary;
+  const trafficStats = useMemo(() => {
+    const summary = trafficData?.vehicle?.summary
 
-  if (!summary) {
-    return {
-      motor: 0,
-      mobil: 0,
-      bus: 0,
-      truck: 0,
-      total: 0,
-    };
-  }
-
-  return {
-    motor: summary.motor ?? 0,
-    mobil: summary.mobil ?? 0,
-    bus: summary.bus ?? 0,
-    truck: summary.truck ?? 0,
-    total: summary.total ?? 0,
-  };
-}, [trafficData]);
-  
-const trafficPercentages = useMemo(() => {
-    if (trafficStats.total <= 0) {
-        return {
-            motor: 0,
-            car: 0,
-            bus: 0,
-            truck: 0,
-        };
+    if (!summary) {
+      return {
+        motor: 0,
+        mobil: 0,
+        bus: 0,
+        truck: 0,
+        total: 0,
+      }
     }
 
     return {
-        motor: Math.round(
-            (trafficStats.motor /
-                trafficStats.total) * 100
-        ),
+      motor: summary.motor ?? 0,
+      mobil: summary.mobil ?? 0,
+      bus: summary.bus ?? 0,
+      truck: summary.truck ?? 0,
+      total: summary.total ?? 0,
+    }
+  }, [trafficData])
 
-        car: Math.round(
-            (trafficStats.mobil /
-                trafficStats.total) * 100
-        ),
+  const trafficPercentages = useMemo(() => {
+    if (trafficStats.total <= 0) {
+      return {
+        motor: 0,
+        car: 0,
+        bus: 0,
+        truck: 0,
+      }
+    }
 
-        bus: Math.round(
-            (trafficStats.bus /
-                trafficStats.total) * 100
-        ),
+    return {
+      motor: Math.round((trafficStats.motor / trafficStats.total) * 100),
 
-        truck: Math.round(
-            (trafficStats.truck /
-                trafficStats.total) * 100
-        ),
-    };
-}, [trafficStats]);
+      car: Math.round((trafficStats.mobil / trafficStats.total) * 100),
+
+      bus: Math.round((trafficStats.bus / trafficStats.total) * 100),
+
+      truck: Math.round((trafficStats.truck / trafficStats.total) * 100),
+    }
+  }, [trafficStats])
 
   // ========================================================
   // INITIALIZE LEAFLET (DYNAMIC IMPORT FOR SSR SAFE)
@@ -797,6 +685,8 @@ const trafficPercentages = useMemo(() => {
         mapRef.current = map
         pjuLayer.current = Leaflet.layerGroup().addTo(map)
         setMapInstance(map)
+        setVisibleMapBounds(map.getBounds())
+        map.on('moveend', () => setVisibleMapBounds(map.getBounds()))
 
         // Handle Resize
         if (mapElement.current && typeof ResizeObserver !== 'undefined') {
@@ -840,7 +730,11 @@ const trafficPercentages = useMemo(() => {
       .list()
       .then((data) => {
         setMarkers(data)
-        setLastUpdate(formatTime())
+        const newestMarkerTime = data.reduce<number | null>((newest, marker) => {
+          const timestamp = new Date(marker.date).getTime()
+          return Number.isNaN(timestamp) ? newest : Math.max(newest ?? timestamp, timestamp)
+        }, null)
+        if (newestMarkerTime !== null) setLastUpdate(formatTime(new Date(newestMarkerTime)))
       })
       .catch((error) => console.error('[DIGITAL TWIN ERROR]', error))
 
@@ -875,7 +769,7 @@ const trafficPercentages = useMemo(() => {
     const instances = pjuInstances.current
     const activeIds = new Set<number>()
 
-    pjus.forEach((pju) => {
+    visiblePjus.forEach((pju) => {
       if (pju.id == null) return
 
       const id = pju.id
@@ -892,7 +786,7 @@ const trafficPercentages = useMemo(() => {
 
       const colors = CONDITION_COLORS[condition as keyof typeof CONDITION_COLORS] || CONDITION_COLORS.Gelap
       const iconColor = colors[0]
-      const luxColor = getLuxColor(lux)
+      const luxColor = getLuxColor(lux, maxLux)
 
       const popupContent = `
         <div class="pju-lidah-wetan-vehicle-popup">
@@ -931,7 +825,7 @@ const trafficPercentages = useMemo(() => {
         instances.delete(id)
       }
     }
-  }, [pjus, mapInstance])
+  }, [visiblePjus, mapInstance])
 
   const toggleSatellite = () => {
     const map = mapRef.current
@@ -954,236 +848,209 @@ const trafficPercentages = useMemo(() => {
   const centerMap = () => mapRef.current?.flyTo([CENTER_LAT, CENTER_LON], CENTER_ZOOM, { duration: 1 })
 
   useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-    Object.values(vehicleMarkersRef.current).forEach(
-        (marker) => {
-            if (vehicleVisible) {
-                if (!map.hasLayer(marker)) {
-                    marker.addTo(map);
-                }} else {
-                if (map.hasLayer(marker)) {
-                    map.removeLayer(marker);
-                }}});
-  }, [vehicleVisible]);
+    const map = mapRef.current
+    if (!map) return
+    Object.values(vehicleMarkersRef.current).forEach((marker) => {
+      if (vehicleVisible) {
+        if (!map.hasLayer(marker)) {
+          marker.addTo(map)
+        }
+      } else {
+        if (map.hasLayer(marker)) {
+          map.removeLayer(marker)
+        }
+      }
+    })
+  }, [vehicleVisible])
   useEffect(() => {
-    fetchTrafficData();
+    fetchTrafficData()
 
     const interval = window.setInterval(() => {
-        fetchTrafficData();
-    }, REFRESH_INTERVAL);
+      fetchTrafficData()
+    }, REFRESH_INTERVAL)
 
     return () => {
-        window.clearInterval(interval);
-    };
-}, [fetchTrafficData]);
+      window.clearInterval(interval)
+    }
+  }, [fetchTrafficData])
 
   // ========================================================
-// LOAD CAMERAS FROM USSC DATABASE
-// ========================================================
+  // LOAD CAMERAS FROM USSC DATABASE
+  // ========================================================
 
-useEffect(() => {
-  let cancelled = false;
+  useEffect(() => {
+    let cancelled = false
 
-  async function loadCameras() {
-    try {
-      setCameraLoading(true);
-      setCameraError(null);
+    async function loadCameras() {
+      try {
+        setCameraLoading(true)
+        setCameraError(null)
 
-      const response = await fetch(CAMERAS_API_URL, {
-        cache: "no-store",
-      });
+        const response = await fetch(CAMERAS_API_URL, {
+          cache: 'no-store',
+        })
 
-      if (!response.ok) {
-        throw new Error(`Gagal memuat CCTV`);}
-
-      const result = await response.json();
-
-      if (!result.success || !Array.isArray(result.data)) {
-        throw new Error("Format data kamera tidak valid");
-      }
-
-      // Hanya nama yang diizinkan yang ditampilkan.
-      const allowedCameras: AdminCamera[] = result.data.filter(
-        (camera: AdminCamera) =>
-          ALLOWED_CAMERA_NAMES.includes(
-            camera.public_name as (typeof ALLOWED_CAMERA_NAMES)[number]
-          )
-      );
-
-      if (cancelled) return;
-
-      setCameras(allowedCameras);
-
-      // Pertahankan pilihan jika masih tersedia.
-      setSelectedCameraCode((previous) => {
-        if (
-          previous &&
-          allowedCameras.some(
-            (camera) => camera.public_code === previous
-          )
-        ) {
-          return previous;
+        if (!response.ok) {
+          throw new Error(`Gagal memuat CCTV`)
         }
 
-        return allowedCameras[0]?.public_code ?? "";
-      });
-    } catch (error) {
-      if (cancelled) return;
+        const result = await response.json()
 
-      setCameraError(
-        error instanceof Error
-          ? error.message
-          : "Gagal mengambil data kamera"
-      );
-    } finally {
-      if (!cancelled) setCameraLoading(false);
-    }
-  }
+        if (!result.success || !Array.isArray(result.data)) {
+          throw new Error('Format data kamera tidak valid')
+        }
 
-  void loadCameras();
+        // Hanya nama yang diizinkan yang ditampilkan.
+        const allowedCameras: AdminCamera[] = result.data.filter((camera: AdminCamera) =>
+          ALLOWED_CAMERA_NAMES.includes(camera.public_name as (typeof ALLOWED_CAMERA_NAMES)[number])
+        )
 
-  return () => {
-    cancelled = true;
-  };
-}, []);
+        if (cancelled) return
 
+        setCameras(allowedCameras)
 
-
-
-const publicCameraPath: string | undefined = selectedCamera
-  ? PUBLIC_CAMERA_STREAMS[selectedCamera.public_name ?? ""]
-  : undefined;
-
-
-useEffect(() => {
-  const streamPath = publicCameraPath;
-
-  if (!selectedCamera || typeof streamPath !== "string" || streamPath.length === 0) {
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-    return;
-  }
-
-  let cancelled = false;
-  const pc = new RTCPeerConnection({
-    iceServers: [],
-  });
-
-  peerConnectionRef.current = pc;
-
-  pc.addTransceiver("video", { direction: "recvonly" });
-  pc.addTransceiver("audio", { direction: "recvonly" });
-
-  pc.ontrack = (event) => {
-    if (cancelled || !videoRef.current) return;
-
-    const stream = event.streams[0];
-    if (stream) {
-      videoRef.current.srcObject = stream;
-      void videoRef.current.play().catch((error) => {
-        console.warn("Video belum dapat diputar:", error);
-      });
-    }
-  };
-
-  async function startWebRTC() {
-    try {
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-
-      // Tunggu ICE selesai dikumpulkan sebelum mengirim SDP.
-      if (pc.iceGatheringState !== "complete") {
-        await new Promise<void>((resolve, reject) => {
-          const timeout = window.setTimeout(() => {
-            cleanup();
-            reject(new Error("Timeout saat mengumpulkan ICE"));
-          }, 10000);
-
-          function cleanup() {
-            window.clearTimeout(timeout);
-            pc.removeEventListener(
-              "icegatheringstatechange",
-              onIceGatheringStateChange
-            );
+        // Pertahankan pilihan jika masih tersedia.
+        setSelectedCameraCode((previous) => {
+          if (previous && allowedCameras.some((camera) => camera.public_code === previous)) {
+            return previous
           }
 
-          function onIceGatheringStateChange() {
-            if (pc.iceGatheringState === "complete") {
-              cleanup();
-              resolve();
+          return allowedCameras[0]?.public_code ?? ''
+        })
+      } catch (error) {
+        if (cancelled) return
+
+        setCameraError(error instanceof Error ? error.message : 'Gagal mengambil data kamera')
+      } finally {
+        if (!cancelled) setCameraLoading(false)
+      }
+    }
+
+    void loadCameras()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const publicCameraPath: string | undefined = selectedCamera ? PUBLIC_CAMERA_STREAMS[selectedCamera.public_name ?? ''] : undefined
+
+  useEffect(() => {
+    const streamPath = publicCameraPath
+
+    if (!selectedCamera || typeof streamPath !== 'string' || streamPath.length === 0) {
+      if (videoRef.current) {
+        videoRef.current.srcObject = null
+      }
+      return
+    }
+
+    let cancelled = false
+    const pc = new RTCPeerConnection({
+      iceServers: [],
+    })
+
+    peerConnectionRef.current = pc
+
+    pc.addTransceiver('video', { direction: 'recvonly' })
+    pc.addTransceiver('audio', { direction: 'recvonly' })
+
+    pc.ontrack = (event) => {
+      if (cancelled || !videoRef.current) return
+
+      const stream = event.streams[0]
+      if (stream) {
+        videoRef.current.srcObject = stream
+        void videoRef.current.play().catch((error) => {
+          console.warn('Video belum dapat diputar:', error)
+        })
+      }
+    }
+
+    async function startWebRTC() {
+      try {
+        const offer = await pc.createOffer()
+        await pc.setLocalDescription(offer)
+
+        // Tunggu ICE selesai dikumpulkan sebelum mengirim SDP.
+        if (pc.iceGatheringState !== 'complete') {
+          await new Promise<void>((resolve, reject) => {
+            const timeout = window.setTimeout(() => {
+              cleanup()
+              reject(new Error('Timeout saat mengumpulkan ICE'))
+            }, 10000)
+
+            function cleanup() {
+              window.clearTimeout(timeout)
+              pc.removeEventListener('icegatheringstatechange', onIceGatheringStateChange)
             }
-          }
 
-          pc.addEventListener(
-            "icegatheringstatechange",
-            onIceGatheringStateChange
-          );
+            function onIceGatheringStateChange() {
+              if (pc.iceGatheringState === 'complete') {
+                cleanup()
+                resolve()
+              }
+            }
 
-          // Periksa kembali untuk menghindari race condition.
-          if (pc.iceGatheringState === "complete") {
-            cleanup();
-            resolve();
-          }
-        });
-      }
+            pc.addEventListener('icegatheringstatechange', onIceGatheringStateChange)
 
-      
-      if (cancelled || !pc.localDescription?.sdp) return;
-      if (typeof streamPath !== "string" || streamPath.length === 0) {
-        throw new Error("Path stream CCTV tidak tersedia");
-      }
-      const safeStreamPath: string = streamPath;
-      const response = await fetch(
-        `/api/cctv/whep/${encodeURIComponent(safeStreamPath)}`,
-        {
-          method: "POST",
+            // Periksa kembali untuk menghindari race condition.
+            if (pc.iceGatheringState === 'complete') {
+              cleanup()
+              resolve()
+            }
+          })
+        }
+
+        if (cancelled || !pc.localDescription?.sdp) return
+        if (typeof streamPath !== 'string' || streamPath.length === 0) {
+          throw new Error('Path stream CCTV tidak tersedia')
+        }
+        const safeStreamPath: string = streamPath
+        const response = await fetch(`/api/cctv/whep/${encodeURIComponent(safeStreamPath)}`, {
+          method: 'POST',
           headers: {
-            "Content-Type": "application/sdp",
+            'Content-Type': 'application/sdp',
           },
           body: pc.localDescription.sdp,
-          cache: "no-store",
+          cache: 'no-store',
+        })
+
+        if (!response.ok) {
+          const detail = await response.text()
+          throw new Error(`WHEP HTTP ${response.status}: ${detail}`)
         }
-      );
 
+        const answer = await response.text()
 
-      if (!response.ok) {
-        const detail = await response.text();
-        throw new Error(`WHEP HTTP ${response.status}: ${detail}`);
-      }
+        if (cancelled) return
 
-      const answer = await response.text();
-
-      if (cancelled) return;
-
-      await pc.setRemoteDescription({
-        type: "answer",
-        sdp: answer,
-      });
-    } catch (error) {
-      if (!cancelled) {
-        console.error("[PUBLIC CCTV WEBRTC]", error);
+        await pc.setRemoteDescription({
+          type: 'answer',
+          sdp: answer,
+        })
+      } catch (error) {
+        if (!cancelled) {
+          console.error('[PUBLIC CCTV WEBRTC]', error)
+        }
       }
     }
-  }
 
-  void startWebRTC();
+    void startWebRTC()
 
-  return () => {
-    cancelled = true;
-    pc.close();
+    return () => {
+      cancelled = true
+      pc.close()
 
-    if (peerConnectionRef.current === pc) {
-      peerConnectionRef.current = null;
+      if (peerConnectionRef.current === pc) {
+        peerConnectionRef.current = null
+      }
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = null
+      }
     }
-
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-  };
-}, [selectedCameraCode, publicCameraPath]);
-
+  }, [selectedCameraCode, publicCameraPath])
 
   // ========================================================
   // RENDER
@@ -1203,83 +1070,47 @@ useEffect(() => {
         </div>
 
         <section className="digital-stats">
-
-            <div className="digital-stat-card">
-                <div className="digital-stat-icon total">
-                    🚗
-                </div>
-                <div>
-                    <span>
-                        Total Kendaraan
-                    </span>
-                    <strong>
-                        {trafficStats.total}
-                    </strong>
-                </div>
+          <div className="digital-stat-card">
+            <div className="digital-stat-icon total">🚗</div>
+            <div>
+              <span>Total Kendaraan</span>
+              <strong>{trafficStats.total}</strong>
             </div>
+          </div>
 
+          <div className="digital-stat-card">
+            <div className="digital-stat-icon motor">🏍</div>
+            <div>
+              <span>Motor</span>
 
-            <div className="digital-stat-card">
-                <div className="digital-stat-icon motor">
-                    🏍
-                </div>
-                <div>
-                    <span>
-                        Motor
-                    </span>
-
-                    <strong>
-                        {trafficStats.motor}
-                    </strong>
-                </div>
+              <strong>{trafficStats.motor}</strong>
             </div>
+          </div>
 
+          <div className="digital-stat-card">
+            <div className="digital-stat-icon car">🚗</div>
+            <div>
+              <span>Mobil</span>
 
-            <div className="digital-stat-card">
-                <div className="digital-stat-icon car">
-                    🚗
-                </div>
-                <div>
-
-                    <span>
-                        Mobil
-                    </span>
-
-                    <strong>
-                        {trafficStats.mobil}
-                    </strong>
-                </div>
+              <strong>{trafficStats.mobil}</strong>
             </div>
+          </div>
 
-
-            <div className="digital-stat-card">
-                <div className="digital-stat-icon bus">
-                    🚌
-                </div>
-                <div>
-                    <span>
-                        Bus
-                    </span>
-                    <strong>
-                        {trafficStats.bus}
-                    </strong>
-                </div>
+          <div className="digital-stat-card">
+            <div className="digital-stat-icon bus">🚌</div>
+            <div>
+              <span>Bus</span>
+              <strong>{trafficStats.bus}</strong>
             </div>
+          </div>
 
-
-            <div className="digital-stat-card">
-                <div className="digital-stat-icon truck">
-                    🚛
-                </div>
-                <div>
-                    <span>
-                        Truk
-                    </span>
-                    <strong>
-                        {trafficStats.truck}
-                    </strong>
-                </div>
+          <div className="digital-stat-card">
+            <div className="digital-stat-icon truck">🚛</div>
+            <div>
+              <span>Truk</span>
+              <strong>{trafficStats.truck}</strong>
             </div>
+          </div>
         </section>
 
         <section className="pju-lidah-wetan-stats">
@@ -1330,13 +1161,9 @@ useEffect(() => {
               <button type="button" className={`${satelliteVisible ? 'active' : ''}`.trim()} onClick={toggleSatellite}>
                 <i className="bi bi-globe" aria-hidden="true" /> Satelit
               </button>
-              <button
-                type="button"
-                className={trafficVisible ? "active" : ""}
-                onClick={toggleTraffic}
-              >
-                  🚦 Traffic
-                </button>
+              <button type="button" className={trafficVisible ? 'active' : ''} onClick={toggleTraffic}>
+                🚦 Traffic
+              </button>
               <fieldset className="pju-lidah-wetan-type-switch" aria-label="Pilih jenis PJU">
                 <label className={selectedType === MODES.PJU ? 'active' : ''}>
                   <input
@@ -1385,17 +1212,17 @@ useEffect(() => {
           </div>
 
           <div className="pju-lidah-wetan-map-legend">
-            <div className="pju-lidah-wetan-legend-title">Lux (log)</div>
+            <div className="pju-lidah-wetan-legend-title">Lux (linear)</div>
             <div className="pju-lidah-wetan-lux-gradient" />
             <div className="pju-lidah-wetan-lux-legend-labels">
               <span>0</span>
-              <span>{MAX_LUX} lx</span>
+              <span>{maxLux} lx</span>
             </div>
           </div>
         </section>
 
         <section className="pju-lidah-wetan-bottom-grid">
-          {/* <div className="pju-lidah-wetan-info-card">
+          <div className="pju-lidah-wetan-info-card">
             <div className="pju-lidah-wetan-card-header">
               <div><h3>Area Information</h3></div>
               <span className="pju-lidah-wetan-online-badge">{isOnline ? 'ONLINE' : 'OFFLINE'}</span>
@@ -1406,7 +1233,7 @@ useEffect(() => {
               <div><small>Latitude</small><strong>{CENTER_LAT.toFixed(6)}</strong></div>
               <div><small>Longitude</small><strong>{CENTER_LON.toFixed(6)}</strong></div>
             </div>
-          </div> */}
+          </div>
 
           <div className="pju-lidah-wetan-info-card">
             <div className="pju-lidah-wetan-card-header">
@@ -1463,11 +1290,11 @@ useEffect(() => {
               <div>
                 <h3>Distribusi Lux</h3>
                 <span>
-                  {selectedType === MODES.PJU ? 'PJU Hutan' : 'PJU Luar'} · {pjus.length} titik
+                  {selectedType === MODES.PJU ? 'PJU Hutan' : 'PJU Luar'} · {visiblePjus.length} titik terlihat
                 </span>
               </div>
             </div>
-            <div className="pju-lidah-wetan-line-chart" role="img" aria-label={`Distribusi lux dalam bucket ${LUX_BUCKET_SIZE} lx`}>
+            <div className="pju-lidah-wetan-line-chart" role="img" aria-label={`Distribusi lux PJU ${selectedType} dengan skala linear hingga ${maxLux} lx`}>
               <Line data={luxChartData} options={luxChartOptions} />
               <div className="pju-lidah-wetan-chart-summary">
                 Puncak: {maxLuxBucketCount} marker dalam satu bucket · interval {LUX_BUCKET_SIZE} lx
@@ -1479,7 +1306,7 @@ useEffect(() => {
             <div className="pju-lidah-wetan-card-header">
               <div>
                 <h3>Daftar Marker</h3>
-                <span>{pjus.length} titik PJU ditampilkan</span>
+                <span>{visiblePjus.length} titik PJU terlihat</span>
               </div>
             </div>
             <div className="pju-lidah-wetan-table-wrap">
@@ -1494,8 +1321,8 @@ useEffect(() => {
                   </tr>
                 </thead>
                 <tbody>
-                  {pjus.length > 0 ? (
-                    pjus.map((pju) => {
+                  {visiblePjus.length > 0 ? (
+                    visiblePjus.map((pju) => {
                       const condition = getLightingCondition(pju)
                       const conditionColor = CONDITION_COLORS[condition as keyof typeof CONDITION_COLORS]?.[0] || CONDITION_COLORS.Gelap[0]
                       const photoUrl = pju.photo ? getImageUrl(pju.photo) : ''
@@ -1513,7 +1340,7 @@ useEffect(() => {
                                   aria-label={`Lihat foto ${pju.name || `PJU ${pju.id}`}`}
                                   onClick={() => setPhotoViewer({ image: photoUrl, type: 'photo', title: pju.name || `Foto PJU ${pju.id}` })}
                                 >
-                                  <img src={`${photoUrl}?thumb=50`} alt={`Pratinjau ${pju.name || `PJU ${pju.id}`}`} />
+                                  <img src={withThumbnail(photoUrl)} alt={`Pratinjau ${pju.name || `PJU ${pju.id}`}`} />
                                 </button>
                               )}
                               {photo360Url && (
@@ -1521,16 +1348,18 @@ useEffect(() => {
                                   type="button"
                                   title="Lihat foto 360"
                                   aria-label={`Lihat foto 360 ${pju.name || `PJU ${pju.id}`}`}
-                                  onClick={() => setPhotoViewer({ image: photo360Url, type: '360', title: `Foto 360 ${pju.name || `PJU ${pju.id}`}` })}
+                                  onClick={() =>
+                                    setPhotoViewer({ image: photo360Url, type: '360', title: `Foto 360 ${pju.name || `PJU ${pju.id}`}` })
+                                  }
                                 >
-                                    <PanoramaThumbnail imageUrl={photo360Url} alt={`Pratinjau foto 360 ${pju.name || `PJU ${pju.id}`}`} />
+                                  <PanoramaThumbnail imageUrl={photo360Url} alt={`Pratinjau foto 360 ${pju.name || `PJU ${pju.id}`}`} />
                                 </button>
                               )}
                               {!photoUrl && !photo360Url && <span aria-label="Foto tidak tersedia">-</span>}
                             </div>
                           </td>
                           <td>
-                            <span className="pju-lidah-wetan-lux-badge" style={{ '--lux-color': getLuxColor(pju.lux ?? 0) } as React.CSSProperties}>
+                            <span className="pju-lidah-wetan-lux-badge" style={{ '--lux-color': getLuxColor(pju.lux ?? 0, maxLux) } as React.CSSProperties}>
                               <i className="bi bi-brightness-high" aria-hidden="true" /> {pju.lux ?? 0} lx
                             </span>
                           </td>
@@ -1555,277 +1384,158 @@ useEffect(() => {
           </div>
         </section>
 
-        
-          {selectedCamera && (
-            <div className="mt-4 overflow-hidden rounded-xl border border-gray-700 bg-black">
-              <div className="p-3 text-white">
-                {selectedCamera.public_name}
-              </div>
+        {selectedCamera && (
+          <div className="mt-4 overflow-hidden rounded-xl border border-gray-700 bg-black">
+            <div className="p-3 text-white">{selectedCamera.public_name}</div>
 
-              <video
-                  ref={videoRef}
-                  autoPlay
-                  muted
-                  playsInline
-                  controls
-                  className="aspect-video w-full bg-black"
-                />
-            </div>
-          )}
+            <video ref={videoRef} autoPlay muted playsInline controls className="aspect-video w-full bg-black" />
+          </div>
+        )}
 
-
-            {/* =================================================
+        {/* =================================================
                 CAMERA INFORMATION
             ================================================= */}
         <section className="digital-bottom-grid">
-            <div className="digital-info-card">
+          <div className="digital-info-card">
+            <div className="digital-card-header">
+              <div>
+                <h3>Camera Information</h3>
+              </div>
 
-                <div className="digital-card-header">
-
-                    <div>
-
-                        <h3>
-                            Camera Information
-                        </h3>
-
-                      
-
-                    </div>
-
-
-                    <span className="digital-online-badge">
-                      {selectedCamera?.status ?? "OFFLINE"}
-                    </span>
-
-                </div>
-
-
-                <div className="digital-camera-info-grid">
-
-                    <div>
-                      <small>Nama CCTV</small>
-
-                      {cameraLoading ? (
-                        <span>Memuat kamera...</span>
-                      ) : cameraError ? (
-                        <span role="alert">{cameraError}</span>
-                      ) : cameras.length > 0 ? (
-                        <select
-                          id="ussc-camera-select"
-                          aria-label="Pilih nama CCTV"
-                          value={selectedCameraCode}
-                          onChange={(event) =>
-                            setSelectedCameraCode(event.target.value)
-                          }
-                          className="camera-name-select"
-                        >
-                          {cameras.map((camera) => (
-                            <option
-                              key={camera.public_code}
-                              value={camera.public_code}
-                            >
-                              {camera.public_name}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <span>Tidak ada kamera tersedia</span>
-                      )}
-                    </div>
-
-
-                    <div>
-
-                        <small>
-                            Location
-                        </small>
-
-                        <strong>
-                            {selectedCamera?.public_code ?? "-"}
-                        </strong>
-
-                    </div>
-
-
-                    <div>
-
-                        <small>
-                            Latitude
-                        </small>
-
-                        <strong>
-                            {selectedCamera?.latitude ?? "-"}
-                        </strong>
-
-                    </div>
-
-
-                    <div>
-
-                        <small>
-                            Longitude
-                        </small>
-
-                        <strong>
-                            {selectedCamera?.longitude ?? "-"}
-                        </strong>
-
-                    </div>
-
-                </div>
-
+              <span className="digital-online-badge">{selectedCamera?.status ?? 'OFFLINE'}</span>
             </div>
-            {/* =================================================
+
+            <div className="digital-camera-info-grid">
+              <div>
+                <small>Nama CCTV</small>
+
+                {cameraLoading ? (
+                  <span>Memuat kamera...</span>
+                ) : cameraError ? (
+                  <span role="alert">{cameraError}</span>
+                ) : cameras.length > 0 ? (
+                  <select
+                    id="ussc-camera-select"
+                    aria-label="Pilih nama CCTV"
+                    value={selectedCameraCode}
+                    onChange={(event) => setSelectedCameraCode(event.target.value)}
+                    className="camera-name-select"
+                  >
+                    {cameras.map((camera) => (
+                      <option key={camera.public_code} value={camera.public_code}>
+                        {camera.public_name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span>Tidak ada kamera tersedia</span>
+                )}
+              </div>
+
+              <div>
+                <small>Location</small>
+
+                <strong>{selectedCamera?.public_code ?? '-'}</strong>
+              </div>
+
+              <div>
+                <small>Latitude</small>
+
+                <strong>{selectedCamera?.latitude ?? '-'}</strong>
+              </div>
+
+              <div>
+                <small>Longitude</small>
+
+                <strong>{selectedCamera?.longitude ?? '-'}</strong>
+              </div>
+            </div>
+          </div>
+          {/* =================================================
                 VEHICLE STATUS
             ================================================= */}
 
-            <div className="digital-info-card">
+          <div className="digital-info-card">
+            <div className="digital-card-header">
+              <div>
+                <h3>Vehicle Status</h3>
 
-                <div className="digital-card-header">
+                <span>Komposisi kendaraan aktif</span>
+              </div>
 
-                    <div>
-
-                        <h3>
-                            Vehicle Status
-                        </h3>
-
-                        <span>
-                            Komposisi kendaraan aktif
-                        </span>
-
-                    </div>
-
-
-                    <span className="digital-vehicle-count">
-
-                        {trafficStats.total} kendaraan
-
-                    </span>
-
-                </div>
-
-
-                <div className="digital-status-list">
-
-                    {/* MOTOR */}
-
-                    <div className="digital-status-row">
-
-                        <span className="digital-vehicle-name">
-                            🏍 Motor
-                        </span>
-
-
-                        <div className="digital-status-bar">
-
-                            <div
-                                className="digital-status-fill motor-fill"
-                                style={{
-                                    width:
-                                        `${trafficPercentages.motor}%`,
-                                }}
-                            />
-
-                        </div>
-
-
-                        <strong>
-                            {trafficPercentages.motor}%
-                        </strong>
-
-                    </div>
-
-
-                    {/* MOBIL */}
-
-                    <div className="digital-status-row">
-
-                        <span className="digital-vehicle-name">
-                            🚗 Mobil
-                        </span>
-
-
-                        <div className="digital-status-bar">
-
-                            <div
-                                className="digital-status-fill car-fill"
-                                style={{
-                                    width:
-                                        `${trafficPercentages.car}%`,
-                                }}
-                            />
-
-                        </div>
-
-
-                        <strong>
-                            {trafficPercentages.car}%
-                        </strong>
-
-                    </div>
-
-
-                    {/* BUS */}
-
-                    <div className="digital-status-row">
-
-                        <span className="digital-vehicle-name">
-                            🚌 Bus
-                        </span>
-
-
-                        <div className="digital-status-bar">
-
-                            <div
-                                className="digital-status-fill bus-fill"
-                                style={{
-                                    width:
-                                        `${trafficPercentages.bus}%`,
-                                }}
-                            />
-
-                        </div>
-
-
-                        <strong>
-                            {trafficPercentages.bus}%
-                        </strong>
-
-                    </div>
-
-
-                    {/* TRUK */}
-
-                    <div className="digital-status-row">
-
-                        <span className="digital-vehicle-name">
-                            🚛 Truk
-                        </span>
-
-
-                        <div className="digital-status-bar">
-
-                            <div
-                                className="digital-status-fill truck-fill"
-                                style={{
-                                    width:
-                                        `${trafficPercentages.truck}%`,
-                                }}
-                            />
-
-                        </div>
-
-
-                        <strong>
-                            {trafficPercentages.truck}%
-                        </strong>
-
-                    </div>
-
-                </div>
-
+              <span className="digital-vehicle-count">{trafficStats.total} kendaraan</span>
             </div>
 
+            <div className="digital-status-list">
+              {/* MOTOR */}
+
+              <div className="digital-status-row">
+                <span className="digital-vehicle-name">🏍 Motor</span>
+
+                <div className="digital-status-bar">
+                  <div
+                    className="digital-status-fill motor-fill"
+                    style={{
+                      width: `${trafficPercentages.motor}%`,
+                    }}
+                  />
+                </div>
+
+                <strong>{trafficPercentages.motor}%</strong>
+              </div>
+
+              {/* MOBIL */}
+
+              <div className="digital-status-row">
+                <span className="digital-vehicle-name">🚗 Mobil</span>
+
+                <div className="digital-status-bar">
+                  <div
+                    className="digital-status-fill car-fill"
+                    style={{
+                      width: `${trafficPercentages.car}%`,
+                    }}
+                  />
+                </div>
+
+                <strong>{trafficPercentages.car}%</strong>
+              </div>
+
+              {/* BUS */}
+
+              <div className="digital-status-row">
+                <span className="digital-vehicle-name">🚌 Bus</span>
+
+                <div className="digital-status-bar">
+                  <div
+                    className="digital-status-fill bus-fill"
+                    style={{
+                      width: `${trafficPercentages.bus}%`,
+                    }}
+                  />
+                </div>
+
+                <strong>{trafficPercentages.bus}%</strong>
+              </div>
+
+              {/* TRUK */}
+
+              <div className="digital-status-row">
+                <span className="digital-vehicle-name">🚛 Truk</span>
+
+                <div className="digital-status-bar">
+                  <div
+                    className="digital-status-fill truck-fill"
+                    style={{
+                      width: `${trafficPercentages.truck}%`,
+                    }}
+                  />
+                </div>
+
+                <strong>{trafficPercentages.truck}%</strong>
+              </div>
+            </div>
+          </div>
         </section>
       </div>
       <PhotoViewer viewer={photoViewer} onClose={() => setPhotoViewer(null)} />

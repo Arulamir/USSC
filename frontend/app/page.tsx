@@ -20,12 +20,33 @@ type TrafficData = {
 };
 
 type AirData = {
-  pm01?: number;
-  pm1?: number;
-  pm02?: number;
-  pm25?: number;
-  pm10?: number;
-  co2?: number;
+  pm01?: number | null;
+  pm1?: number| null;
+  pm02?: number | null;
+  pm25?: number| null;
+  pm10?: number | null;
+  co2?: number | null;
+  tvoc?: number | null;
+  humidity?: number | null;
+
+  timestamp?: string | null;
+  created_at?: string | null;
+  recorded_at?: string | null;
+  calculated_at?: string | null;
+};
+
+type AirHourlyData = {
+  id: number;
+  hour_start: string;
+  hour_end: string;
+  pm01_avg: number | null;
+  pm02_avg: number | null;
+  pm10_avg: number | null;
+  co2_avg: number | null;
+  tvoc_avg: number | null;
+  humidity_avg: number | null;
+  sample_count: number;
+  calculated_at: string;
 };
 
 type FloodLocation = {
@@ -87,22 +108,102 @@ export default function Home() {
         console.warn("[Dashboard] Traffic API warning:", e);
       }
 
-      // 2. Ambil Kualitas Udara
+      
+      
+        // 2. Ambil kualitas udara dari tabel agregat per jam
       try {
-        const now = new Date();
-        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
-          now.getDate()
-        ).padStart(2, "0")}`;
+        // Gunakan tanggal lokal WIB, bukan tanggal UTC.
+        const getLocalDateString = (date: Date) => {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, "0");
+          const day = String(date.getDate()).padStart(2, "0");
 
-        const airRes = await ApiService.getAirQuality(today);
-        if (airRes?.latest) {
-          setAir(airRes.latest);
-        } else if (airRes?.data) {
-          setAir(airRes.data);
+          return `${year}-${month}-${day}`;
+        };
+
+        const now = new Date();
+
+        const today = getLocalDateString(now);
+
+        // Tanggal kemarin untuk fallback saat pergantian hari.
+        const yesterdayDate = new Date(now);
+        yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+
+        const yesterday = getLocalDateString(yesterdayDate);
+
+        // Ambil data agregat hari ini terlebih dahulu.
+        const hourlyRes = await ApiService.getAirQualityHourly(today);
+
+        let hourlyData: AirHourlyData[] =
+          Array.isArray(hourlyRes?.data)
+            ? hourlyRes.data
+            : [];
+
+        let usingYesterdayData = false;
+
+        // Jika hari ini belum memiliki data, gunakan data kemarin.
+        if (hourlyData.length === 0) {
+          console.info(
+            "[Dashboard] Data hari ini kosong, mengambil data kemarin:",
+            yesterday
+          );
+
+          const yesterdayRes =
+            await ApiService.getAirQualityHourly(yesterday);
+
+          const yesterdayData: AirHourlyData[] =
+            Array.isArray(yesterdayRes?.data)
+              ? yesterdayRes.data
+              : [];
+
+          if (yesterdayData.length > 0) {
+            hourlyData = yesterdayData;
+            usingYesterdayData = true;
+          }
+        }
+
+        // Simpan data yang tersedia untuk kebutuhan chart.
+        setAirHourly(hourlyData);
+
+        if (hourlyData.length > 0) {
+          // Urutkan agar data paling baru berada di urutan pertama.
+          const latest = [...hourlyData].sort(
+            (a, b) =>
+              new Date(b.hour_start).getTime() -
+              new Date(a.hour_start).getTime()
+          )[0];
+
+          // Saat menggunakan data kemarin, waktu tampil di dashboard
+          // menjadi pukul 00.00 WIB pada tanggal hari ini.
+          const displayTimestamp = usingYesterdayData
+            ? `${today}T00:00:00+07:00`
+            : latest.hour_end;
+
+          setAir({
+            pm01: latest.pm01_avg,
+            pm02: latest.pm02_avg,
+            pm25: latest.pm02_avg,
+            pm10: latest.pm10_avg,
+            co2: latest.co2_avg,
+            tvoc: latest.tvoc_avg,
+            humidity: latest.humidity_avg,
+            timestamp: displayTimestamp,
+            calculated_at: latest.calculated_at,
+          });
+        } else {
+          console.warn(
+            "[Dashboard] Data kualitas udara hari ini dan kemarin tidak tersedia."
+          );
         }
       } catch (e) {
-        console.warn("[Dashboard] Air API warning:", e);
+        console.warn(
+          "[Dashboard] Air hourly API warning:",
+          e
+        );
       }
+
+
+
 
       // 3. Ambil Status Banjir
       try {
@@ -162,9 +263,25 @@ export default function Home() {
 
   const statusLidah = determineFloodStatus(flood?.lidah?.jarak, flood?.lidah?.status);
   const statusKetintang = determineFloodStatus(flood?.ketintang?.jarak, flood?.ketintang?.status);
-
+  const lidahSoil = flood?.lidah?.kelembapan_tanah ?? flood?.lidah?.soil;
+  const ketintangSoil = flood?.ketintang?.kelembapan_tanah ?? flood?.ketintang?.soil;
   const lidahLightClass = getStatusClass(statusLidah, isLidahConnected);
   const ketintangLightClass = getStatusClass(statusKetintang, isKetintangConnected);
+  
+  const [isAirPopupDark, setIsAirPopupDark] = useState(false);
+  const [airUpdatedAt, setAirUpdatedAt] = useState<string | null>(null);
+  let airScore = 0;
+  const [airHourly, setAirHourly] = useState<AirHourlyData[]>([]);
+  const [selectedHour, setSelectedHour] =
+    useState<AirHourlyData | null>(null);
+  const [showAirPopup, setShowAirPopup] = useState(false);
+  const pm1Val = air.pm01 ?? air.pm1 ?? 0;
+  const pm25Val = air.pm02 ?? air.pm25 ?? 0;
+  const pm10Val = air.pm10 ?? 0;
+  const co2Val = air.co2 ?? 0;
+  const tvocVal = (air as any).tvoc ?? (air as any).tvoc_index ?? 0;
+  
+
 
   // Evaluasi Agregat Dashboard Utama
   let finalFloodStatus = "--";
@@ -173,55 +290,43 @@ export default function Home() {
 
   if ((!statusLidah || statusLidah === "--") && (!statusKetintang || statusKetintang === "--")) {
     finalFloodStatus = "--";
-    finalFloodDesc = "Sensor belum terhubung / offline";
+    finalFloodDesc = "Sensor offline";
     floodTextColor = "#64748b";
   } else if (statusLidah === "BAHAYA" && statusKetintang === "BAHAYA") {
     finalFloodStatus = "BAHAYA";
-    finalFloodDesc = "2 Lokasi Kondisi BAHAYA";
+    finalFloodDesc = "2 lokasi bahaya";
     floodTextColor = "#ef4444";
   } else if (statusLidah === "BAHAYA" || statusKetintang === "BAHAYA") {
     finalFloodStatus = "BAHAYA";
     finalFloodDesc =
       statusLidah === "BAHAYA"
-        ? "Lidah Wetan kondisi BAHAYA"
-        : "Ketintang kondisi BAHAYA";
+        ? "Lidah Wetan bahaya"
+        : "Ketintang bahaya";
     floodTextColor = "#ef4444";
   } else if (statusLidah === "WASPADA" && statusKetintang === "WASPADA") {
     finalFloodStatus = "WASPADA";
-    finalFloodDesc = "2 Lokasi Kondisi Waspada";
+    finalFloodDesc = "2 lokasi waspada";
     floodTextColor = "#f59e0b";
   } else if (statusLidah === "WASPADA" || statusKetintang === "WASPADA") {
     finalFloodStatus = "WASPADA";
     finalFloodDesc =
       statusLidah === "WASPADA"
-        ? "Lidah Wetan kondisi Waspada"
-        : "Ketintang kondisi Waspada";
+        ? "Lidah Wetan waspada"
+        : "Ketintang waspada";
     floodTextColor = "#f59e0b";
   } else if (statusLidah === "AMAN" && statusKetintang === "AMAN") {
     finalFloodStatus = "AMAN";
-    finalFloodDesc = "2 Lokasi Kondisi AMAN";
+    finalFloodDesc = "2 lokasi aman";
     floodTextColor = "#10b981";
   } else if (statusLidah === "AMAN" || statusKetintang === "AMAN") {
     finalFloodStatus = "AMAN";
     finalFloodDesc =
       statusLidah === "AMAN"
-        ? "Lidah Wetan AMAN (Ketintang menunggu data)"
-        : "Ketintang AMAN (Lidah Wetan menunggu data)";
+        ? "Lidah Wetan aman"
+        : "Ketintang aman";
     floodTextColor = "#10b981";
   }
 
-  /* =======================================================
-   LOGIKA KUALITAS UDARA (SCORING)
-======================================================= */
-
-const pm1Val = air.pm01 ?? air.pm1 ?? 0;
-const pm25Val = air.pm02 ?? air.pm25 ?? 0;
-const pm10Val = air.pm10 ?? 0;
-const co2Val = air.co2 ?? 0;
-
-// jika nanti API sudah mengirim TVOC
-const tvocVal = (air as any).tvoc ?? (air as any).tvoc_index ?? 0;
-let airScore = 0;
 
 // =======================
 // PM2.5 (bobot terbesar)
@@ -255,25 +360,159 @@ else if(tvocVal > 100){
   airScore += 1;
 }
 
-// =======================
-// STATUS AKHIR
-// =======================
+const airStatus = getAirStatus(airScore);
+const airTextColor = getAirColor(airStatus); 
+const airStatusDescription = getAirStatusDescription(airStatus);
 
-let airStatus = "BAIK";
-let airTextColor = "#10b981";
 
-if(airScore >= 6){
-  airStatus = "BURUK";
-  airTextColor = "#ef4444";
+function getAirStatusDescription(status: AirStatus): string {
+  switch (status) {
+    case "BAIK":
+      return "";
+
+    case "SEDANG":
+      return "Tingkat kualitas udara masih dapat diterima bagi kesehatan manusia, hewan, dan tumbuhan.";
+
+    case "TIDAK SEHAT":
+      return "Tingkat kualitas udara yang dapat merugikan kesehatan manusia, hewan, dan tumbuhan.";
+
+    case "SANGAT TIDAK SEHAT":
+      return "Tingkat kualitas udara yang dapat meningkatkan risiko kesehatan pada sejumlah segmen populasi yang terpapar.";
+
+    case "BERBAHAYA":
+      return "Tingkat kualitas udara yang dapat menimbulkan dampak serius terhadap kesehatan masyarakat dan memerlukan penanganan segera.";
+
+    default:
+      return "";
+  }
 }
-else if(airScore >= 3){
-  airStatus = "WASPADA";
-  airTextColor = "#f59e0b";
+
+  
+
+type AirStatus =
+  | "BAIK"
+  | "SEDANG"
+  | "TIDAK SEHAT"
+  | "SANGAT TIDAK SEHAT"
+  | "BERBAHAYA";
+
+function getAirStatus(score: number): AirStatus {
+  if (score <= 2) return "BAIK";
+  if (score <= 4) return "SEDANG";
+  if (score <= 6) return "TIDAK SEHAT";
+  if (score <= 8) return "SANGAT TIDAK SEHAT";
+  return "BERBAHAYA";
 }
-else{
-  airStatus = "BAIK";
-  airTextColor = "#10b981";
+
+function getAirColor(status: AirStatus): string {
+  switch (status) {
+    case "BAIK":
+      return "#22c55e";
+    case "SEDANG":
+      return "#facc15";
+    case "TIDAK SEHAT":
+      return "#ef4444";
+    case "SANGAT TIDAK SEHAT":
+      return "#7f1d1d";
+    case "BERBAHAYA":
+      return "#171717";
+  }
 }
+
+
+function getSensorColor(name: string, value: number): string {
+  // Warna bertingkat:
+  // hijau -> kuning -> oranye -> merah -> merah tua -> hitam
+  const levels: Record<string, number[]> = {
+    "PM1.0": [15, 30, 55, 90, 150],
+    "PM2.5": [15, 35, 55, 75, 150],
+    "PM10": [50, 100, 150, 250, 350],
+    "CO₂": [800, 1000, 1500, 2000, 3000],
+    "TVOC": [100, 300, 500, 1000, 2000],
+  };
+
+  const colors = [
+    "#22c55e", // Hijau: aman
+    "#facc15", // Kuning: mulai meningkat
+    "#f97316", // Oranye: perlu perhatian
+    "#ef4444", // Merah: tidak sehat
+    "#7f1d1d", // Merah tua: sangat tidak sehat
+    "#171717", // Hitam: sangat tinggi
+  ];
+
+  // Kelembapan tidak menggunakan aturan polutan.
+  // Rentang 30-60% dijadikan rentang nyaman secara visual.
+  if (name === "Kelembapan") {
+    if (value >= 30 && value <= 60) return colors[0];
+    if ((value >= 20 && value < 30) ||
+        (value > 60 && value <= 70)) return colors[1];
+    if ((value >= 10 && value < 20) ||
+        (value > 70 && value <= 80)) return colors[2];
+    if ((value >= 5 && value < 10) ||
+        (value > 80 && value <= 90)) return colors[3];
+    if (value >= 0 && value < 5) return colors[4];
+    return colors[5];
+  }
+
+  const thresholds = levels[name];
+
+  // Jika nama sensor tidak dikenal, gunakan warna hijau.
+  if (!thresholds) return colors[0];
+
+  if (value <= thresholds[0]) return colors[0];
+  if (value <= thresholds[1]) return colors[1];
+  if (value <= thresholds[2]) return colors[2];
+  if (value <= thresholds[3]) return colors[3];
+  if (value <= thresholds[4]) return colors[4];
+
+  return colors[5];
+}
+
+const airChartItems = [
+  {
+    name: "PM1.0",
+    value: air.pm01 ?? air.pm1 ?? null,
+    unit: "µg/m³",
+    max: 100,
+    color: "#3b82f6",
+  },
+  {
+    name: "PM2.5",
+    value: air.pm02 ?? air.pm25 ?? null,
+    unit: "µg/m³",
+    max: 150,
+    color: "#8b5cf6",
+  },
+  {
+    name: "PM10",
+    value: air.pm10 ?? null,
+    unit: "µg/m³",
+    max: 200,
+    color: "#f59e0b",
+  },
+  {
+    name: "CO₂",
+    value: air.co2 ?? null,
+    unit: "ppm",
+    max: 2000,
+    color: "#ef4444",
+  },
+  {
+    name: "TVOC",
+    value: air.tvoc ?? null,
+    unit: "ppb",
+    max: 500,
+    color: "#14b8a6",
+  },
+  {
+    name: "RH",
+    value: air.humidity ?? null,
+    unit: "%",
+    max: 100,
+    color: "#06b6d4",
+  },
+];
+
 
   /* =======================================================
      LOGIKA EVALUASI SENSOR pH AIR / LINGKUNGAN
@@ -360,9 +599,7 @@ else{
     return `${Number(val).toFixed(1)} ${unit}`.trim();
   };
 
-  const lidahSoil = flood?.lidah?.kelembapan_tanah ?? flood?.lidah?.soil;
-  const ketintangSoil = flood?.ketintang?.kelembapan_tanah ?? flood?.ketintang?.soil;
-
+ 
   return (
     <MainLayout>
       <div className="dashboard-page-container">
@@ -375,9 +612,6 @@ else{
               <span className="eyebrow">OVERVIEW</span>
               <h2>Dashboard Utama</h2>
               <p>Ringkasan kondisi lingkungan kampus secara real-time.</p>
-            </div>
-            <div className="last-update">
-              <i className="bi bi-arrow-repeat"></i> Update otomatis
             </div>
           </div>
 
@@ -402,11 +636,17 @@ else{
                 <small id="dashboardFloodDesc">{finalFloodDesc}</small>
               </div>
             </div>
-
-            <div className="summary-card">
+            
+            <button
+              type="button"
+              className="summary-card air-summary-card"
+              onClick={() => setShowAirPopup(true)}
+              aria-label="Buka detail kualitas udara"
+            >
               <div className="summary-icon green">
                 <i className="bi bi-wind"></i>
               </div>
+
               <div>
                 <span>Kualitas Udara</span>
                 <strong
@@ -415,25 +655,12 @@ else{
                 >
                   {airStatus}
                 </strong>
-                <small>Kondisi udara kampus</small>
+                <small>lihat detail cuaca</small>
               </div>
-            </div>
+              <i className="bi bi-chevron-right air-card-arrow"></i>
+            </button>
 
-            <div className="summary-card summary-card-ph">
-              <div className="summary-icon green">
-                <i className="bi bi-droplet-half"></i>
-              </div>
-              <div>
-                <span>Sensor pH</span>
-                <strong
-                  id="dashboardPhStatus"
-                  style={{ color: phTextColor }}
-                >
-                  {phValueDisplay}
-                </strong>
-                <small id="dashboardPhDesc">{phDesc}</small>
-              </div>
-            </div>
+            
 
             <div className="summary-card">
               <div className="summary-icon green">
@@ -460,6 +687,238 @@ else{
                 <small>Total emisi kendaraan</small>
               </div>
             </div>
+            
+            {showAirPopup && (
+              <div
+                className="air-popup-overlay"
+                onClick={() => setShowAirPopup(false)}
+              >
+                <div
+                  className="air-popup"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="air-popup-title"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <div className="air-popup-header">
+                    <button
+                      type="button"
+                      className="air-popup-close"
+                      onClick={() => setShowAirPopup(false)}
+                      aria-label="Tutup popup"
+                    >
+                      <i className="bi bi-x-lg"></i>
+                    </button>
+                  </div>
+                  
+                    <div className="air-popup-status">
+                    <div className="air-popup-status-content">
+                      <div className="air-popup-status-heading">
+                        <span className="air-popup-title">
+                          Status kualitas udara saat ini
+                        </span>
+
+                        <span className="air-popup-updated">
+                          <i className="bi bi-clock-history"></i>
+
+                          {(() => {
+                            const rawTimestamp =
+                              air.timestamp ??
+                              air.created_at ??
+                              air.recorded_at;
+
+                            if (!rawTimestamp) {
+                              return "Waktu data tidak tersedia";
+                            }
+
+                            const date = new Date(rawTimestamp);
+
+                            if (Number.isNaN(date.getTime())) {
+                              return "Format waktu tidak valid";
+                            }
+
+                            return (
+                              date.toLocaleString("id-ID", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                second: "2-digit",
+                                hour12: false,
+                                timeZone: "Asia/Jakarta",
+                              }) + " WIB"
+                            );
+                          })()}
+                        </span>
+                      </div>
+
+                      <strong style={{ color: airTextColor }}>
+                        {airStatus}
+                      </strong>
+
+                      <small>
+                        Skor sensor: {airScore} / 10
+                      </small>
+                    </div>
+
+  <div className="air-popup-status-icon">
+    <i className="bi bi-wind"></i>
+  </div>
+</div>
+
+
+
+
+                  <div className="air-vertical-layout">
+                    {/* DIAGRAM BATANG VERTIKAL */}
+                    <div className="air-vertical-chart">
+                      <h3>Parameter Sensor</h3>
+                      <p className="air-chart-subtitle">
+                        Nilai terkini setiap sensor
+                      </p>
+
+                      <div className="air-vertical-bars">
+                        {airChartItems.map((item) => {
+                          const hasValue =
+                            item.value !== null &&
+                            item.value !== undefined &&
+                            Number.isFinite(Number(item.value));
+
+                          const numericValue = hasValue
+                            ? Number(item.value)
+                            : 0;
+
+                          const barHeight = hasValue
+                            ? Math.min(
+                                100,
+                                Math.max(
+                                  numericValue > 0 ? 2 : 0,
+                                  (numericValue / item.max) * 100
+                                )
+                              )
+                            : 0;
+
+                          return (
+                            <div
+                              className="air-vertical-item"
+                              key={item.name}
+                            >
+                              <span className="air-vertical-value">
+                                {hasValue
+                                  ? numericValue.toLocaleString("id-ID", {
+                                      maximumFractionDigits: 1,
+                                    })
+                                  : "--"}
+                              </span>
+
+                              <div className="air-vertical-track">
+                                {hasValue && (
+                                  <div
+                                    className="air-vertical-fill"
+                                    style={{
+                                      height: `${barHeight}%`,
+                                      backgroundColor: hasValue
+                                        ? getSensorColor(item.name, numericValue)
+                                        : "transparent",
+                                      transition: "height 0.4s ease, background-color 0.4s ease",
+                                    }}
+                                  />
+                                )}
+                              </div>
+
+                              <strong className="air-vertical-name">
+                                {item.name}
+                              </strong>
+
+                              <span className="air-vertical-unit">
+                                {item.unit}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* SKALA STATUS DI SAMPING GRAFIK */}
+                    <div className="air-quality-scale">
+                      <h3>Indeks</h3>
+
+                      {([
+                        {
+                          name: "BERBAHAYA",
+                          min: 9,
+                          max: 10,
+                          color: "#171717",
+                        },
+                        {
+                          name: "SANGAT TIDAK SEHAT",
+                          min: 7,
+                          max: 8,
+                          color: "#7f1d1d",
+                        },
+                        {
+                          name: "TIDAK SEHAT",
+                          min: 5,
+                          max: 6,
+                          color: "#ef4444",
+                        },
+                        {
+                          name: "SEDANG",
+                          min: 3,
+                          max: 4,
+                          color: "#facc15",
+                        },
+                        {
+                          name: "BAIK",
+                          min: 0,
+                          max: 2,
+                          color: "#22c55e",
+                        },
+                      ]).map((level) => {
+                        const active = level.name === airStatus;
+
+                        return (
+                          <div
+                            key={level.name}
+                            className={`air-scale-level ${
+                              active ? "active" : ""
+                            }`}
+                          >
+                            <span
+                              className="air-scale-color"
+                              style={{
+                                backgroundColor: level.color,
+                              }}
+                            />
+
+                            <div className="air-scale-text">
+                              <strong>{level.name}</strong>
+                              {active && (
+                                <small>
+                                  <i className="bi bi-check-circle-fill"></i>
+                                  {" "}Saat ini
+                                </small>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="air-popup-footer">
+                    <i className="bi bi-info-circle"></i>
+                    
+                      <span>
+                        {airStatusDescription}
+                      </span>
+
+                  </div>
+                </div>
+              </div>
+            )}
+
           </div>
 
           {/* =================================================
@@ -564,44 +1023,9 @@ else{
             </div>
           </div>
 
-          {/* =================================================
-               DASHBOARD: LINGKUNGAN KAMPUS (Kualitas Udara)
-          ================================================== */}
-          <div className="section-title">
-            <h3>Lingkungan Kampus</h3>
-            <span>Data terbaru</span>
-          </div>
+         
 
-          <div className="environment-grid">
-            <div className="metric-card">
-              <i className="bi bi-circle"></i>
-              <span>PM1.0</span>
-              <strong id="dashboardPM1">
-                {pm1Val ? `${Number(pm1Val).toFixed(1)} µg/m³` : "-- µg/m³"}
-              </strong>
-            </div>
-            <div className="metric-card">
-              <i className="bi bi-circle-half"></i>
-              <span>PM2.5</span>
-              <strong id="dashboardPM25">
-                {pm25Val ? `${Number(pm25Val).toFixed(1)} µg/m³` : "-- µg/m³"}
-              </strong>
-            </div>
-            <div className="metric-card">
-              <i className="bi bi-cloud"></i>
-              <span>PM10</span>
-              <strong id="dashboardPM10">
-                {pm10Val ? `${Number(pm10Val).toFixed(1)} µg/m³` : "-- µg/m³"}
-              </strong>
-            </div>
-            <div className="metric-card">
-              <i className="bi bi-cloud-haze2"></i>
-              <span>CO₂</span>
-              <strong id="dashboardCO2">
-                {co2Val ? `${Math.round(Number(co2Val))} ppm` : "-- ppm"}
-              </strong>
-            </div>
-          </div>
+          
         </section>
       </div>
     </MainLayout>

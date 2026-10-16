@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useTheme } from '../layout/Theme'
 import Cookies from 'js-cookie'
 
-const apiBaseUrl = '/api/admin'
+const apiBaseUrl = '/admin'
 const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''
 
 function sharedSessionCookieOptions() {

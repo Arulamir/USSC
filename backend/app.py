@@ -33,6 +33,8 @@ try:
     from backend.api.flood import flood_bp
     from backend.api.export import export_bp
     from backend.api.digital_twin import digital_twin_bp
+    from backend.api.airquality_hourly import airquality_hourly_bp
+
 except ImportError:
     from api.traffic import traffic_bp
     from api.trafficgrafik import traffic_grafik_bp
@@ -43,6 +45,7 @@ except ImportError:
     from api.flood import flood_bp
     from api.export import export_bp
     from api.digital_twin import digital_twin_bp
+    from api.airquality_hourly import airquality_hourly_bp
 
 
 # =====================================================
@@ -97,6 +100,8 @@ app.register_blueprint(airquality_bp)
 app.register_blueprint(flood_bp)
 app.register_blueprint(export_bp)
 app.register_blueprint(digital_twin_bp)
+app.register_blueprint(airquality_hourly_bp)
+
 
 
 # =====================================================

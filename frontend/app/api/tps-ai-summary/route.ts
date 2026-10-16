@@ -191,7 +191,11 @@ export async function POST(request: NextRequest) {
   let wasteRows: WasteRecord[] = [];
   let energyRows: EnergyRecord[] = [];
   try {
-    const body = await request.json() as { wasteData?: unknown; energyData?: unknown; data?: unknown };
+    const rawBody: unknown = await request.json();
+    if (!rawBody || typeof rawBody !== "object" || Array.isArray(rawBody)) {
+      throw new Error("Invalid request body");
+    }
+    const body = rawBody as { wasteData?: unknown; energyData?: unknown; data?: unknown };
     const rawWaste = Array.isArray(body.wasteData) ? body.wasteData : Array.isArray(body.data) ? body.data : [];
     const rawEnergy = Array.isArray(body.energyData) ? body.energyData : [];
 
