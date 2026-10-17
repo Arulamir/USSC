@@ -1,0 +1,67 @@
+// Outputs 1..6 sama dengan flow lama. Output 7 menuju Dispatch kontrol web.
+// RUANG_UTAMA A/B dan keputusan OFF AC memakai satu timer dan region_1.
+// Output 8: OFF AC otomatis -> Function HVAC lama -> MQTT IRHVAC.
+var s=context.get('runtime')||{active:false,waiting:false,generation:0};
+var out=[null,null,null,null,null,null,null,null],now=Date.now();
+function log(text){out[5]={topic:'automasi/lampu',payload:{event:text,active:s.active,waitingOccupancy:s.waiting,deadline:s.deadline||null,pauseUntil:s.pause?s.pause.until:null}};}
+function occupancy(){
+    var config=flow.get('automation_config')||{},rec=flow.get('vs321_lights_region1');
+    var maxAge=(config.occupancyMaxAgeMinutes||15)*60000;
+    if(!rec||rec.source!=='region_1'||rec.eui!==(config.occupancyEui||'24E124443F431957')||now-rec.updatedAt>maxAge||rec.updatedAt>now)return 'unknown';
+    return rec.value;
+}
+function arm(duration){
+    s.waiting=false;s.generation++;
+    s.token=String(context.get('session'))+':'+s.generation;
+    s.deadline=now+duration;
+    out[3]=[{reset:true},{topic:'lights_due',cycle:s.token,payload:'arm',delay:duration}];
+}
+function off(){
+    s.active=false;s.waiting=false;s.deadline=null;s.token=null;s.pause=null;
+    out[2]={payload:{state:'off'}};out[3]={reset:true};
+}
+function decide(){
+    var occ=occupancy();
+    if(occ==='vacant'){off();out[7]={topic:'automation_ac_off',payload:{state:'off'}};log('vacant region_1: RUANG_UTAMA A/B dan AC OFF');}
+    else if(occ==='occupied'){arm(35*60000);log('occupied: tetap ON; cek lagi 35 menit');}
+    else{s.waiting=true;log('menunggu occupancy VS321 baru');}
+}
+if(msg.topic==='web_override'&&msg.control){
+    var p=msg.control;
+    if(p.expires_at<=now)return out;
+    var seen=flow.get('office_web_control_seen')||{};
+    if(seen[p.id]){
+        if(seen[p.id].device===p.device&&seen[p.id].state===p.state){msg.automation=seen[p.id].automation;out[6]=msg;}
+        return out;
+    }
+    if(!s.pause)s.pause={remaining:s.active?Math.max(0,(s.deadline||now)-now):null};
+    s.pause.until=now+60*60000;
+    arm(60*60000);
+    msg.automation={timer_paused:true,scope:'RUANG_UTAMA_A_B',pause_minutes:60,resume_at_utc:new Date(s.pause.until).toISOString(),remaining_seconds:s.pause.remaining===null?null:Math.ceil(s.pause.remaining/1000)};
+    out[6]=msg;log('kontrol web: timer dibekukan 60 menit');
+}else if(msg.topic==='manual_off'||msg.topic==='main_off'){
+    off();if(msg.topic==='manual_off')out[4]={payload:{state:'off'}};
+    log('OFF manual lokal; timer dan jeda web dibatalkan');
+}else if(msg.topic==='accepted_tap'){
+    out[1]={payload:{state:'on'}};
+    if(!s.active){
+        s.active=true;
+        if(s.pause){s.pause.remaining=10*3600000;log('tap saat jeda web: timer 10 jam dimulai setelah jeda');}
+        else{arm(10*3600000);out[0]={payload:{state:'on'}};log('tap awal: RUANG_UTAMA ON 10 jam');}
+    }else log(s.pause?'tap berulang saat jeda; sisa timer tetap':'siklus aktif; timer 10 jam tetap');
+}else if(msg.topic==='lights_due'&&msg.cycle===s.token&&now>=s.deadline){
+    if(s.pause){
+        var remaining=s.pause.remaining;
+        s.pause=null;
+        if(s.active&&remaining!==null){
+            if(remaining>0){out[0]={payload:{state:'on'}};arm(remaining);log('jeda web selesai: kembali ON, lanjut sisa timer');}
+            else{
+                if(occupancy()!=='vacant')out[0]={payload:{state:'on'}};
+                decide();
+            }
+        }else{s.deadline=null;s.token=null;s.waiting=false;log('jeda web selesai; tidak ada siklus MinMoe aktif');}
+    }else if(s.active)decide();
+}else if(msg.topic==='occupancy_update'&&s.active&&s.waiting&&!s.pause)decide();
+context.set('runtime',s);
+node.status({fill:s.pause?'yellow':s.active?'green':'grey',shape:s.waiting?'ring':'dot',text:s.pause?'jeda web sampai '+new Date(s.pause.until).toLocaleTimeString():s.active?(s.waiting?'ON / menunggu occupancy':'ON sampai '+new Date(s.deadline).toLocaleTimeString()):'tidak ada timer aktif'});
+return out;

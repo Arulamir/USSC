@@ -114,7 +114,16 @@ class MinutePowerBridgeTests(unittest.TestCase):
         self.response.json.return_value = {"status": "success", "data": packet(datetime.now(timezone.utc))}
 
     def test_read_only_bridge_keeps_energy_and_environment(self):
+        payload = self.response.json.return_value['data']
+        for record in payload['records']:
+            if record['device_eui'] in AC_METERS:
+                at = datetime.fromisoformat(payload['sampled_at_utc'].replace('Z', '+00:00'))
+                record['energy_points'] = [
+                    {'at': (at - timedelta(minutes=1)).isoformat(), 'wh': 1000},
+                    {'at': at.isoformat(), 'wh': 1015},
+                ]
         data = merge_minute_power(self.data)
+        self.assertEqual(data['ac_minute_wh'], 60)
         self.assertEqual(data["ac_power_w"], 40)
         self.assertEqual(data["lamp_power_w"], 40)
         self.assertEqual(data["ac_day_wh"], 1234)

@@ -1,0 +1,86 @@
+[
+  {
+    "id": "c26b6e8123f41b6d",
+    "type": "function",
+    "z": "4dc7bb15ea87ccc3",
+    "g": "8d7988bc7e2f45bf",
+    "name": "Utama: lampu A/B + AC 10 jam",
+    "func": "// Outputs 1..6 sama dengan flow lama. Output 7 menuju Dispatch kontrol web.\n// RUANG_UTAMA A/B dan keputusan OFF AC memakai satu timer dan region_1.\n// Output 8: OFF AC otomatis -> Function HVAC lama -> MQTT IRHVAC.\nvar s=context.get('runtime')||{active:false,waiting:false,generation:0};\nvar out=[null,null,null,null,null,null,null,null],now=Date.now();\nfunction log(text){out[5]={topic:'automasi/lampu',payload:{event:text,active:s.active,waitingOccupancy:s.waiting,deadline:s.deadline||null,pauseUntil:s.pause?s.pause.until:null}};}\nfunction occupancy(){\n    var config=flow.get('automation_config')||{},rec=flow.get('vs321_lights_region1');\n    var maxAge=(config.occupancyMaxAgeMinutes||15)*60000;\n    if(!rec||rec.source!=='region_1'||rec.eui!==(config.occupancyEui||'24E124443F431957')||now-rec.updatedAt>maxAge||rec.updatedAt>now)return 'unknown';\n    return rec.value;\n}\nfunction arm(duration){\n    s.waiting=false;s.generation++;\n    s.token=String(context.get('session'))+':'+s.generation;\n    s.deadline=now+duration;\n    out[3]=[{reset:true},{topic:'lights_due',cycle:s.token,payload:'arm',delay:duration}];\n}\nfunction off(){\n    s.active=false;s.waiting=false;s.deadline=null;s.token=null;s.pause=null;\n    out[2]={payload:{state:'off'}};out[3]={reset:true};\n}\nfunction decide(){\n    var occ=occupancy();\n    if(occ==='vacant'){off();out[7]={topic:'automation_ac_off',payload:{state:'off'}};log('vacant region_1: RUANG_UTAMA A/B dan AC OFF');}\n    else if(occ==='occupied'){arm(35*60000);log('occupied: tetap ON; cek lagi 35 menit');}\n    else{s.waiting=true;log('menunggu occupancy VS321 baru');}\n}\nif(msg.topic==='web_override'&&msg.control){\n    var p=msg.control;\n    if(p.expires_at<=now)return out;\n    var seen=flow.get('office_web_control_seen')||{};\n    if(seen[p.id]){\n        if(seen[p.id].device===p.device&&seen[p.id].state===p.state){msg.automation=seen[p.id].automation;out[6]=msg;}\n        return out;\n    }\n    if(!s.pause)s.pause={remaining:s.active?Math.max(0,(s.deadline||now)-now):null};\n    s.pause.until=now+60*60000;\n    arm(60*60000);\n    msg.automation={timer_paused:true,scope:'RUANG_UTAMA_A_B',pause_minutes:60,resume_at_utc:new Date(s.pause.until).toISOString(),remaining_seconds:s.pause.remaining===null?null:Math.ceil(s.pause.remaining/1000)};\n    out[6]=msg;log('kontrol web: timer dibekukan 60 menit');\n}else if(msg.topic==='manual_off'||msg.topic==='main_off'){\n    off();if(msg.topic==='manual_off')out[4]={payload:{state:'off'}};\n    log('OFF manual lokal; timer dan jeda web dibatalkan');\n}else if(msg.topic==='accepted_tap'){\n    out[1]={payload:{state:'on'}};\n    if(!s.active){\n        s.active=true;\n        if(s.pause){s.pause.remaining=10*3600000;log('tap saat jeda web: timer 10 jam dimulai setelah jeda');}\n        else{arm(10*3600000);out[0]={payload:{state:'on'}};log('tap awal: RUANG_UTAMA ON 10 jam');}\n    }else log(s.pause?'tap berulang saat jeda; sisa timer tetap':'siklus aktif; timer 10 jam tetap');\n}else if(msg.topic==='lights_due'&&msg.cycle===s.token&&now>=s.deadline){\n    if(s.pause){\n        var remaining=s.pause.remaining;\n        s.pause=null;\n        if(s.active&&remaining!==null){\n            if(remaining>0){out[0]={payload:{state:'on'}};arm(remaining);log('jeda web selesai: kembali ON, lanjut sisa timer');}\n            else{\n                if(occupancy()!=='vacant')out[0]={payload:{state:'on'}};\n                decide();\n            }\n        }else{s.deadline=null;s.token=null;s.waiting=false;log('jeda web selesai; tidak ada siklus MinMoe aktif');}\n    }else if(s.active)decide();\n}else if(msg.topic==='occupancy_update'&&s.active&&s.waiting&&!s.pause)decide();\ncontext.set('runtime',s);\nnode.status({fill:s.pause?'yellow':s.active?'green':'grey',shape:s.waiting?'ring':'dot',text:s.pause?'jeda web sampai '+new Date(s.pause.until).toLocaleTimeString():s.active?(s.waiting?'ON / menunggu occupancy':'ON sampai '+new Date(s.deadline).toLocaleTimeString()):'tidak ada timer aktif'});\nreturn out;\n",
+    "outputs": 8,
+    "noerr": 0,
+    "initialize": "context.set('runtime', null); context.set('session', Date.now().toString(36) + Math.random().toString(36).slice(2));",
+    "finalize": "",
+    "libs": [],
+    "x": 730,
+    "y": 1330,
+    "wires": [
+      [
+        "376ed2159e1977ed",
+        "35226c06a26c0aec"
+      ],
+      [
+        "22e242ac3a194e93",
+        "eba023cffac8fcf2"
+      ],
+      [
+        "65e6fb935f70f841",
+        "67fd05637b3b9a88"
+      ],
+      [
+        "a183bd0aa859ccda"
+      ],
+      [
+        "513476344673a5dd",
+        "a819c1247f2cbeb3"
+      ],
+      [
+        "f799f12a750a4c35"
+      ],
+      [
+        "85d84986cb13d34a"
+      ],
+      [
+        "8ce39f78a70667df"
+      ]
+    ]
+  },
+  {
+    "id": "8ce39f78a70667df",
+    "type": "function",
+    "z": "4dc7bb15ea87ccc3",
+    "g": "2f70349775466e96",
+    "name": "HVAC: ON tap / OFF manual atau timer utama",
+    "func": "const status = String(msg.payload.state).trim().toLowerCase();\n\nif (status !== \"on\" && status !== \"off\") {\n    return null;\n}\n\nmsg.payload = {\n    Vendor: \"DAIKIN\",\n    Model: -1,\n    Command: \"Control\",\n    Power: status === \"on\" ? \"On\" : \"Off\",\n    Mode: \"Cool\",\n    Celsius: \"On\",\n    Temp: 24,\n    FanSpeed: \"Mid\",\n    SwingV: \"Off\",\n    SwingH: \"Auto\",\n    Quiet: \"Off\",\n    Turbo: \"Off\",\n    Econo: \"Off\",\n    Light: \"Off\",\n    Filter: \"Off\",\n    Clean: \"Off\",\n    Beep: \"Off\",\n    Sleep: -1,\n    iFeel: \"Off\",\n    SensorTemp: null\n};\n\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 450,
+    "y": 1640,
+    "wires": [
+      [
+        "0873000df6b86304"
+      ]
+    ]
+  },
+  {
+    "id": "0873000df6b86304",
+    "type": "mqtt out",
+    "z": "4dc7bb15ea87ccc3",
+    "g": "2f70349775466e96",
+    "name": "",
+    "topic": "cmnd/ussc/IRHVAC",
+    "qos": "",
+    "retain": "",
+    "respTopic": "",
+    "contentType": "",
+    "userProps": "",
+    "correl": "",
+    "expiry": "",
+    "broker": "5022b98a499a9a81",
+    "x": 750,
+    "y": 1640,
+    "wires": []
+  }
+]

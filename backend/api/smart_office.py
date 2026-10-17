@@ -127,6 +127,92 @@ def snapshot_data(row, now=None):
     return data
 
 
+def minute_ac_energy(records, sampled_at, now):
+    """Counter differences over one common 60-second window, never active W.
+
+    Interpolate only between genuine observations at most 90 seconds apart.
+    A 10-minute counter change must never masquerade as one minute of energy.
+    """
+    result = {"ac_minute_wh": None, "ac_minute_stale": True,
+              "ac_minute_start_utc": None, "ac_minute_end_utc": None,
+              "ac_minute_quality": {"meter_used": 0, "meter_expected": 4,
+                                    "estimated": False}}
+    series = []
+    for eui in AC_METERS:
+        matches = [r for r in records if _eui(r) == eui]
+        if len(matches) != 1:
+            continue
+        raw = matches[0].get("energy_points")
+        if not isinstance(raw, list) or not 2 <= len(raw) <= 16:
+            continue
+        points = {}
+        invalid = False
+        for point in raw:
+            if not isinstance(point, dict):
+                invalid = True
+                break
+            at = _utc(point.get("at"))
+            value = _number(point.get("wh"), maximum=4294967295)
+            if (at is None or value is None or at > sampled_at or at > now
+                    or at in points and points[at] != value):
+                invalid = True
+                break
+            points[at] = value
+        if invalid or len(points) < 2:
+            continue
+        ordered = sorted(points.items())
+        # After a reset only the new monotonic segment can be used.
+        reset = max((i for i in range(1, len(ordered))
+                     if ordered[i][1] < ordered[i - 1][1]), default=0)
+        ordered = ordered[reset:]
+        if (len(ordered) < 2 or now - ordered[-1][0] > POWER_MAX_AGE
+                or sampled_at - ordered[-1][0] > POWER_MAX_AGE):
+            continue
+        if _minute_counter_delta(ordered, ordered[-1][0]) is not None:
+            series.append(ordered)
+    if not series:
+        return result
+    end = min(points[-1][0] for points in series)
+    values = [_minute_counter_delta(points, end) for points in series]
+    values = [value for value in values if value is not None]
+    if not values:
+        return result
+    result.update(
+        ac_minute_wh=round(sum(value[0] for value in values), 3),
+        ac_minute_stale=False,
+        ac_minute_start_utc=(end - timedelta(minutes=1)).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
+        ac_minute_end_utc=end.isoformat(timespec="milliseconds").replace("+00:00", "Z"),
+        ac_minute_quality={"meter_used": len(values), "meter_expected": 4,
+                           "estimated": any(value[1] for value in values)},
+    )
+    return result
+
+
+def _minute_counter_delta(points, end):
+    start = end - timedelta(minutes=1)
+    if points[0][0] > start or points[-1][0] < end:
+        return None
+    # Even exact boundary readings cannot hide a long gap inside the window.
+    for (at, _), (next_at, _) in zip(points, points[1:]):
+        if at < end and next_at > start and next_at - at > timedelta(seconds=90):
+            return None
+
+    def boundary(target):
+        for at, value in points:
+            if at == target:
+                return value, False
+        for (at, value), (next_at, next_value) in zip(points, points[1:]):
+            if at < target < next_at:
+                fraction = (target - at) / (next_at - at)
+                return value + (next_value - value) * fraction, True
+        return None
+
+    left, right = boundary(start), boundary(end)
+    if left is None or right is None:
+        return None
+    return max(0, right[0] - left[0]), left[1] or right[1]
+
+
 def minute_power_data(packet, now=None):
     """Use genuine meter observation times, never the minute publish time as age."""
     now = _utc(now) if now is not None else datetime.now(timezone.utc)
@@ -136,7 +222,9 @@ def minute_power_data(packet, now=None):
                           for group in ("ac", "lamp")},
         "power_interval_minutes": 1, "power_stale": True,
         "power_sampled_at_utc": None, "power_observed_at_utc": None,
+        "lamp_power_observed_at_utc": None,
     }
+    data.update(minute_ac_energy([], now, now))
     if not isinstance(packet, dict):
         return data
     sampled_at = _utc(packet.get("sampled_at_utc"))
@@ -148,6 +236,7 @@ def minute_power_data(packet, now=None):
             or not isinstance(records, list) or len(records) > 8):
         return data
     records = [record for record in records if isinstance(record, dict)]
+    data.update(minute_ac_energy(records, sampled_at, now))
     # Both checks matter: a retained MQTT packet and a cached meter reading can
     # independently be stale. Re-publishing never renews power_w_at.
     duplicates = {_eui(record) for record in records
@@ -160,12 +249,17 @@ def minute_power_data(packet, now=None):
                 if _eui(record) in AC_METERS | LAMP_METERS
                 and _number(record.get("power_w"), maximum=4294967295) is not None
                 and _fresh(record, "power_w", now, POWER_MAX_AGE)]
+    lamp_observed = [_utc(record.get("power_w_at")) for record in records
+                     if _eui(record) in LAMP_METERS
+                     and _number(record.get("power_w"), maximum=4294967295) is not None
+                     and _fresh(record, "power_w", now, POWER_MAX_AGE)]
     data.update(
         ac_power_w=ac, lamp_power_w=lamp,
         power_quality={"ac": ac_quality, "lamp": lamp_quality},
         power_stale=ac is None and lamp is None,
         power_sampled_at_utc=sampled_at.isoformat(timespec="milliseconds").replace("+00:00", "Z"),
         power_observed_at_utc=min(observed).isoformat(timespec="milliseconds").replace("+00:00", "Z") if observed else None,
+        lamp_power_observed_at_utc=min(lamp_observed).isoformat(timespec="milliseconds").replace("+00:00", "Z") if lamp_observed else None,
     )
     return data
 

@@ -6,13 +6,28 @@ CSS tambahan hanya berlaku pada panel baru.
 
 ## Data yang ditampilkan
 
-- Daya AC dan lampu dalam **W**, dijumlahkan dari pembacaan `power_w`
-  pada `device_samples` di snapshot terbaru `smart_office.office1`.
-  Masing-masing menggunakan empat meter sesuai paket office1; meter
-  `ATAS_PINTU` tidak masuk total AC.
+- **Energi AC 1 Menit (Wh)**: selisih counter `power_consumption` WS523
+  pada interval 60 detik terbaru. Tidak memakai `active_power` dan bukan
+  akumulasi sejak awal hari. Memerlukan pembaruan tiga Function pada
+  [panduan energi AC 1 menit](nodered/ac-minute-energy/README.md).
+- Daya lampu tetap **W**, jumlah pembacaan `power_w` empat meter lampu.
+  AC juga menggunakan empat meter; `ATAS_PINTU` tidak masuk total AC.
 - Occupancy: `occupied` → Terisi, `vacant` → Kosong.
 - Suhu dalam °C dan kelembapan dalam %.
 - Illumination: `bright` → Terang, `dim` → Redup. Sensor ini tidak memberikan lux.
+
+Untuk monitoring occupancy sesuai flow lama pengguna, tersedia perbaikan
+[VS321 region_1](nodered/vs321-region1/README.md). Collector membaca status
+`region_1` langsung, tanpa inferensi jumlah orang atau gabungan region. Frontend
+dan backend sudah membaca nilai occupancy sehingga tidak perlu perubahan kode
+website untuk mengganti sumbernya. Perubahan ini berlaku pada snapshot baru
+setelah kedua Function monitoring UG65 diperbarui.
+
+Sesuai perubahan automasi berikutnya, tersedia [automasi AC bersama lampu
+utama](nodered/ac-main-timer/README.md): tap mengirim ON melalui Function HVAC
+dan MQTT lama; akhir 10 jam memeriksa region_1. Vacant menghasilkan OFF lampu
+A/B dan AC melalui IRHVAC, occupied memperpanjang 35 menit, data unknown
+menunggu. WS523 tetap hanya meter daya, bukan jalur kontrol AC.
 
 Kolom `ac_jam_wh` / `lampu_jam_wh` dan periode lainnya berisi **energi**, sehingga
 tidak dipakai sebagai daya. Nilai nol tetap ditampilkan sebagai nol; data yang
@@ -64,13 +79,21 @@ Untuk pembaruan daya 1 menit, pasang tambahan flow Node-RED di bawah.
 Koneksi MariaDB dan pembacaan perangkat langsung perlu diverifikasi di
 server yang memiliki akses ke `smart_office.office1`.
 
-## Daya AC/lampu setiap 1 menit
+## Feed monitoring setiap 1 menit
 
-Jalur opsional ini hanya memperbarui dua nilai **W**. UG65 membaca cache meter
+Jalur ini memperbarui energi AC **Wh/interval satu menit** dan daya lampu **W**.
+UG65 membaca cache meter
 yang sudah ada setiap 60 detik, menerbitkan `office1/monitoring/power`, lalu
 mini PC menyimpan pembacaan terbaru di RAM. Backend membaca endpoint privat
 `GET /office1/power` menggunakan `OFFICE_CONTROL_KEY` yang sama dengan kontrol.
 Key tetap di backend dan Node-RED; tidak dikirim ke browser.
+
+Untuk sistem yang sudah memakai feed sebelumnya, ganti isi tiga Function
+sesuai [panduan ini](nodered/ac-minute-energy/README.md), tanpa import node
+duplikat. Riwayat counter untuk batas interval hanya berada di cache, tidak
+ditulis sebagai baris database baru. Perhitungan **energi harian AC**, grafik,
+dan Excel tetap memakai jalur dan kolom lama. Jika feed belum diperbarui,
+kartu energi AC satu menit menampilkan “—”; tidak diganti angka W atau Wh harian.
 
 Pasang tambahan pada tab yang sama dengan flow lama:
 
@@ -88,9 +111,10 @@ SMART_OFFICE_POWER_URL=http://100.97.64.86:1880/office1/power
 ```
 
 Restart backend dan build/restart frontend setelah menerapkan perubahan kode.
-Biarkan variabel kosong bila flow tambahan belum dipasang; perilaku lama tetap
-membaca W dari snapshot database. Jika diaktifkan tetapi feed terputus, W menjadi
-`null`/“—” dengan status terlambat, sementara energi dan lingkungan tetap tersedia.
+Biarkan variabel kosong bila flow tambahan belum dipasang; daya lampu tetap
+membaca W dari snapshot database dan energi AC satu menit belum tersedia.
+Jika diaktifkan tetapi feed terputus, nilai menit menjadi `null`/“—”, sementara
+energi harian dan lingkungan tetap tersedia.
 Tidak ada pengalihan diam-diam ke snapshot lama untuk mengklaim daya terbaru.
 
 **Meter WS502 dan empat WS523 AC harus mengirim pembacaan daya setiap 1 menit
@@ -106,7 +130,7 @@ tetap dikecualikan. Browser memeriksa setiap 15 detik, sehingga tampilan juga
 bergantung pada interval uplink dan keterlambatan jaringan, bukan jaminan tepat
 60 detik. Jam UG65, mini PC, dan server harus sinkron.
 
-Snapshot database **10 menit**, energi Wh, grafik, Excel, occupancy, suhu,
+Snapshot database **10 menit**, energi harian Wh, grafik, Excel, occupancy, suhu,
 kelembapan, illumination, dan kontrol ON/OFF tetap memakai jalur semula. Tidak ada
 tabel baru, perubahan SQL, atau penambahan baris daya 1 menit di `office1`.
 

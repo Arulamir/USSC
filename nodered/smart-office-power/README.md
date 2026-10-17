@@ -1,5 +1,12 @@
 # Tambahan daya W setiap 1 menit
 
+**Pembaruan kartu AC:** website sekarang menampilkan energi AC pada interval
+satu menit terbaru dalam Wh, sementara lampu tetap W. Kedua fragment di sini
+sudah meneruskan counter untuk fitur tersebut. Collector UG65 juga wajib
+diperbarui sesuai [panduan tiga Function](../ac-minute-energy/README.md).
+Untuk instalasi yang sudah berjalan cukup ganti isi Function sesuai panduan;
+jangan import node yang sama dua kali.
+
 Flow ini menambahkan jalur monitoring daya yang terpisah dari snapshot 10 menit.
 File fragment di folder ini tidak berisi nilai key atau kredensial MQTT.
 

@@ -57,16 +57,18 @@ export default function SmartOfficeMonitoring() {
   }, []);
 
   const updatedAt = formatTime(data?.sampled_at_utc);
-  const powerUpdatedAt = formatTime(data?.power_observed_at_utc);
+  const powerUpdatedAt = formatTime(data?.lamp_power_observed_at_utc);
+  const acUpdatedAt = formatTime(data?.ac_minute_end_utc);
   const status = loading ? "Memuat data..."
     : failed ? "Koneksi terputus"
     : !data ? "Belum ada data"
-    : data.power_stale ? "Daya belum terbaru"
+    : data.ac_minute_wh == null ? "Menunggu energi AC 1 menit"
+    : data.lamp_power_w == null ? "Daya lampu belum terbaru"
     : data.stale ? "Data terlambat"
-    : data.power_interval_minutes === 1 ? "Daya 1 menit"
+    : data.power_interval_minutes === 1 ? "Pembaruan 1 menit"
     : `Snapshot ${data.interval_minutes} menit`;
   const metrics = [
-    { label: "Daya AC", icon: "bi-snow", value: formatValue(data?.ac_power_w, "W") },
+    { label: "Energi AC 1 Menit", icon: "bi-snow", value: formatValue(data?.ac_minute_wh, "Wh") },
     { label: "Daya Lampu", icon: "bi-lightbulb", value: formatValue(data?.lamp_power_w, "W") },
     { label: "Status Occupancy", icon: "bi-people", value: data?.occupancy === "occupied" ? "Terisi"
       : data?.occupancy === "vacant" ? "Kosong" : "—" },
@@ -99,7 +101,7 @@ export default function SmartOfficeMonitoring() {
         <p className="smart-office-updated">
           <i className="bi bi-clock-history" aria-hidden="true" />
           {data?.power_interval_minutes === 1
-            ? `Daya: ${powerUpdatedAt ?? "menunggu pembacaan meter"} · Lingkungan: ${updatedAt ?? "menunggu data"}`
+            ? `AC (akhir interval): ${acUpdatedAt ?? "menunggu dua pembacaan"} · Daya lampu: ${powerUpdatedAt ?? "menunggu pembacaan meter"} · Lingkungan: ${updatedAt ?? "menunggu data"}`
             : updatedAt ? `Data terakhir: ${updatedAt}` : "Menunggu data Smart Office"}
           {failed && (data ? " · Menampilkan data terakhir yang berhasil dimuat."
             : " · Data belum dapat dimuat.")}

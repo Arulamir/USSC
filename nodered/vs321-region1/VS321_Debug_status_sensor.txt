@@ -1,0 +1,29 @@
+// Monitoring only: never change automation state or infer occupancy from counts.
+var current=msg.payload||{},now=Date.now();
+var own=function(key){return Object.prototype.hasOwnProperty.call(current,key);};
+if(!['region_1','temperature','humidity','illuminance_status','illumination'].some(own))return null;
+var saved=context.get('vs321_display_region1_v1')||{};
+function save(key,value){saved[key]={value:value,at:now};}
+if(own('region_1')){
+    if(current.region_1==='occupied'||current.region_1==='vacant')save('occupancy',current.region_1);
+    else delete saved.occupancy;
+}
+if(typeof current.temperature==='number'&&Number.isFinite(current.temperature)&&current.temperature>=-100&&current.temperature<=150)save('temperature',current.temperature);
+if(typeof current.humidity==='number'&&Number.isFinite(current.humidity)&&current.humidity>=0&&current.humidity<=100)save('humidity',current.humidity);
+if(own('illuminance_status')||own('illumination')){
+    var light=own('illuminance_status')?current.illuminance_status:current.illumination;
+    if(light==='bright'||light==='dim')save('illumination',light);
+    else delete saved.illumination;
+}
+function value(key,maxAge){var entry=saved[key];return entry&&entry.at<=now&&now-entry.at<=maxAge?entry.value:null;}
+function at(key){return saved[key]?new Date(saved[key].at).toISOString():null;}
+context.set('vs321_display_region1_v1',saved);
+return {deveui:msg.deveui,deviceName:msg.deviceName,topic:msg.topic,payload:{
+    occupancy:value('occupancy',900000),occupancy_source:'region_1',occupancy_at:at('occupancy'),
+    temperature:value('temperature',1800000),humidity:value('humidity',1800000),
+    illumination:value('illumination',1800000),illumination_at:at('illumination'),
+    received_at:new Date(now).toISOString(),
+    sensor_report:{region_1:own('region_1')?current.region_1:null,
+        region_1_enable:own('region_1_enable')?current.region_1_enable:null,
+        illuminance_status:own('illuminance_status')?current.illuminance_status:null}
+}};

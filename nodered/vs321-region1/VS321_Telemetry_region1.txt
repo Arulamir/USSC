@@ -1,0 +1,88 @@
+// Cabang monitoring saja; tidak mengubah pesan atau timer automasi.
+var devices = {
+  "24E124148060C6A0": {
+    "model": "WS523",
+    "room": "RUANG_UTAMA",
+    "name": "WS523_RUANG_UTAMA_A"
+  },
+  "24E12414806031FC": {
+    "model": "WS523",
+    "room": "RUANG_UTAMA",
+    "name": "WS523_RUANG_UTAMA_B"
+  },
+  "24E124148060D73E": {
+    "model": "WS523",
+    "room": "BU_DINI",
+    "name": "WS523_BU_DINI"
+  },
+  "24E1241480609886": {
+    "model": "WS523",
+    "room": "RUANG_MAGANG",
+    "name": "WS523_RUANG_MAGANG"
+  },
+  "24E124148060801A": {
+    "model": "WS523",
+    "room": "ATAS_PINTU",
+    "name": "WS523_ATAS_PINTU"
+  },
+  "24E124443F431957": {
+    "model": "VS321",
+    "room": "RUANG_UTAMA",
+    "name": "VS321"
+  },
+  "24E1247710630110": {
+    "model": "WS502",
+    "room": "RUANG_UTAMA",
+    "name": "WS502_RUANG_UTAMA_A"
+  },
+  "24E124771063F466": {
+    "model": "WS502",
+    "room": "RUANG_UTAMA",
+    "name": "WS502_RUANG_UTAMA_B"
+  },
+  "24E1247710633F88": {
+    "model": "WS502",
+    "room": "RUANG_MAGANG",
+    "name": "WS502_RUANG_MAGANG"
+  },
+  "24E1247710638799": {
+    "model": "WS502",
+    "room": "BU_DINI",
+    "name": "WS502_BU_DINI"
+  }
+};
+var eui = String(msg.deveui || '').toUpperCase();
+var device = devices[eui];
+var data = msg.payload;
+if (!device || !data || typeof data !== 'object') return null;
+var cache = flow.get('telemetry_latest_v1') || {};
+var saved = cache[eui] || {};
+var now = Date.now();
+function save(key, value) { saved[key] = { value: value, receivedAt: now }; }
+function number(key, value, min, max) {
+    if (typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max) save(key, value);
+}
+if (device.model === 'WS523' || device.model === 'WS502') {
+    number('power_w', data.active_power, 0, 4294967295);
+    number('energy_wh', data.power_consumption, 0, 4294967295);
+} else {
+    number('temperature_c', data.temperature, -100, 150);
+    number('humidity_pct', data.humidity, 0, 100);
+    // Monitoring website uses only the current region_1 sensor status.
+    // Clear values produced by the old people-count/combined-region rule once.
+    if(saved.occupancy_source!=='region_1'){delete saved.occupancy;saved.occupancy_source='region_1';}
+    if(Object.prototype.hasOwnProperty.call(data,'region_1')){
+        if(data.region_1==='occupied'||data.region_1==='vacant')save('occupancy',data.region_1);
+        else delete saved.occupancy;
+    }
+    // Only an explicit light report can update its value and observation time.
+    if(Object.prototype.hasOwnProperty.call(data,'illuminance_status')||Object.prototype.hasOwnProperty.call(data,'illumination')){
+        var light=Object.prototype.hasOwnProperty.call(data,'illuminance_status')?data.illuminance_status:data.illumination;
+        if(light==='bright'||light==='dim')save('illumination',light);
+        else delete saved.illumination;
+    }
+}
+// History-only atau battery-only tidak memperbarui umur nilai sebelumnya.
+cache[eui] = saved;
+flow.set('telemetry_latest_v1', cache);
+return null;

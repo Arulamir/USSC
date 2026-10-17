@@ -1,0 +1,14 @@
+// Lamp automation only: use VS321 region_1, never people count or other regions.
+var data=msg.payload;
+var eui=String(msg.deveui||'').trim().toUpperCase();
+if(eui!=='24E124443F431957'||!data||typeof data!=='object')return null;
+if(!Object.prototype.hasOwnProperty.call(data,'region_1'))return null;
+var value=data.region_1;
+if(value!=='occupied'&&value!=='vacant'){
+    flow.set('vs321_lights_region1',null);
+    node.status({fill:'grey',shape:'ring',text:'region_1 belum valid'});
+    return null;
+}
+flow.set('vs321_lights_region1',{eui:eui,value:value,updatedAt:Date.now(),source:'region_1'});
+node.status({fill:value==='occupied'?'green':'blue',shape:'dot',text:'region_1: '+value});
+return {topic:'occupancy_update',deveui:eui,payload:{occupancy:value,source:'region_1'}};
