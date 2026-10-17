@@ -6,7 +6,7 @@ CSS tambahan hanya berlaku pada panel baru.
 
 ## Data yang ditampilkan
 
-- **Energi AC 10 Menit (Wh)**: selisih counter `power_consumption` WS523
+- **Energi AC (Wh), periode 10 menit**: selisih counter `power_consumption` WS523
   pada dua laporan 10 menit terbaru per meter. Tidak memakai `active_power` dan bukan
   akumulasi sejak awal hari. Memerlukan pembaruan dua Function UG65 pada
   [panduan energi AC 10 menit](nodered/ac-interval-energy/README.md).

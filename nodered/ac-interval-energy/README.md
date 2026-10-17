@@ -1,7 +1,7 @@
 # Energi AC pada dua laporan 10 menit terbaru
 
 WS523 AC pada instalasi ini mengirim setiap 10 menit dan intervalnya tidak
-dapat diubah. Kartu **Energi AC 10 Menit (Wh)** memakai selisih dua counter
+dapat diubah. Kartu **Energi AC (Wh)** memakai periode **10 menit**, yaitu selisih dua counter
 `power_consumption` terbaru per meter, kemudian menjumlahkan meter AC yang valid.
 Tidak memakai `active_power`, tidak dibagi sepuluh, tidak diinterpolasi, dan
 tidak menjumlahkan seluruh pemakaian sebelumnya. Meter ATAS_PINTU dikecualikan.
