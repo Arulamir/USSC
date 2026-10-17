@@ -52,6 +52,9 @@ ditampilkan dalam WIB. Snapshot lebih dari 30 menit atau bertanggal di masa
 depan ditandai “Data terlambat”.
 Jika koneksi gagal, panel memberi status “Koneksi terputus”; data terakhir
 yang sudah berhasil dimuat tetap disertai waktu pembacaannya.
+Halaman juga membaca ulang segera saat tab kembali aktif, koneksi pulih, atau
+halaman dipulihkan dari cache navigasi browser. Permintaan lama yang masih
+tertunda dibatalkan agar tidak menimpa respons yang lebih baru.
 
 ## Penerapan
 
@@ -96,6 +99,9 @@ Backend memilih nilai terakhir yang tersedia dari feed, cache proses, atau
 snapshot database. Cache dipisahkan per sumber dan diisi kembali dari database
 setelah restart. Jika belum pernah ada nilai yang valid, tampilan tetap “—”.
 Respons kosong juga mempertahankan data yang sudah ditampilkan di browser.
+Pemilihan nilai terbaru mengikuti waktu observasi meter paling baru pada tiap
+kelompok. Meter lain yang masih memakai data sebelumnya tidak menghalangi
+perubahan total watt. Waktu data lama tetap ditampilkan untuk penanda kesegaran.
 
 **Meter WS502 dan empat WS523 AC harus mengirim pembacaan daya setiap 1 menit
 agar pembacaan fisiknya benar-benar diperbarui per menit.** Sesuaikan Reporting

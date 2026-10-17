@@ -9,7 +9,8 @@ import {
 import MainLayout from "../components/layout/MainLayout";
 import { useTheme } from "../components/layout/Theme";
 import { ApiService } from "../../lib/api";
-import type { OfficeHistory, OfficePeriod, SmartOfficeSnapshot } from "../../lib/smart-office";
+import { useSmartOfficeSnapshot } from "../hooks/useSmartOfficeSnapshot";
+import type { OfficeHistory, OfficePeriod } from "../../lib/smart-office";
 import OfficeControls from "./OfficeControls";
 import "../dashboard.css";
 import "./office.css";
@@ -55,9 +56,7 @@ function qualityLabel(status: string) {
 
 export default function SmartOfficePage() {
   const { theme } = useTheme();
-  const [snapshot, setSnapshot] = useState<SmartOfficeSnapshot | null>(null);
-  const [snapshotError, setSnapshotError] = useState(false);
-  const [snapshotLoading, setSnapshotLoading] = useState(true);
+  const { snapshot, error: snapshotError, loading: snapshotLoading } = useSmartOfficeSnapshot();
   const [period, setPeriod] = useState<OfficePeriod>("daily");
   const [date, setDate] = useState(todayWib);
   const [history, setHistory] = useState<OfficeHistory | null>(null);
@@ -65,29 +64,6 @@ export default function SmartOfficePage() {
   const [historyError, setHistoryError] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState("");
-
-  useEffect(() => {
-    let stopped = false;
-    let controller: AbortController;
-    let timer: ReturnType<typeof setTimeout>;
-    const refresh = async () => {
-      controller = new AbortController();
-      try {
-        const response = await ApiService.getSmartOffice(controller.signal);
-        if (!stopped) {
-          setSnapshot(previous => response.data ?? (previous
-            ? { ...previous, stale: true, power_stale: true, power_previous: true } : null));
-          setSnapshotError(false);
-        }
-      } catch {
-        if (!stopped) setSnapshotError(true);
-      } finally {
-        if (!stopped) { setSnapshotLoading(false); timer = setTimeout(refresh, 15_000); }
-      }
-    };
-    refresh();
-    return () => { stopped = true; controller.abort(); clearTimeout(timer); };
-  }, []);
 
   useEffect(() => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;

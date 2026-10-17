@@ -184,6 +184,21 @@ class MinutePowerBridgeTests(unittest.TestCase):
         self.assertEqual(result["power_observed_at_utc"], first["power_observed_at_utc"])
         self.assertTrue(result["power_previous"])
 
+    def test_new_meter_update_is_not_blocked_by_an_older_meter_in_the_group(self):
+        now = datetime.now(timezone.utc)
+        first_packet = packet(now - timedelta(minutes=2))
+        self.response.json.return_value = {"status": "success", "data": first_packet}
+        self.assertEqual(merge_minute_power(self.data)["ac_power_w"], 40)
+        next_packet = packet(now)
+        ac_records = [r for r in next_packet["records"] if r["device_eui"] in AC_METERS]
+        ac_records[0]["power_w_at"] = (now - timedelta(minutes=5)).isoformat()
+        ac_records[1]["power_w"] = 100
+        self.response.json.return_value = {"status": "success", "data": next_packet}
+        result = merge_minute_power(self.data)
+        self.assertEqual(result["ac_power_w"], 130)
+        self.assertEqual(result["power_observed_at_by_group"]["ac"],
+                         (now - timedelta(minutes=5)).isoformat(timespec="milliseconds").replace("+00:00", "Z"))
+
     def test_no_previous_reading_stays_unknown_instead_of_becoming_zero(self):
         self.session.get.side_effect = requests.Timeout()
         self.data.update(ac_power_w=None, lamp_power_w=None)

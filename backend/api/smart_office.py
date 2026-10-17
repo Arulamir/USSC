@@ -85,7 +85,7 @@ def _power(records, allowed, sampled_at, max_age=MAX_AGE):
             {"meter_used": len(values), "meter_expected": len(allowed)})
 
 
-def _power_observed_at(records, allowed, sampled_at, max_age=MAX_AGE):
+def _power_observed_at(records, allowed, sampled_at, max_age=MAX_AGE, newest=False):
     times = []
     for eui in allowed:
         matches = [record for record in records if _eui(record) == eui]
@@ -95,7 +95,8 @@ def _power_observed_at(records, allowed, sampled_at, max_age=MAX_AGE):
         if (_number(record.get("power_w"), maximum=4294967295) is not None
                 and _fresh(record, "power_w", sampled_at, max_age)):
             times.append(_utc(record["power_w_at"]))
-    return min(times).isoformat(timespec="milliseconds").replace("+00:00", "Z") if times else None
+    stamp = (max(times) if newest else min(times)) if times else None
+    return stamp.isoformat(timespec="milliseconds").replace("+00:00", "Z") if stamp else None
 
 
 def snapshot_data(row, now=None):
@@ -127,6 +128,10 @@ def snapshot_data(row, now=None):
         "power_observed_at_by_group": {
             "ac": _power_observed_at(records, AC_METERS, sampled_at),
             "lamp": _power_observed_at(records, LAMP_METERS, sampled_at),
+        },
+        "power_updated_at_by_group": {
+            "ac": _power_observed_at(records, AC_METERS, sampled_at, newest=True),
+            "lamp": _power_observed_at(records, LAMP_METERS, sampled_at, newest=True),
         },
     }
     # The writer has already validated occupancy and environment values. Verify
@@ -160,6 +165,7 @@ def minute_power_data(packet, now=None):
         "power_previous": False,
         "power_sampled_at_utc": None, "power_observed_at_utc": None,
         "power_observed_at_by_group": {"ac": None, "lamp": None},
+        "power_updated_at_by_group": {"ac": None, "lamp": None},
     }
     if not isinstance(packet, dict):
         return data
@@ -195,6 +201,10 @@ def minute_power_data(packet, now=None):
         power_observed_at_by_group={
             "ac": _power_observed_at(records, AC_METERS, now, None),
             "lamp": _power_observed_at(records, LAMP_METERS, now, None),
+        },
+        power_updated_at_by_group={
+            "ac": _power_observed_at(records, AC_METERS, now, None, newest=True),
+            "lamp": _power_observed_at(records, LAMP_METERS, now, None, newest=True),
         },
     )
     return data
@@ -244,20 +254,27 @@ def merge_minute_power(data):
                 if source == "snapshot" and "power_observed_at_by_group" not in reading:
                     stamp = reading.get("sampled_at_utc")
                 observed_at = _utc(stamp)
-                if value is not None and observed_at is not None and observed_at <= now:
+                updated = (reading.get("power_updated_at_by_group") or {}).get(group) or stamp
+                updated_at = _utc(updated)
+                if (value is not None and observed_at is not None and observed_at <= now
+                        and updated_at is not None and updated_at <= now):
                     quality = (reading.get("power_quality") or {}).get(group, {"meter_used": 0, "meter_expected": 4})
-                    candidates.append((observed_at, priority, source, value, stamp, quality))
+                    candidates.append((updated_at, priority, source, value, stamp, quality, updated))
             if not candidates:
                 continue
-            _, _, source, value, stamp, quality = max(candidates, key=lambda item: item[:2])
+            # A new reading on any meter must update the total even when another
+            # meter still contributes an older retained value.
+            _, _, source, value, stamp, quality, updated = max(candidates, key=lambda item: item[:2])
             result[field] = value
             result["power_quality"][group] = dict(quality)
             result["power_observed_at_by_group"][group] = stamp
+            result["power_updated_at_by_group"][group] = updated
             if source != "minute":
                 result["power_previous"] = True
                 result["power_stale"] = True
             cache[group] = {field: value, "power_quality": {group: dict(quality)},
-                            "power_observed_at_by_group": {group: stamp}}
+                            "power_observed_at_by_group": {group: stamp},
+                            "power_updated_at_by_group": {group: updated}}
     stamps = [_utc(stamp) for stamp in result["power_observed_at_by_group"].values() if _utc(stamp)]
     result["power_observed_at_utc"] = min(stamps).isoformat(timespec="milliseconds").replace("+00:00", "Z") if stamps else None
     return result
