@@ -6,8 +6,10 @@ CSS tambahan hanya berlaku pada panel baru.
 
 ## Data yang ditampilkan
 
-- **Energi AC (Wh), periode 10 menit**: selisih counter `power_consumption` WS523
-  pada dua laporan 10 menit terbaru per meter. Tidak memakai `active_power` dan bukan
+- **Energi AC (Wh), interval aktual sekitar 10 atau 20 menit**: selisih counter `power_consumption` WS523
+  pada dua laporan terbaru per meter. Durasi ditampilkan sesuai data yang
+  diterima; meter dengan durasi 10 dan 20 menit tidak dicampur dalam satu jumlah.
+  Tidak memakai `active_power` dan bukan
   akumulasi sejak awal hari. Memerlukan pembaruan dua Function UG65 pada
   [panduan energi AC 10 menit](nodered/ac-interval-energy/README.md).
 - Daya lampu tetap **W**, jumlah pembacaan `power_w` empat meter lampu.
@@ -84,7 +86,7 @@ server yang memiliki akses ke `smart_office.office1`.
 
 ## Feed monitoring setiap 1 menit
 
-Jalur ini memperbarui energi AC **Wh/interval sepuluh menit** dan daya lampu **W**.
+Jalur ini memperbarui energi AC **Wh/interval laporan aktual** dan daya lampu **W**.
 UG65 membaca cache meter
 yang sudah ada setiap 60 detik, menerbitkan `office1/monitoring/power`, lalu
 mini PC menyimpan pembacaan terbaru di RAM. Backend membaca endpoint privat
@@ -96,7 +98,7 @@ dan satu sambungan monitoring sesuai [panduan ini](nodered/ac-interval-energy/RE
 duplikat. Riwayat counter untuk batas interval hanya berada di cache, tidak
 ditulis sebagai baris database baru. Perhitungan **energi harian AC**, grafik,
 dan Excel tetap memakai jalur dan kolom lama. Jika feed belum diperbarui,
-kartu energi AC sepuluh menit menampilkan “—”; tidak diganti angka W atau Wh harian.
+kartu energi AC menampilkan “—”; tidak diganti angka W atau Wh harian.
 
 Pasang tambahan pada tab yang sama dengan flow lama:
 
@@ -115,8 +117,8 @@ SMART_OFFICE_POWER_URL=http://100.97.64.86:1880/office1/power
 
 Restart backend dan build/restart frontend setelah menerapkan perubahan kode.
 Biarkan variabel kosong bila flow tambahan belum dipasang; daya lampu tetap
-membaca W dari snapshot database dan energi AC sepuluh menit belum tersedia.
-Jika feed terlambat atau terputus, energi AC sepuluh menit menjadi `null`/“—”;
+membaca W dari snapshot database dan energi AC per interval belum tersedia.
+Jika feed terlambat atau terputus, energi AC per interval menjadi `null`/“—”;
 Wh harian dan lingkungan tetap tersedia. Nilai daya lampu terakhir tetap
 ditampilkan dengan penanda **Menampilkan data sebelumnya** dan waktu
 observasi aslinya. Nilai nol tetap dipertahankan.
@@ -128,7 +130,8 @@ Pemilihan nilai terbaru mengikuti waktu observasi meter paling baru pada tiap
 kelompok. Meter lain yang masih memakai data sebelumnya tidak menghalangi
 perubahan total watt. Waktu data lama tetap ditampilkan untuk penanda kesegaran.
 
-**Meter WS523 AC tetap mengirim setiap 10 menit; WS502 lampu dapat mengirim setiap 1 menit
+**WS523 AC mengikuti interval laporan yang diterima, sekitar 10 atau 20 menit;
+WS502 lampu dapat mengirim setiap 1 menit
 agar pembacaan lampu benar-benar diperbarui per menit.** Sesuaikan Reporting
 Interval pada perangkat melalui ToolBox atau konfigurasi downlink yang sesuai.
 Fitur ini tidak otomatis mengubah konfigurasi meter atau mengirim ON/OFF.
@@ -151,7 +154,7 @@ dan [WS523 User Guide](https://resource.milesight.com/milesight/iot/document/ws5
 ## Halaman Smart Office
 
 Menu **Smart Office** berada di navigasi samping dan membuka `/smart-office`.
-Ringkasan menampilkan energi AC sepuluh menit (Wh), daya lampu (W),
+Ringkasan menampilkan energi AC per interval laporan (Wh), daya lampu (W),
 energi harian AC/lampu (Wh), suhu (°C),
 kelembapan (%), illumination (Terang/Redup), dan occupancy (Terisi/Kosong).
 Keempat kartu kondisi ruangan memakai snapshot sensor dan pembaruan otomatis

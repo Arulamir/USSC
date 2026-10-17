@@ -27,12 +27,12 @@ export default function SmartOfficeMonitoring() {
   const status = loading ? "Memuat data..."
     : failed ? "Koneksi terputus"
     : !data ? "Belum ada data"
-    : data.ac_interval_wh == null ? "Menunggu energi AC 10 menit"
+    : data.ac_interval_wh == null ? "Menunggu data energi AC"
     : data.lamp_power_w == null ? "Daya lampu belum terbaru"
     : data.ac_interval_stale ? "Menampilkan energi AC sebelumnya"
     : data.lamp_power_previous ? "Menampilkan daya lampu sebelumnya"
     : data.stale ? "Data terlambat"
-    : data.power_interval_minutes === 1 ? "AC 10 menit"
+    : data.ac_interval_minutes ? `AC sekitar ${data.ac_interval_minutes} menit`
     : `Snapshot ${data.interval_minutes} menit`;
   const metrics = [
     { label: "Energi AC", icon: "bi-snow", value: formatValue(data?.ac_interval_wh, "Wh") },

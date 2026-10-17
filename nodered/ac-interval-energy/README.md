@@ -1,7 +1,10 @@
-# Energi AC pada dua laporan 10 menit terbaru
+# Energi AC pada dua laporan terbaru
 
-WS523 AC pada instalasi ini mengirim setiap 10 menit dan intervalnya tidak
-dapat diubah. Kartu **Energi AC (Wh)** memakai periode **10 menit**, yaitu selisih dua counter
+Interval yang disebutkan awalnya 10 menit, tetapi log perangkat juga menunjukkan
+pasangan laporan berjarak 1199,767 detik (sekitar 20 menit). Ini adalah durasi
+antara laporan yang diterima, bukan bukti bahwa konfigurasi perangkat pasti 20
+menit; satu laporan 10 menit bisa saja tidak diterima.
+Kartu **Energi AC (Wh)** memakai selisih dua counter
 `power_consumption` terbaru per meter, kemudian menjumlahkan meter AC yang valid.
 Tidak memakai `active_power`, tidak dibagi sepuluh, tidak diinterpolasi, dan
 tidak menjumlahkan seluruh pemakaian sebelumnya. Meter ATAS_PINTU dikecualikan.
@@ -10,12 +13,16 @@ Energi harian, grafik, Excel, snapshot database, dan kontrol tetap memakai jalur
 Counter disimpan maksimal 16 observasi selama 45 menit agar laporan sebelumnya
 tidak hilang saat jarak antar-uplink sekitar 10 menit. Waktu observasi asli
 dipertahankan. Selisih terakhir berlaku sampai laporan berikutnya, maksimal
-15 menit sejak pembacaan akhir. Reset, konflik, dan data hilang tidak menjadi nol.
-Nol asli tetap 0 Wh. Dua laporan harus berjarak 10 menit dengan toleransi
-90 detik untuk variasi penerimaan radio; jika satu laporan hilang sehingga
-jaraknya sekitar 20 menit, meter dikecualikan sampai pasangan berikutnya valid.
+15 menit untuk pasangan 10 menit atau 25 menit untuk pasangan 20 menit sejak
+pembacaan akhir. Reset, konflik, dan data hilang tidak menjadi nol. Nol asli
+tetap 0 Wh. Pasangan 10 atau 20 menit diterima dengan toleransi 90 detik.
+Wh tidak dibagi atau diinterpolasi; interval yang ditampilkan mengikuti pasangan
+yang digunakan. Jika durasi antarmeter berbeda, backend memakai kelompok meter
+terbanyak dengan durasi sama; seri bertie memilih pembacaan akhir terbaru.
+Dengan demikian Wh 10 menit dan Wh 20 menit tidak dijumlahkan sebagai satu interval.
 
-Metadata `ac_interval_quality.intervals` mencatat waktu awal/akhir dan durasi
+Metadata `ac_interval_minutes` menunjukkan kelompok durasi yang digunakan.
+`ac_interval_quality.intervals` mencatat waktu awal/akhir dan durasi
 aktual tiap meter. Waktu yang ditampilkan adalah pembacaan akhir tertua di
 antara meter yang dijumlahkan. Meter tidak harus mengirim pada detik yang sama.
 
@@ -39,6 +46,9 @@ Mini PC yang sudah memakai flow counter sebelumnya tidak perlu diubah lagi.
 Format `office_power` versi 1, `energy_points`, endpoint `/office1/power`,
 key, source ID, dan batas packet 32 KB tetap sama. File cache Mini PC di folder
 ini hanya untuk referensi instalasi baru. `.env` backend tidak berubah.
+
+Perbaikan penerimaan pasangan 20 menit hanya mengubah backend/frontend. UG65
+yang sudah menyimpan counter selama 45 menit tidak perlu diperbarui lagi.
 
 Backend/frontend perlu diperbarui dan di-restart/build bersamaan. Browser
 memeriksa setiap 15 detik saat tab aktif; angka AC berubah ketika meter mengirim,

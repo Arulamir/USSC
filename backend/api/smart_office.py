@@ -156,13 +156,14 @@ def snapshot_data(row, now=None):
 
 
 def interval_ac_energy(records, sampled_at, now):
-    """Actual differences between each meter's latest two 10-minute reports.
+    """Actual differences between the latest two 10- or 20-minute reports.
 
     No interpolation, division by ten, or active-power conversion. Small radio
-    timing variations are allowed; a missed 20-minute report is excluded.
+    timing variations are allowed. Only meters with matching report durations
+    are summed, so ten-minute Wh is never mixed with twenty-minute Wh.
     """
     result = {"ac_interval_wh": None, "ac_interval_stale": True,
-              "ac_interval_minutes": 10,
+              "ac_interval_minutes": None,
               "ac_interval_start_utc": None, "ac_interval_end_utc": None,
               "ac_interval_quality": {"meter_used": 0, "meter_expected": 4,
                                       "estimated": False, "intervals": []}}
@@ -191,17 +192,29 @@ def interval_ac_energy(records, sampled_at, now):
             continue
         (start, previous), (end, latest) = sorted(points.items())[-2:]
         seconds = (end - start).total_seconds()
-        if (not 510 <= seconds <= 690 or latest < previous
-                or now - end > timedelta(minutes=15)
-                or sampled_at - end > timedelta(minutes=15)):
+        period = next((minutes for minutes in (10, 20)
+                       if abs(seconds - minutes * 60) <= 90), None)
+        if (period is None or latest < previous
+                or now - end > timedelta(minutes=period + 5)
+                or sampled_at - end > timedelta(minutes=period + 5)):
             continue
         intervals.append({"device_eui": eui, "wh": latest - previous,
                           "start_utc": start.isoformat(timespec="milliseconds").replace("+00:00", "Z"),
                           "end_utc": end.isoformat(timespec="milliseconds").replace("+00:00", "Z"),
-                          "duration_seconds": seconds})
+                          "duration_seconds": seconds,
+                          "report_interval_minutes": period})
     if intervals:
+        # Use the largest group with the same duration; ties prefer the group
+        # with the newest observed end, then the longer reporting period.
+        groups = {period: [item for item in intervals
+                           if item["report_interval_minutes"] == period]
+                  for period in {item["report_interval_minutes"] for item in intervals}}
+        period = max(groups, key=lambda key: (
+            len(groups[key]), max(item["end_utc"] for item in groups[key]), key))
+        intervals = groups[period]
         result.update(
             ac_interval_wh=round(sum(item["wh"] for item in intervals), 3),
+            ac_interval_minutes=period,
             ac_interval_stale=False,
             ac_interval_start_utc=min(item["start_utc"] for item in intervals),
             ac_interval_end_utc=min(item["end_utc"] for item in intervals),

@@ -9,7 +9,7 @@ export type SmartOfficeSnapshot = {
   stale: boolean;
   ac_power_w: number | null;
   ac_interval_wh?: number | null;
-  ac_interval_minutes?: number;
+  ac_interval_minutes?: number | null;
   ac_interval_stale?: boolean;
   ac_interval_start_utc?: string | null;
   ac_interval_end_utc?: string | null;

@@ -44,8 +44,45 @@ class IntervalEnergyTests(unittest.TestCase):
                 record['energy_points'][-1]['at'] = (NOW + timedelta(seconds=1)).isoformat()
         self.assertIsNone(minute_power_data(payload, NOW)['ac_interval_wh'])
 
-    def test_missed_twenty_minute_report_excluded(self):
-        self.assertIsNone(minute_power_data(energy_packet(offsets=(-2400, -1200, 0)), NOW)['ac_interval_wh'])
+    def test_twenty_minute_reports_keep_actual_delta_and_duration(self):
+        data = minute_power_data(energy_packet(offsets=(-2400, -1200, 0)), NOW)
+        self.assertEqual(data['ac_interval_wh'], 40)
+        self.assertEqual(data['ac_interval_minutes'], 20)
+
+    def test_user_report_1199_seconds_and_zero_wh_is_valid(self):
+        payload = packet()
+        record = next(r for r in payload['records'] if r['device_eui'] == '24E12414806031FC')
+        record['energy_points'] = [
+            {'at': (NOW - timedelta(seconds=1199.767)).isoformat(), 'wh': 222525},
+            {'at': NOW.isoformat(), 'wh': 222525},
+        ]
+        data = minute_power_data(payload, NOW)
+        self.assertEqual(data['ac_interval_wh'], 0)
+        self.assertEqual(data['ac_interval_minutes'], 20)
+        self.assertEqual(data['ac_interval_quality']['meter_used'], 1)
+        self.assertFalse(data['ac_interval_stale'])
+
+    def test_twenty_minute_value_survives_until_next_expected_report(self):
+        payload = energy_packet(offsets=(-3600, -2400, -1200))
+        data = minute_power_data(payload, NOW)
+        self.assertEqual(data['ac_interval_wh'], 40)
+        self.assertEqual(data['ac_interval_end_utc'], '2026-10-17T05:40:00.000Z')
+        self.assertIsNone(minute_power_data(energy_packet(offsets=(-3960, -2760, -1560)), NOW)['ac_interval_wh'])
+
+    def test_mixed_ten_and_twenty_minute_values_are_never_summed_together(self):
+        payload = energy_packet()
+        ac = [r for r in payload['records'] if r['device_eui'] in AC_METERS]
+        ac[0]['energy_points'] = [
+            {'at': (NOW - timedelta(minutes=20)).isoformat(), 'wh': 1000},
+            {'at': NOW.isoformat(), 'wh': 1999},
+        ]
+        data = minute_power_data(payload, NOW)
+        self.assertEqual(data['ac_interval_wh'], 30)
+        self.assertEqual(data['ac_interval_minutes'], 10)
+        self.assertEqual(data['ac_interval_quality']['meter_used'], 3)
+
+    def test_thirty_minute_gap_is_not_claimed_as_ten_or_twenty(self):
+        self.assertIsNone(minute_power_data(energy_packet(offsets=(-3600, -1800, 0)), NOW)['ac_interval_wh'])
 
     def test_retained_old_packet_cannot_become_fresh_minute_wh(self):
         payload = energy_packet(offsets=(-1500, -900, -300))
