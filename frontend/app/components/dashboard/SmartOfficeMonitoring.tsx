@@ -23,19 +23,18 @@ export default function SmartOfficeMonitoring() {
 
   const updatedAt = formatTime(data?.sampled_at_utc);
   const powerUpdatedAt = formatTime(data?.lamp_power_observed_at_utc);
-  const acUpdatedAt = formatTime(data?.ac_interval_end_utc);
+  const acUpdatedAt = formatTime(data?.power_observed_at_by_group?.ac);
   const status = loading ? "Memuat data..."
     : failed ? "Koneksi terputus"
     : !data ? "Belum ada data"
-    : data.ac_interval_wh == null ? "Menunggu data energi AC"
+    : data.ac_power_w == null ? "Menunggu data daya AC"
     : data.lamp_power_w == null ? "Daya lampu belum terbaru"
-    : data.ac_interval_stale ? "Menampilkan energi AC sebelumnya"
-    : data.lamp_power_previous ? "Menampilkan daya lampu sebelumnya"
+    : data.power_previous ? "Menampilkan pembacaan daya sebelumnya"
     : data.stale ? "Data terlambat"
-    : data.ac_interval_minutes ? `AC sekitar ${data.ac_interval_minutes} menit`
+    : data.power_interval_minutes === 1 ? "Pembacaan daya terakhir"
     : `Snapshot ${data.interval_minutes} menit`;
   const metrics = [
-    { label: "Energi AC", icon: "bi-snow", value: formatValue(data?.ac_interval_wh, "Wh") },
+    { label: "Daya AC", icon: "bi-snow", value: formatValue(data?.ac_power_w, "W") },
     { label: "Daya Lampu", icon: "bi-lightbulb", value: formatValue(data?.lamp_power_w, "W") },
     { label: "Status Occupancy", icon: "bi-people", value: data?.occupancy === "occupied" ? "Terisi"
       : data?.occupancy === "vacant" ? "Kosong" : "—" },
@@ -68,7 +67,7 @@ export default function SmartOfficeMonitoring() {
         <p className="smart-office-updated">
           <i className="bi bi-clock-history" aria-hidden="true" />
           {data?.power_interval_minutes === 1
-            ? `AC (pembacaan tertua): ${acUpdatedAt ?? "menunggu dua pembacaan"} · Daya lampu: ${powerUpdatedAt ?? "menunggu pembacaan meter"} · Lingkungan: ${updatedAt ?? "menunggu data"}`
+            ? `Daya AC (pembacaan tertua): ${acUpdatedAt ?? "menunggu pembacaan meter"} · Daya lampu: ${powerUpdatedAt ?? "menunggu pembacaan meter"} · Lingkungan: ${updatedAt ?? "menunggu data"}`
             : updatedAt ? `Data terakhir: ${updatedAt}` : "Menunggu data Smart Office"}
           {failed && (data ? " · Menampilkan data terakhir yang berhasil dimuat."
             : " · Data belum dapat dimuat.")}

@@ -166,7 +166,7 @@ export default function SmartOfficePage() {
   };
 
   const cards = [
-    { label: "Energi AC", icon: "bi-snow", value: number(snapshot?.ac_interval_wh, "Wh"), color: "green" },
+    { label: "Daya AC", icon: "bi-snow", value: number(snapshot?.ac_power_w, "W"), color: "green" },
     { label: "Daya Lampu", icon: "bi-lightbulb", value: number(snapshot?.lamp_power_w, "W"), color: "green" },
     { label: "Energi Harian AC", icon: "bi-lightning-charge", value: number(snapshot?.ac_day_wh, "Wh"), color: "green" },
     { label: "Energi Harian Lampu", icon: "bi-lightning-charge", value: number(snapshot?.lamp_day_wh, "Wh"), color: "orange" },
@@ -196,9 +196,9 @@ export default function SmartOfficePage() {
         <p className="office-snapshot-status" role="status">
           {snapshotLoading ? "Memuat data kantor..." : snapshotError ? "Koneksi data terputus." : !snapshot ? "Belum ada snapshot kantor." : snapshot.stale ? "Data terlambat." : "Data terakhir tersedia."}
           {snapshot && ` Snapshot: ${dateTime(snapshot.sampled_at_utc, true)}. Energi harian tanggal ${dateTime(snapshot.energy_date_wib)}.`}
-          {snapshot && (snapshot.ac_interval_wh == null
-            ? " Energi AC menunggu dua pembacaan counter yang valid."
-            : ` Energi AC: selisih dua laporan terbaru per meter, interval sekitar ${snapshot.ac_interval_minutes ?? "—"} menit. Pembacaan tertua: ${dateTime(snapshot.ac_interval_end_utc, true)}.`)}
+          {snapshot && (snapshot.ac_power_w == null
+            ? " Daya AC menunggu pembacaan meter."
+            : ` Daya AC: pembacaan meter terakhir${snapshot.power_previous ? " (data sebelumnya)" : ""}; mengikuti interval laporan perangkat. Pembacaan tertua: ${dateTime(snapshot.power_observed_at_by_group?.ac, true)}.`)}
           {snapshot?.power_interval_minutes === 1 && (snapshot.lamp_power_w == null
             ? " Daya lampu belum mendapat pembacaan terbaru."
             : snapshot.lamp_power_previous

@@ -20,6 +20,7 @@ export type SmartOfficeSnapshot = {
   power_previous?: boolean;
   power_sampled_at_utc?: string | null;
   power_observed_at_utc?: string | null;
+  power_observed_at_by_group?: { ac: string | null; lamp: string | null };
   lamp_power_observed_at_utc?: string | null;
   lamp_power_previous?: boolean;
   ac_day_wh?: number | null;
