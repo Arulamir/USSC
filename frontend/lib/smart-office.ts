@@ -16,6 +16,7 @@ export type SmartOfficeSnapshot = {
   lamp_power_w: number | null;
   power_interval_minutes?: number;
   power_stale?: boolean;
+  power_previous?: boolean;
   power_sampled_at_utc?: string | null;
   power_observed_at_utc?: string | null;
   lamp_power_observed_at_utc?: string | null;

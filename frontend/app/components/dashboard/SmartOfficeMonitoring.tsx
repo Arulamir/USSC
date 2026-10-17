@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ApiService } from "../../../lib/api";
-import type { SmartOfficeSnapshot } from "../../../lib/smart-office";
+import { useSmartOfficeSnapshot } from "../../hooks/useSmartOfficeSnapshot";
 import "./smart-office.css";
 
 function formatValue(value: number | null | undefined, unit: string) {
@@ -21,40 +19,7 @@ function formatTime(timestamp: string | null | undefined) {
 }
 
 export default function SmartOfficeMonitoring() {
-  const [data, setData] = useState<SmartOfficeSnapshot | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    let controller: AbortController;
-    let timer: ReturnType<typeof setTimeout>;
-
-    const refresh = async () => {
-      controller = new AbortController();
-      try {
-        const response = await ApiService.getSmartOffice(controller.signal);
-        if (!cancelled) {
-          setData(response.data);
-          setFailed(false);
-        }
-      } catch {
-        if (!cancelled) setFailed(true);
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-          timer = setTimeout(refresh, 15_000);
-        }
-      }
-    };
-
-    refresh();
-    return () => {
-      cancelled = true;
-      controller.abort();
-      clearTimeout(timer);
-    };
-  }, []);
+  const { snapshot: data, loading, error: failed } = useSmartOfficeSnapshot();
 
   const updatedAt = formatTime(data?.sampled_at_utc);
   const powerUpdatedAt = formatTime(data?.lamp_power_observed_at_utc);
@@ -64,6 +29,8 @@ export default function SmartOfficeMonitoring() {
     : !data ? "Belum ada data"
     : data.ac_minute_wh == null ? "Menunggu energi AC 1 menit"
     : data.lamp_power_w == null ? "Daya lampu belum terbaru"
+    : data.power_previous ? "Menampilkan data sebelumnya"
+    : data.power_stale ? "Daya belum terbaru"
     : data.stale ? "Data terlambat"
     : data.power_interval_minutes === 1 ? "Pembaruan 1 menit"
     : `Snapshot ${data.interval_minutes} menit`;

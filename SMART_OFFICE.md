@@ -67,6 +67,9 @@ ditampilkan dalam WIB. Snapshot lebih dari 30 menit atau bertanggal di masa
 depan ditandai “Data terlambat”.
 Jika koneksi gagal, panel memberi status “Koneksi terputus”; data terakhir
 yang sudah berhasil dimuat tetap disertai waktu pembacaannya.
+Halaman juga membaca ulang segera saat tab kembali aktif, koneksi pulih, atau
+halaman dipulihkan dari cache navigasi browser. Permintaan lama yang masih
+tertunda dibatalkan agar tidak menimpa respons yang lebih baru.
 
 ## Penerapan
 
@@ -113,9 +116,17 @@ SMART_OFFICE_POWER_URL=http://100.97.64.86:1880/office1/power
 Restart backend dan build/restart frontend setelah menerapkan perubahan kode.
 Biarkan variabel kosong bila flow tambahan belum dipasang; daya lampu tetap
 membaca W dari snapshot database dan energi AC satu menit belum tersedia.
-Jika diaktifkan tetapi feed terputus, nilai menit menjadi `null`/“—”, sementara
-energi harian dan lingkungan tetap tersedia.
-Tidak ada pengalihan diam-diam ke snapshot lama untuk mengklaim daya terbaru.
+Jika feed terlambat atau terputus, energi AC satu menit menjadi `null`/“—”;
+Wh harian dan lingkungan tetap tersedia. Nilai daya lampu terakhir tetap
+ditampilkan dengan penanda **Menampilkan data sebelumnya** dan waktu
+observasi aslinya. Nilai nol tetap dipertahankan.
+Backend memilih nilai terakhir yang tersedia dari feed, cache proses, atau
+snapshot database. Cache dipisahkan per sumber dan diisi kembali dari database
+setelah restart. Jika belum pernah ada nilai yang valid, tampilan tetap “—”.
+Respons kosong juga mempertahankan data yang sudah ditampilkan di browser.
+Pemilihan nilai terbaru mengikuti waktu observasi meter paling baru pada tiap
+kelompok. Meter lain yang masih memakai data sebelumnya tidak menghalangi
+perubahan total watt. Waktu data lama tetap ditampilkan untuk penanda kesegaran.
 
 **Meter WS502 dan empat WS523 AC harus mengirim pembacaan daya setiap 1 menit
 agar pembacaan fisiknya benar-benar diperbarui per menit.** Sesuaikan Reporting
@@ -124,7 +135,7 @@ Fitur ini tidak otomatis mengubah konfigurasi meter atau mengirim ON/OFF.
 Menyalin cache tiap menit tidak menciptakan pengukuran baru.
 
 Timestamp `power_w_at` asli dipertahankan. Packet lebih dari 150 detik atau
-pembacaan meter lebih dari 3 menit tidak dipakai untuk jalur ini. Nilai nol valid;
+pembacaan meter lebih dari 3 menit ditandai sebagai data sebelumnya. Nilai nol valid;
 meter hilang tidak diubah menjadi nol; meter duplikat ditolak dan meter ATAS_PINTU
 tetap dikecualikan. Browser memeriksa setiap 15 detik, sehingga tampilan juga
 bergantung pada interval uplink dan keterlambatan jaringan, bukan jaminan tepat
@@ -140,7 +151,12 @@ dan [WS523 User Guide](https://resource.milesight.com/milesight/iot/document/ws5
 ## Halaman Smart Office
 
 Menu **Smart Office** berada di navigasi samping dan membuka `/smart-office`.
-Ringkasan menampilkan daya AC/lampu (W) serta energi harian AC/lampu (Wh).
+Ringkasan menampilkan energi AC satu menit (Wh), daya lampu (W),
+energi harian AC/lampu (Wh), suhu (°C),
+kelembapan (%), illumination (Terang/Redup), dan occupancy (Terisi/Kosong).
+Keempat kartu kondisi ruangan memakai snapshot sensor dan pembaruan otomatis
+yang sama dengan ringkasan lainnya. Data sensor yang belum tersedia ditampilkan
+sebagai `—`, termasuk status illumination dan occupancy yang belum diketahui.
 Energi harian mengambil `ac_hari_wh` dan `lampu_hari_wh` dari satu snapshot
 terbaru, disertai tanggal snapshot dalam WIB. Snapshot lama tidak ditampilkan
 seolah-olah berasal dari hari ini.

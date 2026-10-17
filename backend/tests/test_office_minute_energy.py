@@ -47,6 +47,18 @@ class MinuteEnergyTests(unittest.TestCase):
     def test_ten_minute_change_cannot_be_shown_as_one_minute(self):
         self.assertIsNone(minute_power_data(energy_packet(offsets=(-1200, -600, 0)), NOW)['ac_minute_wh'])
 
+    def test_retained_old_packet_cannot_become_fresh_minute_wh(self):
+        payload = energy_packet(offsets=(-240, -180, -120))
+        payload['sampled_at_utc'] = (NOW - timedelta(seconds=151)).isoformat()
+        for record in payload['records']:
+            record['power_w_at'] = payload['sampled_at_utc']
+            if record['device_eui'] in AC_METERS:
+                record['energy_points'][-1]['at'] = payload['sampled_at_utc']
+        data = minute_power_data(payload, NOW)
+        self.assertEqual(data['lamp_power_w'], 8)
+        self.assertTrue(data['power_previous'])
+        self.assertIsNone(data['ac_minute_wh'])
+
     def test_reset_needs_new_full_minute(self):
         payload = energy_packet(values=(1000, 1100, 5))
         self.assertIsNone(minute_power_data(payload, NOW)['ac_minute_wh'])

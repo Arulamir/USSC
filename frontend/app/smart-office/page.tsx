@@ -9,7 +9,8 @@ import {
 import MainLayout from "../components/layout/MainLayout";
 import { useTheme } from "../components/layout/Theme";
 import { ApiService } from "../../lib/api";
-import type { OfficeHistory, OfficePeriod, SmartOfficeSnapshot } from "../../lib/smart-office";
+import { useSmartOfficeSnapshot } from "../hooks/useSmartOfficeSnapshot";
+import type { OfficeHistory, OfficePeriod } from "../../lib/smart-office";
 import OfficeControls from "./OfficeControls";
 import "../dashboard.css";
 import "./office.css";
@@ -55,9 +56,7 @@ function qualityLabel(status: string) {
 
 export default function SmartOfficePage() {
   const { theme } = useTheme();
-  const [snapshot, setSnapshot] = useState<SmartOfficeSnapshot | null>(null);
-  const [snapshotError, setSnapshotError] = useState(false);
-  const [snapshotLoading, setSnapshotLoading] = useState(true);
+  const { snapshot, error: snapshotError, loading: snapshotLoading } = useSmartOfficeSnapshot();
   const [period, setPeriod] = useState<OfficePeriod>("daily");
   const [date, setDate] = useState(todayWib);
   const [history, setHistory] = useState<OfficeHistory | null>(null);
@@ -65,25 +64,6 @@ export default function SmartOfficePage() {
   const [historyError, setHistoryError] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState("");
-
-  useEffect(() => {
-    let stopped = false;
-    let controller: AbortController;
-    let timer: ReturnType<typeof setTimeout>;
-    const refresh = async () => {
-      controller = new AbortController();
-      try {
-        const response = await ApiService.getSmartOffice(controller.signal);
-        if (!stopped) { setSnapshot(response.data); setSnapshotError(false); }
-      } catch {
-        if (!stopped) setSnapshotError(true);
-      } finally {
-        if (!stopped) { setSnapshotLoading(false); timer = setTimeout(refresh, 15_000); }
-      }
-    };
-    refresh();
-    return () => { stopped = true; controller.abort(); clearTimeout(timer); };
-  }, []);
 
   useEffect(() => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
@@ -190,6 +170,12 @@ export default function SmartOfficePage() {
     { label: "Daya Lampu", icon: "bi-lightbulb", value: number(snapshot?.lamp_power_w, "W"), color: "green" },
     { label: "Energi Harian AC", icon: "bi-lightning-charge", value: number(snapshot?.ac_day_wh, "Wh"), color: "green" },
     { label: "Energi Harian Lampu", icon: "bi-lightning-charge", value: number(snapshot?.lamp_day_wh, "Wh"), color: "orange" },
+    { label: "Suhu", icon: "bi-thermometer-half", value: number(snapshot?.temperature_c, "°C"), color: "orange" },
+    { label: "Kelembapan", icon: "bi-droplet", value: number(snapshot?.humidity_pct, "%"), color: "blue" },
+    { label: "Illumination", icon: "bi-brightness-high", value: snapshot?.illumination === "bright" ? "Terang"
+      : snapshot?.illumination === "dim" ? "Redup" : "—", color: "orange" },
+    { label: "Occupancy", icon: "bi-people", value: snapshot?.occupancy === "occupied" ? "Terisi"
+      : snapshot?.occupancy === "vacant" ? "Kosong" : "—", color: "green" },
   ];
   const hasChartData = Boolean(history?.data.some(row => row.ac_wh !== null || row.lamp_wh !== null));
   const range = history ? `${dateTime(history.start_wib)} – ${dateTime(new Date(new Date(history.end_wib).getTime() - 1).toISOString())} WIB` : "";
@@ -199,7 +185,7 @@ export default function SmartOfficePage() {
       <div className="dashboard-page-container office-page">
         <div className="page-heading">
           <div><span className="eyebrow">SMART OFFICE</span><h2>Smart Office</h2>
-            <p>Pemantauan daya, konsumsi energi, dan kontrol perangkat kantor.</p></div>
+            <p>Pemantauan daya, konsumsi energi, kondisi ruangan, dan kontrol perangkat kantor.</p></div>
         </div>
         <div className="summary-grid">
           {cards.map(card => <div className="summary-card" key={card.label}>
@@ -215,6 +201,8 @@ export default function SmartOfficePage() {
             : ` Energi AC untuk 1 menit hingga ${dateTime(snapshot.ac_minute_end_utc, true)}${snapshot.ac_minute_quality?.estimated ? " (estimasi antar pembacaan)" : ""}.`)}
           {snapshot?.power_interval_minutes === 1 && (snapshot.lamp_power_w == null
             ? " Daya lampu belum mendapat pembacaan terbaru."
+            : snapshot.power_previous
+            ? ` Menampilkan daya lampu sebelumnya; pembacaan: ${dateTime(snapshot.lamp_power_observed_at_utc, true)}.`
             : ` Daya lampu diperbarui tiap 1 menit; pembacaan: ${dateTime(snapshot.lamp_power_observed_at_utc, true)}.`)}
         </p>
 
