@@ -166,7 +166,7 @@ export default function SmartOfficePage() {
   };
 
   const cards = [
-    { label: "Energi AC 1 Menit", icon: "bi-snow", value: number(snapshot?.ac_minute_wh, "Wh"), color: "green" },
+    { label: "Energi AC", icon: "bi-snow", value: number(snapshot?.ac_minute_wh, "Wh"), color: "green" },
     { label: "Daya Lampu", icon: "bi-lightbulb", value: number(snapshot?.lamp_power_w, "W"), color: "green" },
     { label: "Energi Harian AC", icon: "bi-lightning-charge", value: number(snapshot?.ac_day_wh, "Wh"), color: "green" },
     { label: "Energi Harian Lampu", icon: "bi-lightning-charge", value: number(snapshot?.lamp_day_wh, "Wh"), color: "orange" },

@@ -35,7 +35,7 @@ export default function SmartOfficeMonitoring() {
     : data.power_interval_minutes === 1 ? "Pembaruan 1 menit"
     : `Snapshot ${data.interval_minutes} menit`;
   const metrics = [
-    { label: "Energi AC 1 Menit", icon: "bi-snow", value: formatValue(data?.ac_minute_wh, "Wh") },
+    { label: "Energi AC", icon: "bi-snow", value: formatValue(data?.ac_minute_wh, "Wh") },
     { label: "Daya Lampu", icon: "bi-lightbulb", value: formatValue(data?.lamp_power_w, "W") },
     { label: "Status Occupancy", icon: "bi-people", value: data?.occupancy === "occupied" ? "Terisi"
       : data?.occupancy === "vacant" ? "Kosong" : "—" },
