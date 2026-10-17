@@ -156,13 +156,15 @@ dan [WS523 User Guide](https://resource.milesight.com/milesight/iot/document/ws5
 
 Menu **Smart Office** berada di navigasi samping dan membuka `/smart-office`.
 Ringkasan menampilkan daya AC (W), daya lampu (W),
-energi harian AC/lampu (Wh), suhu (°C),
+energi harian AC/lampu (kWh), suhu (°C),
 kelembapan (%), illumination (Terang/Redup), dan occupancy (Terisi/Kosong).
 Keempat kartu kondisi ruangan memakai snapshot sensor dan pembaruan otomatis
 yang sama dengan ringkasan lainnya. Data sensor yang belum tersedia ditampilkan
 sebagai `—`, termasuk status illumination dan occupancy yang belum diketahui.
 Energi harian mengambil `ac_hari_wh` dan `lampu_hari_wh` dari satu snapshot
-terbaru, disertai tanggal snapshot dalam WIB. Snapshot lama tidak ditampilkan
+terbaru lalu membagi nilainya dengan 1.000 untuk tampilan kWh, maksimal tiga
+angka desimal. Nilai nol tetap nol dan data kosong tetap `—`. Tanggal snapshot
+ditampilkan dalam WIB. Snapshot lama tidak ditampilkan
 seolah-olah berasal dari hari ini.
 
 Tanggal acuan menentukan periode grafik:

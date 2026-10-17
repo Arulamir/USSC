@@ -24,9 +24,9 @@ const periods: { value: OfficePeriod; label: string }[] = [
   { value: "yearly", label: "Per Tahun" },
 ];
 
-function number(value: number | null | undefined, unit: string) {
+function number(value: number | null | undefined, unit: string, maximumFractionDigits = 2) {
   return value == null || !Number.isFinite(value) ? "—"
-    : `${value.toLocaleString("id-ID", { maximumFractionDigits: 2 })} ${unit}`;
+    : `${value.toLocaleString("id-ID", { maximumFractionDigits })} ${unit}`;
 }
 
 function dateTime(value: string | null | undefined, withTime = false) {
@@ -168,8 +168,8 @@ export default function SmartOfficePage() {
   const cards = [
     { label: "Daya AC", icon: "bi-snow", value: number(snapshot?.ac_power_w, "W"), color: "green" },
     { label: "Daya Lampu", icon: "bi-lightbulb", value: number(snapshot?.lamp_power_w, "W"), color: "green" },
-    { label: "Energi Harian AC", icon: "bi-lightning-charge", value: number(snapshot?.ac_day_wh, "Wh"), color: "green" },
-    { label: "Energi Harian Lampu", icon: "bi-lightning-charge", value: number(snapshot?.lamp_day_wh, "Wh"), color: "orange" },
+    { label: "Energi Harian AC", icon: "bi-lightning-charge", value: number(snapshot?.ac_day_wh == null ? null : snapshot.ac_day_wh / 1000, "kWh", 3), color: "green" },
+    { label: "Energi Harian Lampu", icon: "bi-lightning-charge", value: number(snapshot?.lamp_day_wh == null ? null : snapshot.lamp_day_wh / 1000, "kWh", 3), color: "orange" },
     { label: "Suhu", icon: "bi-thermometer-half", value: number(snapshot?.temperature_c, "°C"), color: "orange" },
     { label: "Kelembapan", icon: "bi-droplet", value: number(snapshot?.humidity_pct, "%"), color: "blue" },
     { label: "Illumination", icon: "bi-brightness-high", value: snapshot?.illumination === "bright" ? "Terang"
