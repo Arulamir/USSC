@@ -8,11 +8,12 @@ export type SmartOfficeSnapshot = {
   interval_minutes: number;
   stale: boolean;
   ac_power_w: number | null;
-  ac_minute_wh?: number | null;
-  ac_minute_stale?: boolean;
-  ac_minute_start_utc?: string | null;
-  ac_minute_end_utc?: string | null;
-  ac_minute_quality?: OfficeMeterQuality & { estimated: boolean };
+  ac_interval_wh?: number | null;
+  ac_interval_minutes?: number;
+  ac_interval_stale?: boolean;
+  ac_interval_start_utc?: string | null;
+  ac_interval_end_utc?: string | null;
+  ac_interval_quality?: OfficeMeterQuality & { estimated: boolean };
   lamp_power_w: number | null;
   power_interval_minutes?: number;
   power_stale?: boolean;
@@ -20,6 +21,7 @@ export type SmartOfficeSnapshot = {
   power_sampled_at_utc?: string | null;
   power_observed_at_utc?: string | null;
   lamp_power_observed_at_utc?: string | null;
+  lamp_power_previous?: boolean;
   ac_day_wh?: number | null;
   lamp_day_wh?: number | null;
   energy_date_wib?: string;

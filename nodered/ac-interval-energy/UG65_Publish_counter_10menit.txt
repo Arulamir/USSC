@@ -5,7 +5,7 @@ var records=meters.map(function(eui){
     var entry=(cache[eui]||{}).power_w;
     var valid=entry&&typeof entry.value==='number'&&Number.isFinite(entry.value)&&entry.value>=0&&entry.value<=4294967295&&Number.isFinite(entry.receivedAt)&&entry.receivedAt<=now&&now-entry.receivedAt<=180000;
     var energy=(cache[eui]||{}).energy_minute_points;
-    var points=Array.isArray(energy)?energy.filter(function(p){return p&&Number.isFinite(p.at)&&p.at<=now&&now-p.at<=600000&&Number.isFinite(p.wh)&&p.wh>=0&&p.wh<=4294967295;}).slice(-16).map(function(p){return {at:new Date(p.at).toISOString(),wh:p.wh};}):[];
+    var points=Array.isArray(energy)?energy.filter(function(p){return p&&Number.isFinite(p.at)&&p.at<=now&&now-p.at<=2700000&&Number.isFinite(p.wh)&&p.wh>=0&&p.wh<=4294967295;}).slice(-16).map(function(p){return {at:new Date(p.at).toISOString(),wh:p.wh};}):[];
     return {device_eui:eui,power_w:valid?entry.value:null,power_w_at:entry&&Number.isFinite(entry.receivedAt)&&Number.isFinite(new Date(entry.receivedAt).getTime())?new Date(entry.receivedAt).toISOString():null,energy_points:points};
 });
 return {topic:'office1/monitoring/power',qos:'0',retain:true,payload:JSON.stringify({type:'office_power',version:1,source_id:'ug65-ussc',sampled_at_utc:new Date(now).toISOString(),interval_minutes:1,records:records})};

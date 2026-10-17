@@ -166,7 +166,7 @@ export default function SmartOfficePage() {
   };
 
   const cards = [
-    { label: "Energi AC 1 Menit", icon: "bi-snow", value: number(snapshot?.ac_minute_wh, "Wh"), color: "green" },
+    { label: "Energi AC 10 Menit", icon: "bi-snow", value: number(snapshot?.ac_interval_wh, "Wh"), color: "green" },
     { label: "Daya Lampu", icon: "bi-lightbulb", value: number(snapshot?.lamp_power_w, "W"), color: "green" },
     { label: "Energi Harian AC", icon: "bi-lightning-charge", value: number(snapshot?.ac_day_wh, "Wh"), color: "green" },
     { label: "Energi Harian Lampu", icon: "bi-lightning-charge", value: number(snapshot?.lamp_day_wh, "Wh"), color: "orange" },
@@ -196,12 +196,12 @@ export default function SmartOfficePage() {
         <p className="office-snapshot-status" role="status">
           {snapshotLoading ? "Memuat data kantor..." : snapshotError ? "Koneksi data terputus." : !snapshot ? "Belum ada snapshot kantor." : snapshot.stale ? "Data terlambat." : "Data terakhir tersedia."}
           {snapshot && ` Snapshot: ${dateTime(snapshot.sampled_at_utc, true)}. Energi harian tanggal ${dateTime(snapshot.energy_date_wib)}.`}
-          {snapshot && (snapshot.ac_minute_wh == null
-            ? " Energi AC 1 menit menunggu pembacaan counter terbaru."
-            : ` Energi AC untuk 1 menit hingga ${dateTime(snapshot.ac_minute_end_utc, true)}${snapshot.ac_minute_quality?.estimated ? " (estimasi antar pembacaan)" : ""}.`)}
+          {snapshot && (snapshot.ac_interval_wh == null
+            ? " Energi AC 10 menit menunggu pembacaan counter terbaru."
+            : ` Energi AC: selisih dua laporan 10 menit terbaru per meter. Pembacaan tertua: ${dateTime(snapshot.ac_interval_end_utc, true)}.`)}
           {snapshot?.power_interval_minutes === 1 && (snapshot.lamp_power_w == null
             ? " Daya lampu belum mendapat pembacaan terbaru."
-            : snapshot.power_previous
+            : snapshot.lamp_power_previous
             ? ` Menampilkan daya lampu sebelumnya; pembacaan: ${dateTime(snapshot.lamp_power_observed_at_utc, true)}.`
             : ` Daya lampu diperbarui tiap 1 menit; pembacaan: ${dateTime(snapshot.lamp_power_observed_at_utc, true)}.`)}
         </p>

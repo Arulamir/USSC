@@ -57,7 +57,7 @@ var data = msg.payload;
 if (!device || !data || typeof data !== 'object') return null;
 var cache = flow.get('telemetry_latest_v1') || {};
 var saved = cache[eui] || {};
-var now = Date.now();
+var now = Date.now(), acEnergyUpdated=false;
 function save(key, value) { saved[key] = { value: value, receivedAt: now }; }
 function number(key, value, min, max) {
     if (typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max) save(key, value);
@@ -65,13 +65,14 @@ function number(key, value, min, max) {
 if (device.model === 'WS523' || device.model === 'WS502') {
     number('power_w', data.active_power, 0, 4294967295);
     number('energy_wh', data.power_consumption, 0, 4294967295);
-    // Keep genuine counter observations for the latest one-minute AC window.
+    // Keep genuine counter observations for the latest 10-minute AC reports.
     // Publishing the cache never adds a point or renews its observation time.
     if(device.model==='WS523'&&device.room!=='ATAS_PINTU'&&typeof data.power_consumption==='number'&&Number.isFinite(data.power_consumption)&&data.power_consumption>=0&&data.power_consumption<=4294967295){
         var points=Array.isArray(saved.energy_minute_points)?saved.energy_minute_points:[];
-        points=points.filter(function(p){return p&&Number.isFinite(p.at)&&p.at<now&&now-p.at<=600000&&Number.isFinite(p.wh);});
+        points=points.filter(function(p){return p&&Number.isFinite(p.at)&&p.at<now&&now-p.at<=2700000&&Number.isFinite(p.wh);});
         points.push({at:now,wh:data.power_consumption});
         saved.energy_minute_points=points.slice(-16);
+        acEnergyUpdated=true;
     }
 } else {
     number('temperature_c', data.temperature, -100, 150);
@@ -93,5 +94,4 @@ if (device.model === 'WS523' || device.model === 'WS502') {
 // History-only atau battery-only tidak memperbarui umur nilai sebelumnya.
 cache[eui] = saved;
 flow.set('telemetry_latest_v1', cache);
-return null;
-
+return acEnergyUpdated?{topic:'ac_energy_updated'}:null;

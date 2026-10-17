@@ -155,18 +155,19 @@ def snapshot_data(row, now=None):
     return data
 
 
-def minute_ac_energy(records, sampled_at, now):
-    """Counter differences over one common 60-second window, never active W.
+def interval_ac_energy(records, sampled_at, now):
+    """Actual differences between each meter's latest two 10-minute reports.
 
-    Interpolate only between genuine observations at most 90 seconds apart.
-    A 10-minute counter change must never masquerade as one minute of energy.
+    No interpolation, division by ten, or active-power conversion. Small radio
+    timing variations are allowed; a missed 20-minute report is excluded.
     """
-    result = {"ac_minute_wh": None, "ac_minute_stale": True,
-              "ac_minute_start_utc": None, "ac_minute_end_utc": None,
-              "ac_minute_quality": {"meter_used": 0, "meter_expected": 4,
-                                    "estimated": False}}
-    series = []
-    for eui in AC_METERS:
+    result = {"ac_interval_wh": None, "ac_interval_stale": True,
+              "ac_interval_minutes": 10,
+              "ac_interval_start_utc": None, "ac_interval_end_utc": None,
+              "ac_interval_quality": {"meter_used": 0, "meter_expected": 4,
+                                      "estimated": False, "intervals": []}}
+    intervals = []
+    for eui in sorted(AC_METERS):
         matches = [r for r in records if _eui(r) == eui]
         if len(matches) != 1:
             continue
@@ -188,57 +189,26 @@ def minute_ac_energy(records, sampled_at, now):
             points[at] = value
         if invalid or len(points) < 2:
             continue
-        ordered = sorted(points.items())
-        # After a reset only the new monotonic segment can be used.
-        reset = max((i for i in range(1, len(ordered))
-                     if ordered[i][1] < ordered[i - 1][1]), default=0)
-        ordered = ordered[reset:]
-        if (len(ordered) < 2 or now - ordered[-1][0] > POWER_MAX_AGE
-                or sampled_at - ordered[-1][0] > POWER_MAX_AGE):
+        (start, previous), (end, latest) = sorted(points.items())[-2:]
+        seconds = (end - start).total_seconds()
+        if (not 510 <= seconds <= 690 or latest < previous
+                or now - end > timedelta(minutes=15)
+                or sampled_at - end > timedelta(minutes=15)):
             continue
-        if _minute_counter_delta(ordered, ordered[-1][0]) is not None:
-            series.append(ordered)
-    if not series:
-        return result
-    end = min(points[-1][0] for points in series)
-    values = [_minute_counter_delta(points, end) for points in series]
-    values = [value for value in values if value is not None]
-    if not values:
-        return result
-    result.update(
-        ac_minute_wh=round(sum(value[0] for value in values), 3),
-        ac_minute_stale=False,
-        ac_minute_start_utc=(end - timedelta(minutes=1)).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
-        ac_minute_end_utc=end.isoformat(timespec="milliseconds").replace("+00:00", "Z"),
-        ac_minute_quality={"meter_used": len(values), "meter_expected": 4,
-                           "estimated": any(value[1] for value in values)},
-    )
+        intervals.append({"device_eui": eui, "wh": latest - previous,
+                          "start_utc": start.isoformat(timespec="milliseconds").replace("+00:00", "Z"),
+                          "end_utc": end.isoformat(timespec="milliseconds").replace("+00:00", "Z"),
+                          "duration_seconds": seconds})
+    if intervals:
+        result.update(
+            ac_interval_wh=round(sum(item["wh"] for item in intervals), 3),
+            ac_interval_stale=False,
+            ac_interval_start_utc=min(item["start_utc"] for item in intervals),
+            ac_interval_end_utc=min(item["end_utc"] for item in intervals),
+            ac_interval_quality={"meter_used": len(intervals), "meter_expected": 4,
+                                 "estimated": False, "intervals": intervals},
+        )
     return result
-
-
-def _minute_counter_delta(points, end):
-    start = end - timedelta(minutes=1)
-    if points[0][0] > start or points[-1][0] < end:
-        return None
-    # Even exact boundary readings cannot hide a long gap inside the window.
-    for (at, _), (next_at, _) in zip(points, points[1:]):
-        if at < end and next_at > start and next_at - at > timedelta(seconds=90):
-            return None
-
-    def boundary(target):
-        for at, value in points:
-            if at == target:
-                return value, False
-        for (at, value), (next_at, next_value) in zip(points, points[1:]):
-            if at < target < next_at:
-                fraction = (target - at) / (next_at - at)
-                return value + (next_value - value) * fraction, True
-        return None
-
-    left, right = boundary(start), boundary(end)
-    if left is None or right is None:
-        return None
-    return max(0, right[0] - left[0]), left[1] or right[1]
 
 
 def minute_power_data(packet, now=None):
@@ -252,10 +222,11 @@ def minute_power_data(packet, now=None):
         "power_previous": False,
         "power_sampled_at_utc": None, "power_observed_at_utc": None,
         "lamp_power_observed_at_utc": None,
+        "lamp_power_previous": False,
         "power_observed_at_by_group": {"ac": None, "lamp": None},
         "power_updated_at_by_group": {"ac": None, "lamp": None},
     }
-    data.update(minute_ac_energy([], now, now))
+    data.update(interval_ac_energy([], now, now))
     if not isinstance(packet, dict):
         return data
     sampled_at = _utc(packet.get("sampled_at_utc"))
@@ -267,9 +238,9 @@ def minute_power_data(packet, now=None):
             or not isinstance(records, list) or len(records) > 8):
         return data
     records = [record for record in records if isinstance(record, dict)]
-    # Minute Wh needs fresh observations even when old W readings are retained.
+    # Interval Wh uses actual meter reports; minute transport does not renew them.
     if now - sampled_at <= POWER_PACKET_MAX_AGE:
-        data.update(minute_ac_energy(records, sampled_at, now))
+        data.update(interval_ac_energy(records, sampled_at, now))
     # Keep valid old readings, but never renew their original observation time.
     duplicates = {_eui(record) for record in records
                   if sum(_eui(other) == _eui(record) for other in records) > 1}
@@ -300,6 +271,9 @@ def minute_power_data(packet, now=None):
             "lamp": _power_observed_at(records, LAMP_METERS, now, None, newest=True),
         },
     )
+    lamp_at = _utc(data["lamp_power_observed_at_utc"])
+    data["lamp_power_previous"] = lamp_at is not None and (
+        now - sampled_at > POWER_PACKET_MAX_AGE or now - lamp_at > POWER_MAX_AGE)
     return data
 
 
@@ -365,6 +339,8 @@ def merge_minute_power(data):
             if source != "minute":
                 result["power_previous"] = True
                 result["power_stale"] = True
+                if group == "lamp":
+                    result["lamp_power_previous"] = True
             cache[group] = {field: value, "power_quality": {group: dict(quality)},
                             "power_observed_at_by_group": {group: stamp},
                             "power_updated_at_by_group": {group: updated}}

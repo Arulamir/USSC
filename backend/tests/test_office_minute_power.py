@@ -123,11 +123,11 @@ class MinutePowerBridgeTests(unittest.TestCase):
             if record['device_eui'] in AC_METERS:
                 at = datetime.fromisoformat(payload['sampled_at_utc'].replace('Z', '+00:00'))
                 record['energy_points'] = [
-                    {'at': (at - timedelta(minutes=1)).isoformat(), 'wh': 1000},
+                    {'at': (at - timedelta(minutes=10)).isoformat(), 'wh': 1000},
                     {'at': at.isoformat(), 'wh': 1015},
                 ]
         data = merge_minute_power(self.data)
-        self.assertEqual(data['ac_minute_wh'], 60)
+        self.assertEqual(data['ac_interval_wh'], 60)
         self.assertEqual(data["ac_power_w"], 40)
         self.assertEqual(data["lamp_power_w"], 40)
         self.assertEqual(data["ac_day_wh"], 1234)
@@ -140,11 +140,11 @@ class MinutePowerBridgeTests(unittest.TestCase):
         self.assertFalse(self.session.trust_env)
         self.session.post.assert_not_called()
 
-    def test_minute_wh_is_not_filled_from_previous_watts_or_daily_wh(self):
+    def test_interval_wh_is_not_filled_from_previous_watts_or_daily_wh(self):
         self.test_read_only_bridge_keeps_energy_and_environment()
         self.session.get.side_effect = requests.Timeout()
         result = merge_minute_power(self.data)
-        self.assertIsNone(result['ac_minute_wh'])
+        self.assertIsNone(result['ac_interval_wh'])
         self.assertEqual(result['ac_day_wh'], 1234)
         self.assertEqual(result['lamp_power_w'], 40)
         self.assertEqual(result['lamp_power_observed_at_utc'],

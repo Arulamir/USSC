@@ -26,7 +26,7 @@ export function useSmartOfficeSnapshot() {
         const response = await ApiService.getSmartOffice(controller.signal);
         if (!disposed && id === requestId) {
           setSnapshot(previous => response.data ?? (previous
-            ? { ...previous, stale: true, power_stale: true, power_previous: true, ac_minute_stale: true } : null));
+            ? { ...previous, stale: true, power_stale: true, power_previous: true, lamp_power_previous: true, ac_interval_stale: true } : null));
           setError(false);
         }
       } catch {

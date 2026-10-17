@@ -6,10 +6,10 @@ CSS tambahan hanya berlaku pada panel baru.
 
 ## Data yang ditampilkan
 
-- **Energi AC 1 Menit (Wh)**: selisih counter `power_consumption` WS523
-  pada interval 60 detik terbaru. Tidak memakai `active_power` dan bukan
-  akumulasi sejak awal hari. Memerlukan pembaruan tiga Function pada
-  [panduan energi AC 1 menit](nodered/ac-minute-energy/README.md).
+- **Energi AC 10 Menit (Wh)**: selisih counter `power_consumption` WS523
+  pada dua laporan 10 menit terbaru per meter. Tidak memakai `active_power` dan bukan
+  akumulasi sejak awal hari. Memerlukan pembaruan dua Function UG65 pada
+  [panduan energi AC 10 menit](nodered/ac-interval-energy/README.md).
 - Daya lampu tetap **W**, jumlah pembacaan `power_w` empat meter lampu.
   AC juga menggunakan empat meter; `ATAS_PINTU` tidak masuk total AC.
 - Occupancy: `occupied` → Terisi, `vacant` → Kosong.
@@ -84,19 +84,19 @@ server yang memiliki akses ke `smart_office.office1`.
 
 ## Feed monitoring setiap 1 menit
 
-Jalur ini memperbarui energi AC **Wh/interval satu menit** dan daya lampu **W**.
+Jalur ini memperbarui energi AC **Wh/interval sepuluh menit** dan daya lampu **W**.
 UG65 membaca cache meter
 yang sudah ada setiap 60 detik, menerbitkan `office1/monitoring/power`, lalu
 mini PC menyimpan pembacaan terbaru di RAM. Backend membaca endpoint privat
 `GET /office1/power` menggunakan `OFFICE_CONTROL_KEY` yang sama dengan kontrol.
 Key tetap di backend dan Node-RED; tidak dikirim ke browser.
 
-Untuk sistem yang sudah memakai feed sebelumnya, ganti isi tiga Function
-sesuai [panduan ini](nodered/ac-minute-energy/README.md), tanpa import node
+Untuk sistem yang sudah memakai feed sebelumnya, ganti isi dua Function UG65
+dan satu sambungan monitoring sesuai [panduan ini](nodered/ac-interval-energy/README.md), tanpa import node
 duplikat. Riwayat counter untuk batas interval hanya berada di cache, tidak
 ditulis sebagai baris database baru. Perhitungan **energi harian AC**, grafik,
 dan Excel tetap memakai jalur dan kolom lama. Jika feed belum diperbarui,
-kartu energi AC satu menit menampilkan “—”; tidak diganti angka W atau Wh harian.
+kartu energi AC sepuluh menit menampilkan “—”; tidak diganti angka W atau Wh harian.
 
 Pasang tambahan pada tab yang sama dengan flow lama:
 
@@ -115,8 +115,8 @@ SMART_OFFICE_POWER_URL=http://100.97.64.86:1880/office1/power
 
 Restart backend dan build/restart frontend setelah menerapkan perubahan kode.
 Biarkan variabel kosong bila flow tambahan belum dipasang; daya lampu tetap
-membaca W dari snapshot database dan energi AC satu menit belum tersedia.
-Jika feed terlambat atau terputus, energi AC satu menit menjadi `null`/“—”;
+membaca W dari snapshot database dan energi AC sepuluh menit belum tersedia.
+Jika feed terlambat atau terputus, energi AC sepuluh menit menjadi `null`/“—”;
 Wh harian dan lingkungan tetap tersedia. Nilai daya lampu terakhir tetap
 ditampilkan dengan penanda **Menampilkan data sebelumnya** dan waktu
 observasi aslinya. Nilai nol tetap dipertahankan.
@@ -128,8 +128,8 @@ Pemilihan nilai terbaru mengikuti waktu observasi meter paling baru pada tiap
 kelompok. Meter lain yang masih memakai data sebelumnya tidak menghalangi
 perubahan total watt. Waktu data lama tetap ditampilkan untuk penanda kesegaran.
 
-**Meter WS502 dan empat WS523 AC harus mengirim pembacaan daya setiap 1 menit
-agar pembacaan fisiknya benar-benar diperbarui per menit.** Sesuaikan Reporting
+**Meter WS523 AC tetap mengirim setiap 10 menit; WS502 lampu dapat mengirim setiap 1 menit
+agar pembacaan lampu benar-benar diperbarui per menit.** Sesuaikan Reporting
 Interval pada perangkat melalui ToolBox atau konfigurasi downlink yang sesuai.
 Fitur ini tidak otomatis mengubah konfigurasi meter atau mengirim ON/OFF.
 Menyalin cache tiap menit tidak menciptakan pengukuran baru.
@@ -151,7 +151,7 @@ dan [WS523 User Guide](https://resource.milesight.com/milesight/iot/document/ws5
 ## Halaman Smart Office
 
 Menu **Smart Office** berada di navigasi samping dan membuka `/smart-office`.
-Ringkasan menampilkan energi AC satu menit (Wh), daya lampu (W),
+Ringkasan menampilkan energi AC sepuluh menit (Wh), daya lampu (W),
 energi harian AC/lampu (Wh), suhu (°C),
 kelembapan (%), illumination (Terang/Redup), dan occupancy (Terisi/Kosong).
 Keempat kartu kondisi ruangan memakai snapshot sensor dan pembaruan otomatis

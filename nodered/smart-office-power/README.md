@@ -1,9 +1,9 @@
 # Tambahan daya W setiap 1 menit
 
 **Pembaruan kartu AC:** website sekarang menampilkan energi AC pada interval
-satu menit terbaru dalam Wh, sementara lampu tetap W. Kedua fragment di sini
+sepuluh menit terbaru dalam Wh, sementara lampu tetap W. Kedua fragment di sini
 sudah meneruskan counter untuk fitur tersebut. Collector UG65 juga wajib
-diperbarui sesuai [panduan tiga Function](../ac-minute-energy/README.md).
+diperbarui sesuai [panduan dua Function UG65](../ac-interval-energy/README.md).
 Untuk instalasi yang sudah berjalan cukup ganti isi Function sesuai panduan;
 jangan import node yang sama dua kali.
 
@@ -29,9 +29,9 @@ File fragment di folder ini tidak berisi nilai key atau kredensial MQTT.
    `OFFICE_CONTROL_KEY` lama, bukan key operator. Sumber HTTP yang diizinkan tetap
    server `100.86.6.76`, `127.0.0.1`, dan `::1` sesuai flow kontrol sebelumnya.
 
-WS502 lampu dan empat WS523 AC perlu Reporting Interval 1 menit. Flow ini hanya
-membaca cache, sehingga tidak dapat mempercepat sensor yang masih mengirim tiap
-10/20 menit. Tidak ada perintah perubahan interval, ON/OFF, IR atau LoRa downlink
+WS523 AC tetap menggunakan Reporting Interval 10 menit. Untuk lampu W tiap
+menit, WS502 perlu melapor tiap 1 menit. Flow hanya membaca cache dan tidak
+mempercepat sensor. Tidak ada perintah perubahan interval, ON/OFF, IR atau LoRa downlink
 dalam tambahan ini. Jika memakai Source ID selain `ug65-ussc`, sesuaikan field
 source_id di kedua Function tambahan dan `SMART_OFFICE_SOURCE_ID` backend.
 
@@ -49,7 +49,7 @@ Untuk konfigurasi interval melalui downlink: dokumentasi WS50x dan WS52x
 menetapkan Report Interval sebagai channel `ff`, type `03`, UINT16 little-endian
 dalam detik. Nilai 60 detik menghasilkan payload HEX **`ff033c00`**, default
 application port **85**. Kirim hanya ke delapan meter AC/lampu yang dipakai
-website, satu per perangkat melalui fasilitas downlink yang sudah Anda gunakan.
+website bila memang ingin mengubah interval; instalasi AC sekarang tetap 10 menit.
 Ini mengubah interval laporan; bukan perintah ON/OFF atau reset counter energi.
 Sesuaikan port jika perangkat Anda telah dikonfigurasi berbeda dan verifikasi
 uplink berisi daya baru tiap menit. Paket tidak mengirim downlink ini otomatis.
