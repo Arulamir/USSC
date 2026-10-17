@@ -170,6 +170,12 @@ export default function SmartOfficePage() {
     { label: "Daya Lampu", icon: "bi-lightbulb", value: number(snapshot?.lamp_power_w, "W"), color: "green" },
     { label: "Energi Harian AC", icon: "bi-lightning-charge", value: number(snapshot?.ac_day_wh, "Wh"), color: "green" },
     { label: "Energi Harian Lampu", icon: "bi-lightning-charge", value: number(snapshot?.lamp_day_wh, "Wh"), color: "orange" },
+    { label: "Suhu", icon: "bi-thermometer-half", value: number(snapshot?.temperature_c, "°C"), color: "orange" },
+    { label: "Kelembapan", icon: "bi-droplet", value: number(snapshot?.humidity_pct, "%"), color: "blue" },
+    { label: "Illumination", icon: "bi-brightness-high", value: snapshot?.illumination === "bright" ? "Terang"
+      : snapshot?.illumination === "dim" ? "Redup" : "—", color: "orange" },
+    { label: "Occupancy", icon: "bi-people", value: snapshot?.occupancy === "occupied" ? "Terisi"
+      : snapshot?.occupancy === "vacant" ? "Kosong" : "—", color: "green" },
   ];
   const hasChartData = Boolean(history?.data.some(row => row.ac_wh !== null || row.lamp_wh !== null));
   const range = history ? `${dateTime(history.start_wib)} – ${dateTime(new Date(new Date(history.end_wib).getTime() - 1).toISOString())} WIB` : "";
@@ -179,7 +185,7 @@ export default function SmartOfficePage() {
       <div className="dashboard-page-container office-page">
         <div className="page-heading">
           <div><span className="eyebrow">SMART OFFICE</span><h2>Smart Office</h2>
-            <p>Pemantauan daya, konsumsi energi, dan kontrol perangkat kantor.</p></div>
+            <p>Pemantauan daya, konsumsi energi, kondisi ruangan, dan kontrol perangkat kantor.</p></div>
         </div>
         <div className="summary-grid">
           {cards.map(card => <div className="summary-card" key={card.label}>
