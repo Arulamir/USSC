@@ -4,6 +4,7 @@ import copy
 import io
 import unittest
 import zipfile
+from datetime import datetime, timezone
 from unittest.mock import patch
 from xml.etree import ElementTree as ET
 
@@ -11,6 +12,7 @@ import mysql.connector
 from flask import Flask
 
 from backend.api.office_export import HistoryUnavailable, create_workbook, office_export_bp
+from backend.api.office_history import build_history
 
 
 NS = {"s": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
@@ -125,8 +127,40 @@ class ExportWorkbookTests(unittest.TestCase):
         report["data"].reverse()
         before = copy.deepcopy(report)
         detail = unpack(report)["xl/worksheets/sheet2.xml"]
-        self.assertEqual(text(detail,"A8"),"00:00")
+        self.assertEqual(text(detail,"A8"),"17 Oktober 2026, 00:00")
         self.assertEqual(report,before)
+
+    def test_daily_report_names_the_full_date_and_hour(self):
+        parts = unpack(fixture())
+        self.assertIn("Tanggal: 17 Oktober 2026", text(parts["xl/worksheets/sheet1.xml"], "A4"))
+        detail = parts["xl/worksheets/sheet2.xml"]
+        self.assertIn("Tanggal: 17 Oktober 2026", text(detail, "A2"))
+        self.assertEqual(text(detail, "A9"), "17 Oktober 2026, 01:00")
+
+    def test_monthly_report_names_month_year_and_all_leap_month_dates(self):
+        report = build_history("monthly", "2024-02-20", [], datetime(2026, 10, 17, tzinfo=timezone.utc))
+        parts = unpack(report)
+        self.assertEqual(len(report["data"]), 29)
+        self.assertIn("Bulan: Februari 2024", text(parts["xl/worksheets/sheet1.xml"], "A4"))
+        detail = parts["xl/worksheets/sheet2.xml"]
+        self.assertEqual(text(detail, "A8"), "1 Februari 2024")
+        self.assertEqual(text(detail, "A36"), "29 Februari 2024")
+        self.assertIn("01/03/2024 00:00 WIB", text(detail, "A3"))
+
+    def test_yearly_report_names_year_and_each_of_its_twelve_months(self):
+        report = build_history("yearly", "2025-10-17", [], datetime(2026, 10, 17, tzinfo=timezone.utc))
+        parts = unpack(report)
+        self.assertEqual(len(report["data"]), 12)
+        self.assertIn("Tahun: 2025", text(parts["xl/worksheets/sheet1.xml"], "A4"))
+        detail = parts["xl/worksheets/sheet2.xml"]
+        self.assertEqual(text(detail, "A8"), "Januari 2025")
+        self.assertEqual(text(detail, "A19"), "Desember 2025")
+
+    def test_weekly_report_keeps_full_dates_and_source_energy_values(self):
+        report = build_history("weekly", "2026-10-17", [], datetime(2026, 10, 17, tzinfo=timezone.utc))
+        parts = unpack(report)
+        self.assertIn("Tanggal acuan: 17 Oktober 2026", text(parts["xl/worksheets/sheet1.xml"], "A4"))
+        self.assertEqual(text(parts["xl/worksheets/sheet2.xml"], "A8"), "12 Oktober 2026")
 
     def test_unavailable_reasons_are_readable_and_exclusion_counts_present(self):
         report = fixture()
@@ -153,6 +187,21 @@ class ExportRouteTests(unittest.TestCase):
         self.assertIn("USSC_Smart_Office_daily_2026-10-17.xlsx",response.headers["Content-Disposition"])
         self.assertEqual(response.headers["Cache-Control"],"no-store")
         self.assertTrue(zipfile.is_zipfile(io.BytesIO(response.data)))
+
+    @patch("backend.api.office_export.get_history")
+    def test_monthly_and_yearly_filenames_use_only_the_selected_period(self, history):
+        for period, selected, filename in (
+            ("monthly", "2024-02-20", "USSC_Smart_Office_monthly_2024-02.xlsx"),
+            ("yearly", "2025-10-17", "USSC_Smart_Office_yearly_2025.xlsx"),
+            ("weekly", "2026-10-17", "USSC_Smart_Office_weekly_2026-10-17.xlsx"),
+        ):
+            with self.subTest(period=period):
+                history.reset_mock()
+                history.return_value = build_history(period, selected, [], datetime(2026, 10, 17, tzinfo=timezone.utc))
+                response = self.client.get(f"/api/smart-office/export?period={period}&date={selected}")
+                self.assertEqual(response.status_code, 200)
+                history.assert_called_once_with(period, selected)
+                self.assertIn(filename, response.headers["Content-Disposition"])
 
     @patch("backend.api.office_export.get_history")
     def test_validation_failure(self,history):

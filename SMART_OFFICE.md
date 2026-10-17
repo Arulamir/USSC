@@ -185,7 +185,12 @@ konflik dikecualikan. Meter yang tersedia tetap dijumlahkan dengan penanda
 kualitas. Interval mendatang kosong, interval berjalan belum final.
 
 **Unduh Excel** memakai periode dan tanggal yang sedang dipilih melalui
-`GET /api/smart-office/export`. File `.xlsx` memiliki sheet **Ringkasan** dan
+`GET /api/smart-office/export`. Pilih **Per Tanggal** dengan tanggal lengkap,
+**Per Bulan** dengan bulan dan tahun, atau **Per Tahun** dengan tahun saja.
+Pilihan mingguan tetap tersedia. Judul laporan dan baris interval menyebut nama
+bulan dan tahun; laporan tanggal menyebut tanggal lengkap. Nama file bulanan
+memakai `YYYY-MM`, tahunan `YYYY`, dan harian `YYYY-MM-DD`.
+File `.xlsx` memiliki sheet **Ringkasan** dan
 **Energi**, subtotal data tersedia, status kelengkapan, waktu WIB, filter,
 header beku, format angka, serta pengaturan cetak. Nilai hilang tidak menjadi
 nol. Laporan tidak menjumlahkan kolom kumulatif harian antarsnapshot.

@@ -18,7 +18,7 @@ import "./office.css";
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 const periods: { value: OfficePeriod; label: string }[] = [
-  { value: "daily", label: "Per Hari" },
+  { value: "daily", label: "Per Tanggal" },
   { value: "weekly", label: "Per Minggu" },
   { value: "monthly", label: "Per Bulan" },
   { value: "yearly", label: "Per Tahun" },
@@ -47,6 +47,15 @@ function todayWib() {
   return `${part("year")}-${part("month")}-${part("day")}`;
 }
 
+function reportSelection(period: OfficePeriod, date: string) {
+  if (period === "yearly") return `Tahun ${date.slice(0, 4)}`;
+  const selected = new Date(`${date}T00:00:00+07:00`).toLocaleDateString("id-ID", {
+    ...(period === "monthly" ? {} : { day: "numeric" } as const),
+    month: "long", year: "numeric", timeZone: "Asia/Jakarta",
+  });
+  return `${period === "monthly" ? "Bulan" : period === "weekly" ? "Minggu dengan tanggal acuan" : "Tanggal"} ${selected}`;
+}
+
 function qualityLabel(status: string) {
   return ({ complete: "Lengkap", estimated: "Estimasi batas waktu", partial: "Data sebagian",
     partial_estimated: "Data sebagian dengan estimasi", missing_current: "Data meter belum tersedia",
@@ -59,11 +68,13 @@ export default function SmartOfficePage() {
   const { snapshot, error: snapshotError, loading: snapshotLoading } = useSmartOfficeSnapshot();
   const [period, setPeriod] = useState<OfficePeriod>("daily");
   const [date, setDate] = useState(todayWib);
+  const [year, setYear] = useState(() => todayWib().slice(0, 4));
   const [history, setHistory] = useState<OfficeHistory | null>(null);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState("");
+  const validSelection = period !== "yearly" || (/^\d{4}$/.test(year) && Number(year) >= 1970 && Number(year) <= 9998);
 
   useEffect(() => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
@@ -87,6 +98,7 @@ export default function SmartOfficePage() {
 
   const changePeriod = (next: OfficePeriod) => {
     if (next === period) return;
+    setYear(date.slice(0, 4));
     setPeriod(next);
     setHistory(null);
     setHistoryLoading(true);
@@ -96,6 +108,7 @@ export default function SmartOfficePage() {
 
   const changeDate = (next: string) => {
     if (!next || next === date) return;
+    setYear(next.slice(0, 4));
     setDate(next);
     setHistory(null);
     setHistoryLoading(true);
@@ -138,7 +151,7 @@ export default function SmartOfficePage() {
   };
 
   const download = async () => {
-    if (!history || downloading) return;
+    if (!history || historyLoading || !validSelection || downloading) return;
     // Capture the visible period so a later filter change cannot relabel the file.
     const requested = { period: history.period, date: history.date };
     const controller = new AbortController();
@@ -155,7 +168,9 @@ export default function SmartOfficePage() {
       const objectUrl = URL.createObjectURL(await response.blob());
       const link = document.createElement("a");
       link.href = objectUrl;
-      link.download = `USSC_Smart_Office_${requested.period}_${requested.date}.xlsx`;
+      const selection = requested.period === "yearly" ? requested.date.slice(0, 4)
+        : requested.period === "monthly" ? requested.date.slice(0, 7) : requested.date;
+      link.download = `USSC_Smart_Office_${requested.period}_${selection}.xlsx`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -209,7 +224,7 @@ export default function SmartOfficePage() {
         <section aria-labelledby="office-energy-title">
           <div className="section-title office-section-heading">
             <h3 id="office-energy-title">Konsumsi Energi AC dan Lampu</h3>
-            <button type="button" className="office-download" disabled={!history || historyLoading || downloading} onClick={download}>
+            <button type="button" className="office-download" disabled={!history || historyLoading || !validSelection || downloading} onClick={download}>
               <i className={`bi ${downloading ? "bi-hourglass-split" : "bi-file-earmark-excel"}`} aria-hidden="true" />
               {downloading ? "Menyiapkan Excel..." : "Unduh Excel"}
             </button>
@@ -220,12 +235,25 @@ export default function SmartOfficePage() {
                 {periods.map(item => <button type="button" key={item.value} aria-pressed={period === item.value}
                   className={period === item.value ? "selected" : ""} onClick={() => changePeriod(item.value)}>{item.label}</button>)}
               </div>
-              <label className="office-date">Tanggal acuan
+              {period === "yearly" ? <label className="office-date">Tahun
+                <input type="number" inputMode="numeric" min="1970" max="9998" step="1" value={year}
+                  aria-invalid={!validSelection} aria-describedby={!validSelection ? "office-year-error" : undefined}
+                  onChange={event => {
+                    const value = event.target.value;
+                    setYear(value);
+                    if (/^\d{4}$/.test(value) && Number(value) >= 1970 && Number(value) <= 9998) changeDate(`${value}-01-01`);
+                  }} />
+              </label> : period === "monthly" ? <label className="office-date">Bulan dan tahun
+                <input type="month" value={date.slice(0, 7)} min="1970-01" max="9998-12"
+                  onChange={event => { if (event.target.value) changeDate(`${event.target.value}-01`); }} />
+              </label> : <label className="office-date">{period === "daily" ? "Tanggal" : "Tanggal acuan minggu"}
                 <input type="date" value={date} min="1970-01-01" max="9998-12-31" onChange={event => changeDate(event.target.value)} />
-              </label>
+              </label>}
             </div>
+            {!validSelection && <p id="office-year-error" className="office-notice" role="alert">Masukkan tahun 4 digit antara 1970 dan 9998 sebelum mengunduh laporan.</p>}
             <div className="office-period-summary">
-              <p>{historyLoading ? "Memuat riwayat energi..." : range || "Riwayat belum tersedia."}</p>
+              <p>{historyLoading ? "Memuat riwayat energi..." : history
+                ? `${reportSelection(history.period, history.date)} · ${range}` : "Riwayat belum tersedia."}</p>
               {history && <div className="office-energy-totals">
                 <span>AC: <strong>{number(history.totals.ac_wh, "Wh")}</strong></span>
                 <span>Lampu: <strong>{number(history.totals.lamp_wh, "Wh")}</strong></span>

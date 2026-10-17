@@ -4,7 +4,7 @@ import io
 import math
 import re
 import zipfile
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from xml.etree.ElementTree import Element, SubElement, tostring
 
 import mysql.connector
@@ -18,6 +18,8 @@ NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
 REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 WIB = timezone(timedelta(hours=7))
 PERIODS = {"daily": "Harian", "weekly": "Mingguan", "monthly": "Bulanan", "yearly": "Tahunan"}
+MONTHS = ("Januari", "Februari", "Maret", "April", "Mei", "Juni",
+          "Juli", "Agustus", "September", "Oktober", "November", "Desember")
 QUALITY = {
     "complete": "Lengkap", "ok": "Lengkap", "partial": "Sebagian",
     "partial_estimated": "Sebagian / estimasi", "estimated": "Estimasi",
@@ -44,6 +46,50 @@ def _stamp(value):
         return parsed.astimezone(WIB).strftime("%d/%m/%Y %H:%M WIB")
     except (TypeError, ValueError):
         return _xml(value)
+
+
+def _long_date(value):
+    return f"{value.day} {MONTHS[value.month - 1]} {value.year}"
+
+
+def _selection(report):
+    selected = str(report.get("date", ""))
+    try:
+        chosen = date.fromisoformat(selected)
+    except ValueError:
+        return selected
+    if report.get("period") == "yearly":
+        return f"Tahun: {chosen.year}"
+    if report.get("period") == "monthly":
+        return f"Bulan: {MONTHS[chosen.month - 1]} {chosen.year}"
+    return f"{'Tanggal acuan' if report.get('period') == 'weekly' else 'Tanggal'}: {_long_date(chosen)}"
+
+
+def _interval_label(bucket, period):
+    label = str(bucket.get("label", ""))
+    try:
+        if period == "yearly":
+            chosen = date.fromisoformat(label + "-01")
+            return f"{MONTHS[chosen.month - 1]} {chosen.year}"
+        if period in ("monthly", "weekly"):
+            return _long_date(date.fromisoformat(label))
+        if period == "daily":
+            start = datetime.fromisoformat(str(bucket.get("start_utc", "")).replace("Z", "+00:00"))
+            if start.tzinfo is None:
+                start = start.replace(tzinfo=timezone.utc)
+            return f"{_long_date(start.astimezone(WIB))}, {label}"
+    except ValueError:
+        pass
+    return label
+
+
+def _filename(report):
+    selected = str(report["date"])
+    if report["period"] == "monthly":
+        selected = selected[:7]
+    elif report["period"] == "yearly":
+        selected = selected[:4]
+    return f"USSC_Smart_Office_{report['period']}_{selected}.xlsx"
 
 
 def _number(value):
@@ -192,8 +238,8 @@ def create_workbook(report):
     detail, data = _sheet([21,25,25,19,19,18,18,13,13,32], total_row + 3, freeze=7)
     _row(data, 1, ["SMART OFFICE MONITORING"] + [""] * 9, [1] * 10, 40)
     period = PERIODS.get(report.get("period"), report.get("period", ""))
-    selected = str(report.get("date", ""))
-    _row(data, 2, [f"Laporan energi {period.lower()} | Acuan: {selected}"] + [""] * 9, [6] * 10, 28)
+    selected = _selection(report)
+    _row(data, 2, [f"Laporan energi {period.lower()} | {selected}"] + [""] * 9, [6] * 10, 28)
     bounds = f"Rentang WIB: {_stamp(report.get('start_wib'))} s.d. {_stamp(report.get('end_wib'))} (batas akhir eksklusif)"
     _row(data, 3, [bounds] + [""] * 9, [8] * 10, 29)
     _row(data, 4, [f"Diekspor: {_stamp(report.get('generated_at_utc'))}"] + [""] * 9, [8] * 10)
@@ -207,7 +253,7 @@ def create_workbook(report):
         exclusions = _exclusions(bucket)
         if exclusions:
             note += " " + exclusions
-        values = [bucket.get("label", ""), _stamp(bucket.get("start_utc")), _stamp(bucket.get("end_utc")), _number(bucket.get("ac_wh")), _number(bucket.get("lamp_wh")), _quality(bucket, "ac"), _quality(bucket, "lamp"), _meters(bucket.get("ac_detail")), _meters(bucket.get("lamp_detail")), note]
+        values = [_interval_label(bucket, report.get("period")), _stamp(bucket.get("start_utc")), _stamp(bucket.get("end_utc")), _number(bucket.get("ac_wh")), _number(bucket.get("lamp_wh")), _quality(bucket, "ac"), _quality(bucket, "lamp"), _meters(bucket.get("ac_detail")), _meters(bucket.get("lamp_detail")), note]
         height = max(42, min(180, 14 * (math.ceil(len(note) / 29) + 1)))
         _row(data, index, values, [shade,shade,shade,numeric,numeric,shade,shade,shade,shade,shade], height)
     if not buckets:
@@ -225,7 +271,7 @@ def create_workbook(report):
     summary, data = _sheet([28,30,23,42], 23)
     _row(data, 1, ["SMART OFFICE MONITORING", "", "", ""], [1] * 4, 42)
     _row(data, 2, ["USSC | Universitas Negeri Surabaya", "", "", ""], [6] * 4, 27)
-    _row(data, 4, [f"Periode: {period} | Acuan tanggal: {selected}", "", "", ""], [0] * 4)
+    _row(data, 4, [f"Periode: {period} | {selected}", "", "", ""], [0] * 4)
     _row(data, 5, [bounds, "", "", ""], [8] * 4, 34)
     _row(data, 6, [f"Diekspor: {_stamp(report.get('generated_at_utc'))}", "", "", ""], [8] * 4)
     _row(data, 8, ["Kategori", "Subtotal tersedia (Wh)", "Interval tersedia", "Cakupan laporan"], [2] * 4, 30)
@@ -289,7 +335,7 @@ def export_smart_office():
     except (HistoryUnavailable, mysql.connector.Error):
         current_app.logger.exception("Smart Office report database unavailable")
         return jsonify({"status": "error", "message": "Data Smart Office belum dapat diakses."}), 503
-    filename = f"USSC_Smart_Office_{report['period']}_{report['date']}.xlsx"
+    filename = _filename(report)
     response = send_file(io.BytesIO(create_workbook(report)), mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", as_attachment=True, download_name=filename, max_age=0)
     response.headers["Cache-Control"] = "no-store"
     return response
