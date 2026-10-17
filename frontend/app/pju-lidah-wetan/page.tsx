@@ -1309,8 +1309,8 @@ export default function PjuLiwetPage() {
                 <span>{visiblePjus.length} titik PJU terlihat</span>
               </div>
             </div>
-            <div className="pju-lidah-wetan-table-wrap">
-              <table>
+            <div className="ussc-table-scroll pju-lidah-wetan-table-wrap">
+              <table className="ussc-data-table">
                 <thead>
                   <tr>
                     <th>ID</th>

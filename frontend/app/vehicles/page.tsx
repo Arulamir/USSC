@@ -1608,9 +1608,9 @@ const emissionHourlyAnalysis = useMemo(() => {
 
             <div className="traffic-card-body">
 
-              <div className="traffic-table-wrapper">
+              <div className="ussc-table-scroll traffic-table-wrapper">
 
-                <table className="traffic-table">
+                <table className="ussc-data-table traffic-table">
 
                   <thead>
                     <tr>
@@ -1772,9 +1772,9 @@ const emissionHourlyAnalysis = useMemo(() => {
 
             <div className="traffic-card-body">
 
-              <div className="traffic-table-wrapper">
+              <div className="ussc-table-scroll traffic-table-wrapper">
 
-                <table className="traffic-table">
+                <table className="ussc-data-table traffic-table">
 
                   <thead>
                     <tr>

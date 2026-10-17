@@ -1,0 +1,109 @@
+:root {
+  --monitoring-surface: #ffffff;
+  --monitoring-text: #475569;
+  --monitoring-border: #e2e8f0;
+  --monitoring-heading: #065f46;
+  --monitoring-header: #ecfdf5;
+  --monitoring-stripe: #f8fafc;
+  --monitoring-hover: #f0fdf4;
+}
+
+html.dark {
+  --monitoring-surface: #1e293b;
+  --monitoring-text: #cbd5e1;
+  --monitoring-border: #334155;
+  --monitoring-heading: #6ee7b7;
+  --monitoring-header: #16382f;
+  --monitoring-stripe: #1a2536;
+  --monitoring-hover: #203a35;
+}
+
+.ussc-visuals { min-width: 0; }
+
+.ussc-visuals div.ussc-table-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--monitoring-border);
+  border-radius: 12px;
+  background: var(--monitoring-surface);
+  -webkit-overflow-scrolling: touch;
+}
+
+.ussc-visuals table.ussc-data-table {
+  width: 100%;
+  margin: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: var(--monitoring-text);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+}
+
+.ussc-visuals table.ussc-data-table > thead {
+  background: var(--monitoring-header);
+}
+
+.ussc-visuals table.ussc-data-table > thead > tr > th {
+  padding: 12px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--monitoring-border);
+  background: var(--monitoring-header);
+  color: var(--monitoring-heading);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.6;
+  letter-spacing: 0.025em;
+  text-transform: none;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.ussc-visuals table.ussc-data-table > thead > tr > th[colspan] {
+  text-align: center;
+}
+
+.ussc-visuals table.ussc-data-table > tbody > tr {
+  border: 0;
+  background: var(--monitoring-surface);
+  transition: background-color 150ms ease;
+}
+
+.ussc-visuals table.ussc-data-table > tbody > tr:nth-child(even) {
+  background: var(--monitoring-stripe);
+}
+
+.ussc-visuals table.ussc-data-table > tbody > tr:hover,
+.ussc-visuals table.ussc-data-table > tbody > tr:focus-within {
+  background: var(--monitoring-hover);
+}
+
+.ussc-visuals table.ussc-data-table > tbody > tr > td {
+  padding: 12px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--monitoring-border);
+  background: transparent;
+  color: var(--monitoring-text);
+  font-size: 12px;
+  line-height: 1.6;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.ussc-visuals table.ussc-data-table > tbody > tr:last-child > td {
+  border-bottom: 0;
+}
+
+.ussc-visuals table.ussc-data-table > tbody > tr > td[colspan] {
+  padding: 28px 16px;
+  color: var(--monitoring-text);
+  text-align: center;
+  white-space: normal;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ussc-visuals table.ussc-data-table > tbody > tr { transition: none; }
+}

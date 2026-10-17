@@ -585,8 +585,8 @@ export default function TpsLidahWetanPage() {
             </div>
           </div>
 
-          <div className="max-h-[560px] overflow-auto">
-            <table className="min-w-[1320px] w-full border-collapse text-center text-xs text-slate-700 dark:text-slate-300">
+          <div className="ussc-table-scroll max-h-[560px] overflow-auto">
+            <table className="ussc-data-table min-w-[1320px] w-full border-collapse text-center text-xs text-slate-700 dark:text-slate-300">
               <thead className="sticky top-0 z-10 bg-slate-50 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
                 <tr className="border-b border-slate-200 dark:border-slate-700">
                   <th rowSpan={2} className="border-r border-slate-200 px-3 py-2.5 dark:border-slate-700">
@@ -712,8 +712,8 @@ export default function TpsLidahWetanPage() {
                 {sampahImportError}
               </div>
             )}
-            <div className="overflow-auto">
-              <table className="w-full min-w-[640px] border-collapse text-left text-sm text-slate-700 dark:text-slate-300">
+            <div className="ussc-table-scroll overflow-auto">
+              <table className="ussc-data-table w-full min-w-[640px] border-collapse text-left text-sm text-slate-700 dark:text-slate-300">
                 <thead className="bg-slate-50 dark:bg-slate-800">
                   <tr className="border-b border-slate-200 dark:border-slate-700">
                     {SAMPAH_HEADINGS.map((heading) => (

@@ -805,8 +805,8 @@ export default function KetintangPage() {
               </div>
             </div>
 
-            <div className="realtime-table-wrapper">
-              <table className="realtime-data-table">
+            <div className="ussc-table-scroll realtime-table-wrapper">
+              <table className="ussc-data-table realtime-data-table">
                 <thead>
                   <tr>
                     <th rowSpan={2} style={{ width: "45px" }}>No</th>

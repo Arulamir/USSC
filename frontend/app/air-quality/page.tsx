@@ -1848,9 +1848,9 @@ export default function AirQualityPage() {
 
             <div className="aq-card-body">
 
-              <div className="aq-table-responsive">
+              <div className="ussc-table-scroll aq-table-responsive">
 
-                <table className="aq-table">
+                <table className="ussc-data-table aq-table">
 
                   <thead>
 

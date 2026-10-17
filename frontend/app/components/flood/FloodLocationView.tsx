@@ -580,8 +580,8 @@ export default function FloodLocationView({
         <span>{history.length} Catatan</span>
       </div>
 
-      <div className="flood-table-card">
-        <table className="flood-table">
+      <div className="ussc-table-scroll flood-table-card">
+        <table className="ussc-data-table flood-table">
           <thead>
             <tr>
               <th>Waktu</th>
