@@ -1,0 +1,11 @@
+// Send verified ACK/timeout to the door controller and the existing Debug output.
+var pending=flow.get('door_bridge_pending')||{};
+var timedOut=msg.payload==='ack_timeout',data=timedOut?null:msg.payload;
+var id=timedOut?msg.bridgeRequestId:data&&data.id,request=pending[id];
+if(!request)return [{payload:{accepted:false,id:id||null,error:'Balasan terlambat/tidak memiliki request aktif'}},null];
+if(!timedOut&&data.command!==request.command)return [{payload:{accepted:false,id:id,error:'Perintah pada balasan tidak cocok'}},null];
+delete pending[id];flow.set('door_bridge_pending',pending);
+if(timedOut)data={id:id,command:request.command,accepted:false,error:'Tidak ada respons dalam 30 detik; keadaan pintu belum terkonfirmasi'};
+node.status({fill:data.accepted?'green':'red',shape:timedOut?'ring':'dot',text:data.command+(data.accepted?' diterima ISAPI':' gagal/belum terkonfirmasi')});
+return [{topic:'door_result',doorCycle:request.doorCycle,doorAction:request.doorAction,payload:data},
+    timedOut?null:{topic:id,reset:true}];

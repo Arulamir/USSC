@@ -30,8 +30,14 @@ setelah kedua Function monitoring UG65 diperbarui.
 Sesuai perubahan automasi berikutnya, tersedia [automasi AC bersama lampu
 utama](nodered/ac-main-timer/README.md): tap mengirim ON melalui Function HVAC
 dan MQTT lama; akhir 10 jam memeriksa region_1. Vacant menghasilkan OFF lampu
-A/B dan AC melalui IRHVAC, occupied memperpanjang 35 menit, data unknown
+A/B dan AC melalui IRHVAC, occupied memperpanjang 120 menit, data unknown
 menunggu. WS523 tetap hanya meter daya, bukan jalur kontrol AC.
+
+Sesudah 10 jam, laporan vacant baru selama periode tambahan langsung mematikan
+lampu/AC. Timer pintu terpisah: tap membuka satu jam, close dua menit, lalu
+region_1 occupied membuka maksimum dua jam dan mengulang close dua menit;
+vacant setelah jam pertama mengakhiri siklus. Lihat
+[flow pintu region_1 dan pemulihan mode normal](nodered/door-cycle-region1/README.md).
 
 Kolom `ac_jam_wh` / `lampu_jam_wh` dan periode lainnya berisi **energi**, sehingga
 tidak dipakai sebagai daya. Nilai nol tetap ditampilkan sebagai nol; data yang
