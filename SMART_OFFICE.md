@@ -123,13 +123,26 @@ tetap membaca W dari snapshot database. Wh harian dan lingkungan tetap tersedia.
 Jika feed terlambat atau terputus, nilai daya terakhir tetap
 ditampilkan dengan penanda **Menampilkan data sebelumnya** dan waktu
 observasi aslinya. Nilai nol tetap dipertahankan.
-Backend memilih nilai terakhir yang tersedia dari feed, cache proses, atau
-snapshot database. Cache dipisahkan per sumber dan diisi kembali dari database
+Backend memilih pembacaan terakhir **per meter/EUI** dari feed, cache proses,
+atau snapshot database, kemudian menjumlahkan kelompok AC/lampu. Cache dipisahkan
+per sumber dan diisi kembali dari observasi individual dalam snapshot database
 setelah restart. Jika belum pernah ada nilai yang valid, tampilan tetap “—”.
 Respons kosong juga mempertahankan data yang sudah ditampilkan di browser.
-Pemilihan nilai terbaru mengikuti waktu observasi meter paling baru pada tiap
-kelompok. Meter lain yang masih memakai data sebelumnya tidak menghalangi
-perubahan total watt. Waktu data lama tetap ditampilkan untuk penanda kesegaran.
+Paket baru dari AC B tidak menghapus daya terakhir AC A. Nilai A hanya diganti
+oleh observasi A yang sama baru atau lebih baru; nilai nol asli tetap mengganti
+nilai ON sebelumnya. Null, meter yang absen, atau data lebih tua tidak menghapus
+nilai A. Total ini adalah gabungan pembacaan terakhir, bukan jaminan semua meter
+diukur bersamaan. Waktu data lama tetap ditampilkan untuk penanda kesegaran.
+Metadata `power_meter_readings` memuat EUI, W, dan waktu observasi asli; metadata
+`power_previous_by_group` menandai kelompok yang masih memakai data sebelumnya.
+
+**Perbaikan 30 Oktober 2026:** publisher UG65 lama mengirim null setelah umur W
+melewati 3 menit. Ganti isi Function **Daya W: baca cache meter** memakai
+`nodered/ac-interval-energy/UG65_Publish_counter_10menit.txt`, kemudian Deploy
+Modified Nodes. Publisher baru tetap mengirim nilai terakhir tanpa memperbarui
+waktu observasinya. Backend terbaru juga menyimpan cache per meter, sehingga
+tetap kompatibel dengan paket parsial dari publisher lama. Mini PC dan `.env`
+tidak berubah. Terapkan backend terbaru dan restart layanan backend.
 
 **WS523 AC mengikuti interval laporan yang diterima, sekitar 10 atau 20 menit;
 WS502 lampu dapat mengirim setiap 1 menit

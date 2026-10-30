@@ -1,9 +1,8 @@
 # Tambahan daya W setiap 1 menit
 
-**Pembaruan kartu AC:** website sekarang menampilkan energi AC pada interval
-sepuluh menit terbaru dalam Wh, sementara lampu tetap W. Kedua fragment di sini
-sudah meneruskan counter untuk fitur tersebut. Collector UG65 juga wajib
-diperbarui sesuai [panduan dua Function UG65](../ac-interval-energy/README.md).
+**Kartu AC dan lampu memakai W.** Fragment di sini juga meneruskan counter
+energi untuk diagnostik interval Wh. Collector yang sudah mendukung counter
+tetap kompatibel; lihat [panduan Function UG65](../ac-interval-energy/README.md).
 Untuk instalasi yang sudah berjalan cukup ganti isi Function sesuai panduan;
 jangan import node yang sama dua kali.
 
@@ -29,7 +28,7 @@ File fragment di folder ini tidak berisi nilai key atau kredensial MQTT.
    `OFFICE_CONTROL_KEY` lama, bukan key operator. Sumber HTTP yang diizinkan tetap
    server `100.86.6.76`, `127.0.0.1`, dan `::1` sesuai flow kontrol sebelumnya.
 
-WS523 AC tetap menggunakan Reporting Interval 10 menit. Untuk lampu W tiap
+WS523 AC melapor mengikuti interval aktual (sekitar 10–20 menit). Untuk lampu W tiap
 menit, WS502 perlu melapor tiap 1 menit. Flow hanya membaca cache dan tidak
 mempercepat sensor. Tidak ada perintah perubahan interval, ON/OFF, IR atau LoRa downlink
 dalam tambahan ini. Jika memakai Source ID selain `ug65-ussc`, sesuaikan field
@@ -40,6 +39,15 @@ seperti sebelumnya. Feed power tidak menulis MySQL atau mengubah umur pengukuran
 Packet lebih dari 150 detik dan pembacaan meter lebih dari 3 menit tidak dianggap
 daya terbaru. Website tetap menampilkan nilai daya terakhir dengan penanda data
 sebelumnya dan timestamp asli. Nilai nol dibedakan dari data hilang.
+
+**Perbaikan 30 Oktober 2026:** Function **Daya W: baca cache meter** tidak lagi
+mengosongkan W setelah 3 menit. Nilai tetap dikirim dengan waktu observasi asli;
+usia 3 menit hanya menjadi penanda kesegaran pada website. Backend menyimpan
+nilai per EUI: pembaruan satu AC tidak menghapus nilai AC lainnya yang belum
+melapor. Observasi nol baru dari meter yang sama tetap mengganti nilai lamanya.
+Untuk instalasi aktif cukup ganti isi Function menggunakan
+`../ac-interval-energy/UG65_Publish_counter_10menit.txt` dan restart backend
+setelah menerapkan kode terbaru. Mini PC, key, dan `.env` tidak perlu diubah.
 
 JSON lengkap khusus pengguna disediakan terpisah karena memuat key asli dari
 export. Untuk sistem yang sudah aktif, fragment tambahan di atas menghindari

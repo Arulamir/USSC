@@ -6,7 +6,7 @@ import requests
 from flask import Flask
 
 from backend.api.smart_office import (
-    AC_METERS, LAMP_METERS, merge_minute_power, minute_power_data, smart_office_bp,
+    AC_METERS, LAMP_METERS, merge_minute_power, minute_power_data, snapshot_data, smart_office_bp,
 )
 
 
@@ -216,7 +216,69 @@ class MinutePowerBridgeTests(unittest.TestCase):
         result = merge_minute_power(self.data)
         self.assertEqual(result["ac_power_w"], 130)
         self.assertEqual(result["power_observed_at_by_group"]["ac"],
-                         (now - timedelta(minutes=5)).isoformat(timespec="milliseconds").replace("+00:00", "Z"))
+                         (now - timedelta(minutes=2)).isoformat(timespec="milliseconds").replace("+00:00", "Z"))
+
+    def test_partial_packet_keeps_running_ac_until_that_meter_reports_again(self):
+        now = datetime.now(timezone.utc)
+        first = packet(now - timedelta(minutes=20))
+        main_a = "24E124148060C6A0"
+        for record in first["records"]:
+            if record["device_eui"] in AC_METERS:
+                record["power_w"] = 1642 if record["device_eui"] == main_a else 1
+        self.response.json.return_value = {"status": "success", "data": first}
+        initial = merge_minute_power(self.data)
+        self.assertEqual(initial["ac_power_w"], 1645)
+
+        partial = packet(now - timedelta(seconds=1))
+        for record in partial["records"]:
+            if record["device_eui"] in AC_METERS:
+                record["power_w"] = None if record["device_eui"] == main_a else 1
+        self.response.json.return_value = {"status": "success", "data": partial}
+        retained = merge_minute_power(self.data)
+        self.assertEqual(retained["ac_power_w"], 1645)
+        self.assertEqual(retained["power_quality"]["ac"]["meter_used"], 4)
+        self.assertEqual(retained["power_observed_at_by_group"]["ac"],
+                         initial["power_observed_at_by_group"]["ac"])
+        self.assertTrue(retained["power_previous_by_group"]["ac"])
+        self.assertEqual(retained["ac_day_wh"], 1234)
+
+        # Only a real newer reading from A can replace its retained 1642 W.
+        main_report = packet(now)
+        main_report["records"] = [r for r in main_report["records"] if r["device_eui"] == main_a]
+        main_report["records"][0]["power_w"] = 0
+        self.response.json.return_value = {"status": "success", "data": main_report}
+        stopped = merge_minute_power(self.data)
+        self.assertEqual(stopped["ac_power_w"], 3)
+        self.assertEqual(stopped["lamp_power_w"], retained["lamp_power_w"])
+
+    def test_database_seeds_each_meter_after_backend_restart(self):
+        now = datetime.now(timezone.utc)
+        stored = packet(now - timedelta(minutes=10))
+        main_a = "24E124148060C6A0"
+        for record in stored["records"]:
+            record["power_w"] = 1642 if record["device_eui"] == main_a else 1
+        row = {"sampled_at_utc": now - timedelta(minutes=5), "interval_minutes": 10,
+               "device_samples": stored["records"], "ac_hari_wh": 500, "lampu_hari_wh": 50}
+        partial = packet(now)
+        partial["records"] = [r for r in partial["records"] if r["device_eui"] != main_a]
+        for record in partial["records"]:
+            record["power_w"] = 1
+        self.response.json.return_value = {"status": "success", "data": partial}
+        result = merge_minute_power(snapshot_data(row))
+        self.assertEqual(result["ac_power_w"], 1645)
+        self.assertTrue(result["power_previous_by_group"]["ac"])
+        self.assertEqual(result["ac_day_wh"], 500)
+
+    def test_older_single_meter_value_cannot_erase_a_newer_counterpart(self):
+        now = datetime.now(timezone.utc)
+        self.response.json.return_value = {"status": "success", "data": packet(now - timedelta(seconds=30))}
+        first = merge_minute_power(self.data)
+        payload = packet(now)
+        payload["records"][0].update(power_w=9000, power_w_at=(now - timedelta(minutes=5)).isoformat())
+        self.response.json.return_value = {"status": "success", "data": payload}
+        result = merge_minute_power(self.data)
+        self.assertEqual(result["ac_power_w"], first["ac_power_w"])
+        self.assertTrue(result["power_previous_by_group"]["ac"])
 
     def test_no_previous_reading_stays_unknown_instead_of_becoming_zero(self):
         self.session.get.side_effect = requests.Timeout()

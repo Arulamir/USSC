@@ -1,10 +1,21 @@
 # Energi AC pada dua laporan terbaru
 
+Catatan: kartu utama website sekarang memakai **Daya AC (W)**. Field interval
+Wh berikut tetap tersedia untuk diagnostik dan terpisah dari energi harian.
+
+**Perbaikan W 30 Oktober 2026:** ganti hanya Function **Daya W: baca cache meter**
+dengan `UG65_Publish_counter_10menit.txt`. Publisher mempertahankan nilai W
+terakhir per EUI melewati 3 menit, dengan waktu observasi asli. Backend terbaru
+menyatukan pembacaan per meter sehingga laporan AC lain tidak menimpa total
+dengan menghilangkan AC yang belum melapor. Umur data tetap ditandai sebagai
+data sebelumnya; nol baru dari meter yang sama tetap diterima. Tidak perlu
+mengganti collector, timer, kontrol, Mini PC, atau `.env` untuk perbaikan W ini.
+
 Interval yang disebutkan awalnya 10 menit, tetapi log perangkat juga menunjukkan
 pasangan laporan berjarak 1199,767 detik (sekitar 20 menit). Ini adalah durasi
 antara laporan yang diterima, bukan bukti bahwa konfigurasi perangkat pasti 20
 menit; satu laporan 10 menit bisa saja tidak diterima.
-Kartu **Energi AC (Wh)** memakai selisih dua counter
+Field diagnostik **Energi AC interval (Wh)** memakai selisih dua counter
 `power_consumption` terbaru per meter, kemudian menjumlahkan meter AC yang valid.
 Tidak memakai `active_power`, tidak dibagi sepuluh, tidak diinterpolasi, dan
 tidak menjumlahkan seluruh pemakaian sebelumnya. Meter ATAS_PINTU dikecualikan.
