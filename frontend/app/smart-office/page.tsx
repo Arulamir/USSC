@@ -202,7 +202,7 @@ export default function SmartOfficePage() {
           <div><span className="eyebrow">SMART OFFICE</span><h2>Smart Office</h2>
             <p>Pemantauan daya, konsumsi energi, kondisi ruangan, dan kontrol perangkat kantor.</p></div>
         </div>
-        <div className="summary-grid">
+        <div className="office-summary-grid">
           {cards.map(card => <div className="summary-card" key={card.label}>
             <div className={`summary-icon ${card.color}`}><i className={`bi ${card.icon}`} aria-hidden="true" /></div>
             <div><span>{card.label}</span><strong>{card.value}</strong></div>
