@@ -1,0 +1,9 @@
+// Gabungkan ke contextStorage yang SUDAH ADA di settings.js mini PC.
+// Jangan mengganti default, telemetryRuntime, atau store lain yang sudah berjalan.
+// Tambahkan hanya properti berikut di dalam contextStorage:
+officeStatusFile: {
+    module: "localfilesystem",
+    config: { cache: true, flushInterval: 1 }
+}
+// Jika properti sebelumnya belum diakhiri koma, tambahkan koma pemisah.
+// Restart Node-RED sesudah menyimpan settings.js.

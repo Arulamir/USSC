@@ -1,13 +1,25 @@
 // Read reports only: no command publication, no power-based state inference.
 var packet;
-try{var raw=Buffer.isBuffer(msg.payload)?msg.payload.toString():String(msg.payload);if(raw.length>32768)return null;packet=JSON.parse(raw);}catch(e){
-    if(msg.topic==='tele/ussc/LWT'){
-        var last=flow.get('office_tasmota_ir_state_v1','telemetryRuntime')||{};
-        var text=String(msg.payload).trim();
-        if(text==='Online'||text==='Offline'){last.online=text==='Online';flow.set('office_tasmota_ir_state_v1',last,'telemetryRuntime');}
+try {
+    if (msg.topic === 'tele/ussc/LWT') {
+        var last = flow.get('office_tasmota_ir_state_v1','telemetryRuntime') ||
+            flow.get('office_tasmota_ir_state_v1','officeStatusFile') || {};
+        var text = String(msg.payload).trim();
+        if (text === 'Online' || text === 'Offline') {
+            last.online = text === 'Online';
+            flow.set('office_tasmota_ir_state_v1',last,'telemetryRuntime');
+        }
+        return null;
     }
-    return null;
-}
+    if (msg.payload && typeof msg.payload === 'object' && !Buffer.isBuffer(msg.payload)) {
+        if (JSON.stringify(msg.payload).length > 32768) return null;
+        packet = msg.payload;
+    } else {
+        var raw = Buffer.isBuffer(msg.payload) ? msg.payload.toString() : String(msg.payload);
+        if (raw.length > 32768) return null;
+        packet = JSON.parse(raw);
+    }
+} catch(e) { node.status({fill:'yellow',shape:'ring',text:'payload / penyimpanan status belum siap'}); return null; }
 if(!packet||typeof packet!=='object'||Array.isArray(packet))return null;
 var now=Date.now();
 if(msg.topic==='office1/monitoring/relays'){
@@ -42,7 +54,17 @@ var ir=sent&&packet.IRHVAC||received&&packet.IrReceived&&packet.IrReceived.IRHVA
 if(!ir||typeof ir!=='object'||String(ir.Vendor||ir.Protocol||'').toUpperCase()!=='DAIKIN')return null;
 var power=String(ir.Power||'').toLowerCase();
 if(power!=='on'&&power!=='off')return null;
-flow.set('office_tasmota_ir_state_v1',{state:power,source:sent?'tasmota_ir_sent':'tasmota_ir_received',
-    observed_at_utc:new Date(now).toISOString(),online:true},'telemetryRuntime');
+var report = {state:power,source:sent?'tasmota_ir_sent':'tasmota_ir_received',
+    observed_at_utc:new Date(now).toISOString(),online:true};
+flow.set('office_tasmota_ir_state_v1',report,'telemetryRuntime');
+// Store only the observation: restored state never implies current connectivity.
+try {
+    flow.set('office_tasmota_ir_state_v1',{state:report.state,source:report.source,
+        observed_at_utc:report.observed_at_utc},'officeStatusFile');
+} catch(e) {
+    node.status({fill:'yellow',shape:'ring',text:'IR diterima; officeStatusFile gagal'});
+    node.warn('Status IR belum tersimpan: periksa contextStorage officeStatusFile');
+    return null;
+}
 node.status({fill:'green',shape:'dot',text:'IR Tasmota '+power+'; fisik AC belum terkonfirmasi'});
 return null;

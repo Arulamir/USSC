@@ -22,6 +22,45 @@ memperbarui waktu observasi asli. Nilai W dan pesan perintah tidak menentukan
 status relay. Semua kontrol saat ini memakai payload 0833ff/0830ff untuk kedua
 kanal, sehingga grup ON/OFF harus didukung laporan kedua kanal setiap meter.
 
+## Pembaruan cache IR persisten (mini PC)
+
+1. Buka `settings.js` yang benar-benar dipakai proses Node-RED mini PC (lokasinya
+   tercantum pada log startup `Settings file`; biasanya folder `.node-red` akun
+   yang menjalankan Node-RED). Cadangkan file terlebih dahulu.
+2. Di dalam objek `contextStorage` yang sudah ada, tambahkan properti berikut.
+   Pertahankan `default`, `telemetryRuntime`, dan seluruh store lain. Jangan
+   membuat objek contextStorage kedua. Gunakan koma pemisah antarproperti.
+
+   ```javascript
+   officeStatusFile: {
+       module: "localfilesystem",
+       config: { cache: true, flushInterval: 1 }
+   }
+   ```
+
+3. Restart Node-RED agar store baru dikenali. JSON flow tidak dapat menambahkan
+   konfigurasi ini sendiri. Data baru ditulis ke disk dalam siklus sekitar satu
+   detik; pemadaman mendadak sebelum flush masih dapat kehilangan laporan terakhir.
+4. Jika tambahan monitoring lama sudah dipasang, paling mudah salin seluruh isi
+   `MiniPC_cache_status.txt` ke Function **Status perangkat: cache relay dan IR**
+   dan `MiniPC_API_status.txt` ke Function **API status: akses baca**. Pertahankan
+   ID, tab, kabel, dan konfigurasi lain; Deploy Modified Nodes. Tidak perlu
+   mengimpor node MQTT/API yang sama dua kali. JSON tujuh node juga disediakan
+   untuk pemasangan awal, dengan ID yang sama seperti versi sebelumnya.
+5. Kedua Function harus berada di tab yang sama. Cache kini menerima payload
+   teks JSON, Buffer, maupun objek JSON dari MQTT. Tidak ada polling perintah
+   IRHVAC, perintah ON/OFF, atau nilai status buatan saat startup.
+
+Setelah restart, API memakai laporan IR tersimpan dengan timestamp aslinya dan
+menandainya sebagai laporan sebelumnya sampai ada informasi baru. LWT Online
+hanya menyatakan Tasmota tersambung; bukan observasi IR atau konfirmasi AC.
+Jika belum pernah ada laporan IR yang valid, status tetap belum tersedia. Pada
+penggunaan ON/OFF berikutnya yang memang diperlukan, laporan `IRHVAC.Power`
+akan mengisi cache. Jangan menyalakan atau mematikan AC hanya demi inisialisasi.
+
+Referensi: [Context Node-RED](https://nodered.org/docs/user-guide/context),
+[localfilesystem](https://nodered.org/docs/api/context/store/localfilesystem).
+
 ## Pemasangan mini PC
 
 1. Import `MiniPC_tambahan_status_perangkat.json` ke **current flow Office1
@@ -47,8 +86,8 @@ tidak mengubah TTL atau validasi perintah ON/OFF yang sudah ada.
 
 Endpoint privat baru **GET `/office1/state`** memakai key dan pembatasan sumber
 yang sama dengan `/office1/power` (server 100.86.6.76 dan loopback). Tidak
-menyimpan key di browser, node tambahan, atau file publik. Cache berada di RAM;
-setelah restart Node-RED, status menunggu laporan baru. Tidak mengirim perintah
+menyimpan key di browser, node tambahan, atau file publik. Cache relay berada di RAM; status IR terakhir juga disimpan pada
+`officeStatusFile` dan dapat dibaca kembali sesudah restart. Tidak mengirim perintah
 untuk menebak atau menginisialisasi ON/OFF.
 
 ## Website/backend

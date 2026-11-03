@@ -9,5 +9,15 @@ if(key.length<32)return reply(503,{status:'error',message:'Key belum dikonfigura
 if(String(msg.req.headers.authorization||'')!=='Bearer '+key)return reply(401,{status:'error',message:'Token tidak valid'});
 var relays=flow.get('office_relay_latest_v1','telemetryRuntime');
 var ac=flow.get('office_tasmota_ir_state_v1','telemetryRuntime')||null;
+if(!ac || !ac.observed_at_utc){
+    try {
+        var saved=flow.get('office_tasmota_ir_state_v1','officeStatusFile');
+        if(saved && (saved.state==='on'||saved.state==='off') &&
+            (saved.source==='tasmota_ir_sent'||saved.source==='tasmota_ir_received') &&
+            Number.isFinite(Date.parse(saved.observed_at_utc))) {
+            ac={state:saved.state,source:saved.source,observed_at_utc:saved.observed_at_utc,online:false};
+        }
+    } catch(e) { node.status({fill:'yellow',shape:'ring',text:'officeStatusFile belum siap'}); }
+}
 return reply(200,{status:'success',data:{type:'office_device_states',version:1,source_id:'ug65-ussc',
     served_at_utc:new Date().toISOString(),relays:relays?relays.data:null,ac:ac}});

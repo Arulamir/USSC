@@ -63,9 +63,27 @@ for(const [ip,token,code] of [['192.0.2.3',key,403],['100.86.6.76','wrong',401]]
 }
 result=read();assert.equal(result.headers['Cache-Control'],'no-store');
 if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(result.payload.data));
+// Native MQTT object and Buffer payloads must be accepted too.
+run(cache,{topic:'stat/ussc/RESULT',payload:{IRHVAC:{Vendor:'DAIKIN',Power:'On'}}});
+assert.equal(read().payload.data.ac.state,'on');
+run(cache,{topic:'stat/ussc/RESULT',payload:Buffer.from(JSON.stringify({IRHVAC:{Vendor:'DAIKIN',Power:'Off'}}))});
+assert.equal(read().payload.data.ac.state,'off');
+const saved=JSON.parse(JSON.stringify(read().payload.data.ac));
+assert.equal(values.get('officeStatusFile:office_tasmota_ir_state_v1').observed_at_utc,saved.observed_at_utc);
+// Simulated process restart clears runtime RAM, preserves the disk-store observation.
+for(const k of [...values.keys()])if(k.startsWith('telemetryRuntime:'))values.delete(k);
+now+=3600000;
+assert.equal(read().payload.data.ac.state,'off');
+assert.equal(read().payload.data.ac.observed_at_utc,saved.observed_at_utc,'Restart never refreshes observation time');
+assert.equal(read().payload.data.ac.online,false,'Restored state is historical, not a fresh report');
+run(cache,{topic:'tele/ussc/LWT',payload:'Online'});
+assert.equal(read().payload.data.ac.observed_at_utc,saved.observed_at_utc,'LWT cannot invent an IR observation');
+tasmota('stat/ussc/RESULT',{IRHVAC:{Vendor:'DAIKIN',Power:'On'}},true);
+assert.equal(read().payload.data.ac.state,'off','Retained packets cannot overwrite the restored observation');
+values.clear();assert.equal(read().payload.data.ac,null,'Empty disk and RAM never imply OFF');
 const fragments=['UG65_tambahan_status_relay.json','MiniPC_tambahan_status_perangkat.json'].flatMap(f=>JSON.parse(load(f)));
 assert.equal(fragments.find(n=>n.type==='function'&&n.func.includes('JSON.parse')).func.replace(/\r\n/g,'\n'),cache.replace(/\r\n/g,'\n'),'Imported Function matches tested source');
 assert.equal(fragments.length,10);assert.equal(new Set(fragments.map(n=>n.id)).size,10);
 assert.ok(fragments.filter(n=>n.type==='mqtt out').every(n=>n.topic==='office1/monitoring/relays'));
 assert.ok(fragments.filter(n=>n.type==='http in').every(n=>n.method==='get'));
-console.log('PASS: genuine WS502 channel reports, original timestamps, partial updates, no power inference, Tasmota sent/received IR with no physical claim, retained/invalid/future/duplicate rejection, read-only authenticated HTTP; ten monitoring nodes, no control/door writes.');
+console.log('PASS: genuine WS502 channel reports, original timestamps, partial updates, no power inference, Tasmota sent/received IR with no physical claim, retained/invalid/future/duplicate rejection, read-only authenticated HTTP; persistent IR restore after simulated restart, text/object/Buffer payloads; ten monitoring nodes, no control/door writes.');
