@@ -248,14 +248,17 @@ export default function NodeManagerPage() {
       if (!map.has(n.node_key)) map.set(n.node_key, n.name || n.node_key)
     })
     return Array.from(map.entries()).map(([key, name]) => ({ key, name }))
-  }, [config?.nodes])
+  }, [config])
 
   useEffect(() => {
-    const session = getLoginSession()
-    if (session?.role === 'admin') {
-      const value = document.cookie.split('; ').find((c) => c.startsWith('unesa_session='))?.split('=').slice(1).join('=')
-      if (value) setToken(decodeURIComponent(value))
-    }
+    const initial = window.setTimeout(() => {
+      const session = getLoginSession()
+      if (session?.role === 'admin') {
+        const value = document.cookie.split('; ').find((c) => c.startsWith('unesa_session='))?.split('=').slice(1).join('=')
+        if (value) setToken(decodeURIComponent(value))
+      }
+    }, 0)
+    return () => window.clearTimeout(initial)
   }, [])
 
   useEffect(() => {

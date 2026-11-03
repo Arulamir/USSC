@@ -43,6 +43,7 @@ yarn-error.log*
 
 # 5. Dependensi & Build
 node_modules/
+node_modules
 dist/
 build/
 .cache/

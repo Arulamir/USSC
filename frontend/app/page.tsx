@@ -922,6 +922,7 @@ const airChartItems = [
                Desktop: 1 Baris (5 Kartu Utama)
                Mobile/Tablet: 2 Kelompok (Lingkungan & Mobilitas)
           ================================================== */}
+          <div className="summary-grid">
           <div className="summary-card flood-summary-card">
   <div className="flood-card-content">
 

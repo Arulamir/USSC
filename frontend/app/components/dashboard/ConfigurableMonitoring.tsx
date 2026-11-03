@@ -23,9 +23,9 @@ function Sparkline({ nodeKey, metricKey, label, unit }: { nodeKey: string; metri
     } catch { setFailed(true) }
   }, [nodeKey, metricKey])
   useEffect(() => {
-    void loadHistory()
+    const initial = window.setTimeout(() => void loadHistory(), 0)
     const timer = window.setInterval(() => void loadHistory(), 60000)
-    return () => window.clearInterval(timer)
+    return () => { window.clearTimeout(initial); window.clearInterval(timer) }
   }, [loadHistory])
 
   const width = 240
@@ -93,17 +93,6 @@ export default function ConfigurableMonitoring() {
     return () => { window.clearTimeout(timer); window.removeEventListener('unesa-auth-changed', refreshUser) }
   }, [])
 
-  useEffect(() => {
-    if (editing) setDraft(publishedCards)
-  }, [editing, config?.dashboard])
-
-  useEffect(() => {
-    if (config && user?.role === 'admin') {
-      const enabled = (config.nodes ?? []).filter((node) => node.metric_id && node.metric_enabled)
-      if (publishedCards.length === 0 && enabled.length > 0) setDraft(enabled.map((node, order) => ({ id: cardId(node.node_key, node.metric_key!), nodeKey: node.node_key, metricKey: node.metric_key!, order })))
-    }
-  }, [config, user])
-
   const dashboardCards = config?.dashboard?.cards ?? []
   const publishedCards = dashboardCards.slice().sort((a, b) => a.order - b.order)
 
@@ -119,9 +108,9 @@ export default function ConfigurableMonitoring() {
   }, [])
 
   useEffect(() => {
-    void load()
+    const initial = window.setTimeout(() => void load(), 0)
     const timer = window.setInterval(() => void load(), 15000)
-    return () => window.clearInterval(timer)
+    return () => { window.clearTimeout(initial); window.clearInterval(timer) }
   }, [load])
 
   const metrics = useMemo(() => (config?.nodes ?? []).filter((node) => node.metric_id && node.metric_enabled).map((node) => ({
@@ -153,7 +142,10 @@ export default function ConfigurableMonitoring() {
   return <section className="config-monitoring" aria-labelledby="config-monitoring-title">
     <div className="config-monitoring-heading">
       <div><h3 id="config-monitoring-title">Monitoring Node</h3><p>Flood, lingkungan, cuaca, dan sensor yang dikonfigurasi admin.</p></div>
-      {user?.role === 'admin' && !editing && <button type="button" onClick={() => { setDraft(publishedCards); setEditing(true) }}>Edit dashboard</button>}
+      {user?.role === 'admin' && !editing && <button type="button" onClick={() => {
+        setDraft(publishedCards.length ? publishedCards : metrics.map((metric, order) => ({ id: metric.id, nodeKey: metric.node.node_key, metricKey: metric.node.metric_key!, order })))
+        setEditing(true)
+      }}>Edit dashboard</button>}
       {editing && <div className="config-editor-actions"><button type="button" onClick={() => setEditing(false)}>Batal</button><button type="button" disabled={saving || !saveable} onClick={() => void save()}>{saving ? 'Menyimpan…' : 'Simpan'}</button></div>}
     </div>
     {error && <p role="status" className="config-monitoring-error">{error}</p>}

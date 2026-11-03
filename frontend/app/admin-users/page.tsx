@@ -38,8 +38,11 @@ export default function AdminUsersPage() {
       router.replace('/')
       return
     }
-    setAuthorized(true)
-    loadUsers().catch((cause: unknown) => setError(cause instanceof Error ? cause.message : 'Gagal memuat pengguna.')).finally(() => setLoading(false))
+    const initial = window.setTimeout(() => {
+      setAuthorized(true)
+      loadUsers().catch((cause: unknown) => setError(cause instanceof Error ? cause.message : 'Gagal memuat pengguna.')).finally(() => setLoading(false))
+    }, 0)
+    return () => window.clearTimeout(initial)
   }, [loadUsers, router])
 
   const sortedUsers = useMemo(() => [...users].sort((a, b) => {
