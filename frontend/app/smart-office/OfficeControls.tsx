@@ -199,7 +199,7 @@ export default function OfficeControls() {
                 {device.id !== "WS502_ALL" && <span className="office-controls-state-copy">
                   {awaitingReport ? `Perintah ${command.state.toUpperCase()} terkirim · Menunggu laporan`
                     : !report?.state ? "Status belum tersedia" : report.state === "mixed" ? "Sebagian ON, sebagian OFF"
-                    : `${device.group === "ac" ? "IR Tasmota" : "Status"} ${report.state.toUpperCase()}${report.stale || stateError ? " · Laporan sebelumnya" : ""}`}
+                    : `${device.group === "ac" ? "AC" : "Status"} ${report.state.toUpperCase()}${report.stale || stateError ? " · Laporan sebelumnya" : ""}`}
                   {awaitingReport && report?.state && <span>Laporan terakhir: {report.state === "mixed" ? "Sebagian ON, sebagian OFF" : report.state.toUpperCase()}</span>}
                   {observed && <span>{observed}</span>}
                 </span>}
