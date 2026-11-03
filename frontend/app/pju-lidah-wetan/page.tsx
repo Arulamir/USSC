@@ -12,7 +12,7 @@ import PhotoViewer, { PhotoViewerState } from './PhotoViewer'
 import 'leaflet/dist/leaflet.css'
 import 'pannellum/build/pannellum.css'
 import './index.css'
-
+import Hls from 'hls.js'
 // ============================================================
 // CONFIG & CONSTANTS
 // ============================================================
@@ -192,6 +192,8 @@ type TrafficTableRow = {
   total: number
 }
 
+type PjuViewMode = 'pju_luar' | 'pju' | 'traffic'
+
 type LeafletModule = typeof import('leaflet')
 
 type AdminCamera = {
@@ -208,11 +210,14 @@ type AdminCamera = {
 // CAMERA CONFIGURATION
 // ============================================================
 
-const ALLOWED_CAMERA_NAMES = ['CCTV GERBANG UTAMA LIDAH 2', 'CCTV GERBANG UTAMA KETINTANG 1'] as const
+const ALLOWED_CAMERA_NAMES = ['CCTV GERBANG LIDAH UTAMA DALAM 1', 'CCTV GERBANG KETINTANG UTAMA DALAM'] as const
 
 const PUBLIC_CAMERA_STREAMS: Record<string, string> = {
-  'CCTV GERBANG UTAMA LIDAH 2': 'CTV_GL1_01_00_02',
-  'CCTV GERBANG UTAMA KETINTANG 1': 'CCTV_GK_1_01_02_01',
+  // 'CCTV GERBANG LIDAH UTAMA DALAM 1': 'CTV_GL1_01_00_02',
+  // 'CCTV GERBANG LIDAH UTAMA DALAM 1': 'CTV_GL1_01_00_04',
+  // 'CCTV GERBANG KETINTANG UTAMA DALAM': 'CCTV_GK_1_01_01_01',
+  'CCTV GERBANG LIDAH UTAMA DALAM 1': 'lidah_h264',
+  'CCTV GERBANG KETINTANG UTAMA DALAM': 'ketintang_h264',
 }
 
 const API_URL = '/api/traffic-grafik'
@@ -470,6 +475,20 @@ export default function PjuLiwetPage() {
   const toggleTraffic = () => {
     setTrafficVisible((visible) => !visible)
   }
+  const currentView: PjuViewMode = trafficVisible
+    ? 'traffic'
+    : selectedType === MODES.PJU_LUAR
+      ? 'pju_luar'
+      : 'pju'
+
+  const handleViewChange = (mode: PjuViewMode) => {
+    if (mode === 'traffic') {
+      setTrafficVisible(true)
+    } else {
+      setTrafficVisible(false)
+      setSelectedType(mode === 'pju_luar' ? MODES.PJU_LUAR : MODES.PJU)
+    }
+  }
   const [trafficData, setTrafficData] = useState<TrafficData | null>(null)
   const [trafficLoading, setTrafficLoading] = useState(false)
   const [trafficError, setTrafficError] = useState<string | null>(null)
@@ -480,7 +499,63 @@ export default function PjuLiwetPage() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null)
 
+  const [splitRatio, setSplitRatio] = useState<number>(55)
+  const [splitMode, setSplitMode] = useState<'split' | 'map-only' | 'cctv-only'>('split')
+  const [isDragging, setIsDragging] = useState(false)
+  const [scrollZoom, setScrollZoom] = useState(false)
+  const splitContainerRef = useRef<HTMLDivElement | null>(null)
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setIsDragging(true)
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging || !splitContainerRef.current) return
+    const rect = splitContainerRef.current.getBoundingClientRect()
+    const clientX = e.clientX
+    const newRatio = ((clientX - rect.left) / rect.width) * 100
+    const clamped = Math.max(20, Math.min(80, newRatio))
+    setSplitRatio(clamped)
+    if (splitMode !== 'split') setSplitMode('split')
+  }
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    setIsDragging(false)
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId)
+    } catch {
+      // ignore
+    }
+    if (mapRef.current) {
+      mapRef.current.invalidateSize({ animate: false })
+    }
+  }
+
+  const setPresetMode = (mode: 'map-only' | 'split' | 'cctv-only', ratio = 50) => {
+    setSplitMode(mode)
+    if (mode === 'split') setSplitRatio(ratio)
+    window.setTimeout(() => {
+      mapRef.current?.invalidateSize({ animate: false })
+    }, 50)
+  }
+
   const selectedCamera = cameras.find((camera) => camera.public_code === selectedCameraCode)
+  const selectedTrafficCameraId = useMemo(() => {
+    const name = selectedCamera?.public_name ?? ''
+
+    if (name === 'CCTV GERBANG LIDAH UTAMA DALAM 1') {
+      return 'CAM01'
+    }
+
+    if (name === 'CCTV GERBANG KETINTANG UTAMA DALAM') {
+      return 'CAM02'
+    }
+
+    return null
+  }, [selectedCamera?.public_name])
+
 
   const visibleMarkers = useMemo(() => {
     if (!visibleMapBounds) return []
@@ -577,34 +652,69 @@ export default function PjuLiwetPage() {
     }
   }, [stats])
 
-  const fetchTrafficData = useCallback(async () => {
-    try {
-      setTrafficLoading(true)
-      setTrafficError(null)
+  
+const fetchTrafficData = useCallback(async (
+  signal?: AbortSignal
+) => {
+  if (!selectedTrafficCameraId) {
+    setTrafficData(null)
+    return
+  }
 
-      const response = await fetch(API_URL, {
-        cache: 'no-store',
-      })
+  try {
+    setTrafficLoading(true)
+    setTrafficError(null)
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
-      }
+    const params = new URLSearchParams({
+      camera_id: selectedTrafficCameraId,
+    })
 
-      const result: TrafficData = await response.json()
+    const url = `${API_URL}?${params.toString()}`
 
-      if (result.status !== 'success') {
-        throw new Error('Gagal mengambil data traffic')
-      }
+    console.log('[TRAFFIC REQUEST]', url)
+
+    const response = await fetch(url, {
+      cache: 'no-store',
+      signal,
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`)
+    }
+
+    const result: TrafficData = await response.json()
+
+    if (result.status !== 'success') {
+      throw new Error('Gagal mengambil data kendaraan')
+    }
+
+    if (!signal?.aborted) {
+      console.log(
+        '[TRAFFIC RESPONSE]',
+        selectedTrafficCameraId,
+        result.vehicle?.summary
+      )
 
       setTrafficData(result)
-    } catch (error) {
-      console.error('[TRAFFIC ERROR]', error)
+    }
+  } catch (error) {
+    if (signal?.aborted) return
 
-      setTrafficError(error instanceof Error ? error.message : 'Gagal mengambil data traffic')
-    } finally {
+    console.error('[TRAFFIC ERROR]', error)
+
+    setTrafficData(null)
+    setTrafficError(
+      error instanceof Error
+        ? error.message
+        : 'Gagal mengambil data kendaraan'
+    )
+  } finally {
+    if (!signal?.aborted) {
       setTrafficLoading(false)
     }
-  }, [])
+  }
+}, [selectedTrafficCameraId])
+
 
   // ========================================================
   // STATISTICS
@@ -667,7 +777,11 @@ export default function PjuLiwetPage() {
 
         if (!mapElement.current) return
 
-        const map = Leaflet.map(mapElement.current, { zoomControl: false, attributionControl: false }).setView([CENTER_LAT, CENTER_LON], CENTER_ZOOM)
+        const map = Leaflet.map(mapElement.current, {
+          zoomControl: false,
+          attributionControl: false,
+          scrollWheelZoom: false,
+        }).setView([CENTER_LAT, CENTER_LON], CENTER_ZOOM)
         Leaflet.control.zoom({ position: 'bottomright' }).addTo(map)
 
         const streetLayer = Leaflet.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 24, maxNativeZoom: 19 })
@@ -721,6 +835,16 @@ export default function PjuLiwetPage() {
       setMapInstance(null)
     }
   }, [])
+
+  useEffect(() => {
+    if (mapRef.current) {
+      if (scrollZoom) {
+        mapRef.current.scrollWheelZoom.enable()
+      } else {
+        mapRef.current.scrollWheelZoom.disable()
+      }
+    }
+  }, [scrollZoom])
 
   // ========================================================
   // INITIAL LOAD & SOCKET CONNECTION
@@ -862,17 +986,32 @@ export default function PjuLiwetPage() {
       }
     })
   }, [vehicleVisible])
+
+  
   useEffect(() => {
-    fetchTrafficData()
+    const controller = new AbortController()
+
+    // Kosongkan statistik kamera sebelumnya
+    setTrafficData(null)
+    setTrafficError(null)
+
+    if (!selectedTrafficCameraId) {
+      return () => controller.abort()
+    }
+
+    void fetchTrafficData(controller.signal)
 
     const interval = window.setInterval(() => {
-      fetchTrafficData()
+      if (!controller.signal.aborted) {
+        void fetchTrafficData(controller.signal)
+      }
     }, REFRESH_INTERVAL)
 
     return () => {
+      controller.abort()
       window.clearInterval(interval)
     }
-  }, [fetchTrafficData])
+  }, [fetchTrafficData, selectedTrafficCameraId])
 
   // ========================================================
   // LOAD CAMERAS FROM USSC DATABASE
@@ -1060,9 +1199,9 @@ export default function PjuLiwetPage() {
       <div className="pju-lidah-wetan-page-container">
         <div className="page-heading">
           <div>
-            <span className="eyebrow">PJU</span>
-            <h2>PJU UNESA Lidah Wetan</h2>
-            <p>Visualisasi Penerangan Jalan Umum secara realtime di peta kampus.</p>
+            <span className="eyebrow">DIGITAL TWIN</span>
+            <h2>Digital Twin UNESA</h2>
+            <p>Visualisasi Digital Twin kampus dan CCTV pemantauan secara realtime.</p>
           </div>
           <div className="location-badge">
             <i className="bi bi-pin-map-fill" /> Live Map
@@ -1154,69 +1293,201 @@ export default function PjuLiwetPage() {
 
         <section className="pju-lidah-wetan-area">
           <div className="pju-lidah-wetan-map-header">
-            <div className="pju-lidah-wetan-map-title">
-              <h2>Peta PJU</h2>
+            <div className="pju-lidah-wetan-map-header-top">
+              <div className="pju-lidah-wetan-map-title">
+                <h2>Peta & CCTV Digital Twin</h2>
+              </div>
+              <div className="pju-lidah-wetan-header-right">
+                <div className="pju-lidah-wetan-last-update">
+                  <i className={`bi bi-circle-fill ${isOnline ? 'pju-lidah-wetan-status-green' : 'pju-lidah-wetan-status-red'}`} aria-hidden="true" />
+                  <div>
+                    <small>Last Update</small>
+                    <strong>{lastUpdate}</strong>
+                  </div>
+                </div>
+                <button type="button" className="pju-lidah-wetan-map-control" onClick={centerMap} title="Kembali ke tengah">
+                  <i className="bi bi-cursor"></i>
+                </button>
+              </div>
             </div>
-            <div className="pju-lidah-wetan-map-tools">
-              <button type="button" className={`${satelliteVisible ? 'active' : ''}`.trim()} onClick={toggleSatellite}>
-                <i className="bi bi-globe" aria-hidden="true" /> Satelit
-              </button>
-              <button type="button" className={trafficVisible ? 'active' : ''} onClick={toggleTraffic}>
-                🚦 Traffic
-              </button>
-              <fieldset className="pju-lidah-wetan-type-switch" aria-label="Pilih jenis PJU">
-                <label className={selectedType === MODES.PJU ? 'active' : ''}>
-                  <input
-                    type="radio"
-                    name="pju-type"
-                    value={MODES.PJU}
-                    checked={selectedType === MODES.PJU}
-                    onChange={() => setSelectedType(MODES.PJU)}
-                  />
-                  PJU Hutan
-                </label>
-                <label className={selectedType === MODES.PJU_LUAR ? 'active' : ''}>
-                  <input
-                    type="radio"
-                    name="pju-type"
-                    value={MODES.PJU_LUAR}
-                    checked={selectedType === MODES.PJU_LUAR}
-                    onChange={() => setSelectedType(MODES.PJU_LUAR)}
-                  />
-                  PJU Luar
-                </label>
-              </fieldset>
-            </div>
-            <div className="pju-lidah-wetan-header-right">
-              <div className="pju-lidah-wetan-last-update">
-                <i className={`bi bi-circle-fill ${isOnline ? 'pju-lidah-wetan-status-green' : 'pju-lidah-wetan-status-red'}`} aria-hidden="true" />
-                <div>
-                  <small>Last Update</small>
-                  <strong>{lastUpdate}</strong>
+
+            <div className="pju-lidah-wetan-map-header-controls">
+              <div className="dt-split-presets" role="tablist" aria-label="Pilih tampilan layar">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={splitMode === 'map-only'}
+                  className={splitMode === 'map-only' ? 'active' : ''}
+                  onClick={() => setPresetMode('map-only')}
+                  title="Tampilan Peta Penuh"
+                >
+                  <i className="bi bi-map" /> Peta
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={splitMode === 'split'}
+                  className={splitMode === 'split' ? 'active' : ''}
+                  onClick={() => setPresetMode('split', 50)}
+                  title="Bagi Layar 50:50"
+                >
+                  <i className="bi bi-layout-split" /> Split 50:50
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={splitMode === 'cctv-only'}
+                  className={splitMode === 'cctv-only' ? 'active' : ''}
+                  onClick={() => setPresetMode('cctv-only')}
+                  title="Tampilan CCTV Penuh"
+                >
+                  <i className="bi bi-camera-video" /> CCTV
+                </button>
+              </div>
+
+              <div className="pju-lidah-wetan-map-tools">
+                <button type="button" className={`${satelliteVisible ? 'active' : ''}`.trim()} onClick={toggleSatellite}>
+                  <i className="bi bi-globe" aria-hidden="true" /> Satelit
+                </button>
+                <button
+                  type="button"
+                  className={scrollZoom ? 'active' : ''}
+                  onClick={() => setScrollZoom((v) => !v)}
+                  title="Scroll zoom peta: saat mati, scroll mouse tidak akan mengganggu scroll halaman"
+                >
+                  <i className="bi bi-mouse" aria-hidden="true" /> {scrollZoom ? 'Zoom: ON' : 'Zoom: OFF'}
+                </button>
+                <div className="pju-lidah-wetan-view-picker">
+                  <select
+                    id="pju-view-select"
+                    className="pju-lidah-wetan-view-select"
+                    value={currentView}
+                    onChange={(e) => handleViewChange(e.target.value as PjuViewMode)}
+                    aria-label="Mode Tampilan PJU dan Traffic"
+                  >
+                    <option value="pju_luar">💡 PJU Luar</option>
+                    <option value="pju">🌲 PJU Hutan</option>
+                    <option value="traffic">🚦 Traffic & Kendaraan</option>
+                  </select>
                 </div>
               </div>
-              <button type="button" className="pju-lidah-wetan-map-control" onClick={centerMap} title="Kembali ke tengah">
-                <i className="bi bi-cursor"></i>
-              </button>
             </div>
           </div>
 
-          <div className="pju-lidah-wetan-map-stage">
-            <div id="pju-lidah-wetan-map" ref={mapElement} className="pju-lidah-wetan-map" />
-            <div className="pju-lidah-wetan-live-indicator">
-              <span className={isOnline ? '' : 'offline'} />
-              <div>
-                <strong>{isOnline ? 'LIVE' : 'OFFLINE'}</strong>
+          <div
+            ref={splitContainerRef}
+            className={`dt-split-body mode-${splitMode}`}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+          >
+            {/* LEFT: MAP PANE */}
+            <div
+              className={`dt-split-pane dt-split-pane-map ${splitMode === 'cctv-only' ? 'is-collapsed' : ''}`}
+              style={{
+                width: splitMode === 'map-only' ? '100%' : splitMode === 'split' ? `${splitRatio}%` : '0%',
+              }}
+            >
+              <div className="pju-lidah-wetan-map-stage">
+                <div id="pju-lidah-wetan-map" ref={mapElement} className="pju-lidah-wetan-map" />
+                <div className="pju-lidah-wetan-live-indicator">
+                  <span className={isOnline ? '' : 'offline'} />
+                  <div>
+                    <strong>{isOnline ? 'LIVE' : 'OFFLINE'}</strong>
+                  </div>
+                </div>
+
+                <div className="pju-lidah-wetan-map-legend">
+                  <div className="pju-lidah-wetan-legend-title">Lux (linear)</div>
+                  <div className="pju-lidah-wetan-lux-gradient" />
+                  <div className="pju-lidah-wetan-lux-legend-labels">
+                    <span>0</span>
+                    <span>{maxLux} lx</span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="pju-lidah-wetan-map-legend">
-            <div className="pju-lidah-wetan-legend-title">Lux (linear)</div>
-            <div className="pju-lidah-wetan-lux-gradient" />
-            <div className="pju-lidah-wetan-lux-legend-labels">
-              <span>0</span>
-              <span>{maxLux} lx</span>
+            {/* DIVIDER RESIZER */}
+            {splitMode === 'split' && (
+              <div
+                className={`dt-split-divider ${isDragging ? 'is-dragging' : ''}`}
+                onPointerDown={handlePointerDown}
+                onDoubleClick={() => setSplitRatio(50)}
+                title="Tarik untuk memperkecil/memperbesar layar. Klik 2x untuk reset 50:50"
+              >
+                <div className="dt-split-divider-handle" />
+              </div>
+            )}
+
+            {/* RIGHT: CCTV PANE */}
+            <div
+              className={`dt-split-pane dt-split-pane-cctv ${splitMode === 'map-only' ? 'is-collapsed' : ''}`}
+              style={{
+                width: splitMode === 'cctv-only' ? '100%' : splitMode === 'split' ? `${100 - splitRatio}%` : '0%',
+              }}
+            >
+              <div className="dt-cctv-header">
+                <div className="dt-cctv-header-left">
+                  <span className="dt-cctv-title">
+                    <i className="bi bi-camera-video-fill text-blue-400" />
+                    <span className="dt-cctv-label">CCTV:</span>
+                  </span>
+                  {cameras.length > 0 ? (
+                    <select
+                      id="ussc-camera-select-split"
+                      aria-label="Pilih nama CCTV"
+                      value={selectedCameraCode}
+                      onChange={(event) => setSelectedCameraCode(event.target.value)}
+                      className="dt-cctv-select"
+                    >
+                      {cameras.map((camera) => (
+                        <option key={camera.public_code} value={camera.public_code}>
+                          {camera.public_name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="text-xs text-slate-400">Memuat kamera...</span>
+                  )}
+                </div>
+
+                <div className="dt-cctv-header-right">
+                  <span className={`pju-lidah-wetan-online-badge text-[10px] ${selectedCamera ? '' : 'offline'}`}>
+                    {selectedCamera?.status ?? 'OFFLINE'}
+                  </span>
+                  <button
+                    type="button"
+                    className="dt-cctv-btn"
+                    onClick={() => setPresetMode(splitMode === 'cctv-only' ? 'split' : 'cctv-only', 50)}
+                    title={splitMode === 'cctv-only' ? 'Kembali ke split screen' : 'Perbesar CCTV penuh'}
+                  >
+                    <i className={`bi ${splitMode === 'cctv-only' ? 'bi-fullscreen-exit' : 'bi-arrows-angle-expand'}`} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="dt-cctv-body">
+                {selectedCamera && (
+                  <div className="dt-cctv-live-tag">
+                    <span className="dt-cctv-live-dot" /> LIVE
+                  </div>
+                )}
+                {selectedCamera ? (
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    muted
+                    playsInline
+                    controls
+                    className="dt-cctv-video"
+                  />
+                ) : (
+                  <div className="dt-cctv-placeholder">
+                    <i className="bi bi-camera-video-off" style={{ fontSize: '2rem' }} />
+                    <span>Tidak ada kamera terpilih</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </section>
@@ -1383,14 +1654,6 @@ export default function PjuLiwetPage() {
             </div>
           </div>
         </section>
-
-        {selectedCamera && (
-          <div className="mt-4 overflow-hidden rounded-xl border border-gray-700 bg-black">
-            <div className="p-3 text-white">{selectedCamera.public_name}</div>
-
-            <video ref={videoRef} autoPlay muted playsInline controls className="aspect-video w-full bg-black" />
-          </div>
-        )}
 
         {/* =================================================
                 CAMERA INFORMATION

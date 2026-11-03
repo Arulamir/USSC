@@ -1609,8 +1609,8 @@ export default function DigitalTwinPage() {
 
                 <div className="page-heading">
                   <div>
-                    <span className="eyebrow">KENDARAAN</span>
-                    <h2>Pemantauan Kendaraa</h2>
+                    <span className="eyebrow">DIGITAL TWIN</span>
+                    <h2>Digital Twin</h2>
                     <p>Visualisasi kendaraan secara realtime di peta kampus.</p>
                   </div>
                   <div className="location-badge">

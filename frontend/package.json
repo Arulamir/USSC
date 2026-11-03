@@ -16,6 +16,7 @@
     "bootstrap-icons": "^1.13.1",
     "chart.js": "^4.5.1",
     "dompurify": "^3.4.16",
+    "hls.js": "^1.7.4",
     "js-cookie": "^3.0.8",
     "leaflet": "^1.9.4",
     "marked": "^18.0.14",

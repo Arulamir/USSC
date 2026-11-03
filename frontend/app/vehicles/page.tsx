@@ -9,7 +9,7 @@ import "./traffic.css";
 Chart.register(...registerables);
 
 const API_URL = "/api/traffic-grafik";
-const ROWS_PER_PAGE = 10;
+const ROWS_PER_PAGE = 12;
 
 type TrafficTableRow = {
   timestamp: string;
@@ -279,9 +279,8 @@ export default function VehiclesPage() {
 
   const [dates, setDates] = useState<string[]>([]);
 
-  const [selectedDate, setSelectedDate] =
-    useState(getTodayString());
-
+  const [selectedDate, setSelectedDate] = useState(getTodayString());
+  const [selectedLocation, setSelectedLocation] = useState("CAM01");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
 
@@ -479,6 +478,7 @@ const emissionHourlyAnalysis = useMemo(() => {
       const params = new URLSearchParams();
 
       params.append("date", selectedDate);
+      params.append("camera_id", selectedLocation);
 
       if (startTime) {
         params.append("start", startTime);
@@ -543,12 +543,10 @@ const emissionHourlyAnalysis = useMemo(() => {
    */
 
   useEffect(() => {
-    if (!selectedDate || loadingDates) {
-      return;
-    }
+  if (!selectedDate || loadingDates) {
+    return; }
 
-    loadTraffic();
-  }, [selectedDate, loadingDates]);
+  loadTraffic();}, [selectedDate, selectedLocation, loadingDates]);
 
   /*
    * =========================================================
@@ -1163,11 +1161,43 @@ const emissionHourlyAnalysis = useMemo(() => {
    * =========================================================
    */
 
-  const vehicleTable =
-    data?.vehicle.table || [];
+  // TABEL KENDARAAN PER JAM (00:00 - 23:00)
+  const vehicleTable = Array.from(
+    { length: 24 },
+    (_, jam) => {
+      const row = data?.vehicle.hourly.find(
+        (item) => Number(item.jam) === jam
+      );
 
-  const emissionTable =
-    data?.emission.table || [];
+      return {
+        timestamp: `${selectedDate} ${String(jam).padStart(2, "0")}:00:00`,
+        motor: Number(row?.motor || 0),
+        mobil: Number(row?.mobil || 0),
+        bus: Number(row?.bus || 0),
+        truck: Number(row?.truck || 0),
+        total: Number(row?.total || 0),
+      };
+    }
+  );
+
+  // TABEL EMISI PER JAM (00:00 - 23:00)
+  const emissionTable = Array.from(
+    { length: 24 },
+    (_, jam) => {
+      const row = data?.emission.hourly.find(
+        (item) => Number(item.jam) === jam
+      );
+
+      return {
+        timestamp: `${selectedDate} ${String(jam).padStart(2, "0")}:00:00`,
+        motor: 0,
+        mobil: 0,
+        bus: 0,
+        truck: 0,
+        total: Number(row?.total || 0),
+      };
+    }
+  );
 
   /*
    * =========================================================
@@ -1293,6 +1323,35 @@ const emissionHourlyAnalysis = useMemo(() => {
 
                 </div>
 
+                {/* PILIH LOKASI */}
+
+                <div className="traffic-field">
+                  <label
+                    htmlFor="locationSelect"
+                    className="traffic-label"
+                  >
+                    <i className="bi bi-geo-alt"></i>
+                    Pilih Lokasi
+                  </label>
+
+                  <select
+                    id="locationSelect"
+                    className="traffic-control"
+                    value={selectedLocation}
+                    onChange={(e) =>
+                      setSelectedLocation(e.target.value)
+                    }
+                  >
+                    <option value="CAM02">
+                      Ketintang
+                    </option>
+
+                    <option value="CAM01">
+                      Lidah
+                    </option>
+                  </select>
+                </div>
+
                 {/* DARI JAM */}
 
                 <div className="traffic-field">
@@ -1388,6 +1447,18 @@ const emissionHourlyAnalysis = useMemo(() => {
                     {formatDate(
                       selectedDate
                     )}
+                  </div>
+                </div>
+
+                <div>
+                  <small className="traffic-muted">
+                    Lokasi
+                  </small>
+
+                  <div className="traffic-fw-bold">
+                    {selectedLocation === "CAM01"
+                      ? "Lidah"
+                      : "Ketintang"}
                   </div>
                 </div>
 
@@ -1593,7 +1664,7 @@ const emissionHourlyAnalysis = useMemo(() => {
                 onClick={() =>
                   downloadCSV(
                     vehicleTable,
-                    `vehicle-${selectedDate}.csv`
+                    `vehicle-${selectedLocation}-${selectedDate}.csv`
                   )
                 }
                 disabled={
@@ -1756,7 +1827,7 @@ const emissionHourlyAnalysis = useMemo(() => {
                 onClick={() =>
                   downloadCSV(
                     emissionTable,
-                    `emission-${selectedDate}.csv`
+                    `emission-${selectedLocation}-${selectedDate}.csv`
                   )
                 }
                 disabled={

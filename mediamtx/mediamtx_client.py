@@ -1,6 +1,7 @@
 import os
 import requests
 import time
+import yaml
 from urllib.parse import urlsplit
 
 MEDIAMTX_API = os.getenv(
@@ -13,17 +14,46 @@ MEDIAMTX_USERNAME = os.getenv(
     "ussc_api"
 )
 
-MEDIAMTX_PASSWORD = os.getenv("MEDIAMTX_PASSWORD", "")
 
+MEDIAMTX_CONFIG = (
+    "/home/cctvpro/USSC/mediamtx/mediamtx.yml"
+)
+
+
+def get_mediamtx_password(username):
+    # Prioritaskan password dari environment jika tersedia.
+    env_password = os.getenv("MEDIAMTX_PASSWORD")
+
+    if env_password:
+        return env_password
+
+    # Jika tidak ada, gunakan password dari konfigurasi MediaMTX.
+    with open(MEDIAMTX_CONFIG, "r") as f:
+        config = yaml.safe_load(f)
+
+    for user in config.get("authInternalUsers", []):
+        if user.get("user") == username:
+            return str(user.get("pass", ""))
+
+    raise RuntimeError(
+        f"Akun {username} tidak ditemukan di MediaMTX"
+    )
 
 class MediaMTXClient:
 
     def __init__(self):
+        # self.base_url = MEDIAMTX_API.rstrip("/")
+
+        # self.auth = (
+        #     MEDIAMTX_USERNAME,
+        #     MEDIAMTX_PASSWORD
+        # )
+
         self.base_url = MEDIAMTX_API.rstrip("/")
 
         self.auth = (
             MEDIAMTX_USERNAME,
-            MEDIAMTX_PASSWORD
+            get_mediamtx_password(MEDIAMTX_USERNAME)
         )
 
     def _request(self, method, endpoint, **kwargs):
@@ -37,7 +67,7 @@ class MediaMTXClient:
         print("URL    :", url)
 
         if "json" in kwargs:
-            print("JSON   :", kwargs["json"])
+            print("JSON KEYS:", list(kwargs["json"].keys()))
 
         try:
 

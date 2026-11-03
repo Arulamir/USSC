@@ -34,7 +34,7 @@ def _enrich_row(r):
         try:
             parsed = json.loads(raw)
             if isinstance(parsed, dict):
-                for k in ["ph", "ph_adc", "ph_voltage", "status_ph", "suhu_air", "suhu_air_1", "suhu_air_2", "status_suhu_air", "suhu_udara", "curah_hujan_per_jam"]:
+                for k in ["ph", "ph_adc", "ph_voltage", "status_ph", "suhu_air", "suhu_air_1", "suhu_air_2", "status_suhu_air", "suhu_udara", "curah_hujan_per_jam", "sugeno"]:
                     if k in parsed and k not in r:
                         r[k] = parsed[k]
                 # Sinkronkan alias suhu_air <-> suhu_air_2 dan suhu_udara <-> suhu_air_1
@@ -202,9 +202,9 @@ def get_flood_recent():
                 "id": r.get("id"),
                 "time": r.get("time") or "",
                 "timestamp": r.get("timestamp") or "",
-                "water": float(r.get("water") or 0),
-                "temp": float(r.get("temp") or 0) if r.get("temp") is not None else 0,
-                "soil": float(r.get("soil") or 0) if r.get("soil") is not None else 0,
+                "water": round(float(r.get("water") or 0), 1),
+                "temp": round(float(r.get("temp") or 0), 1) if r.get("temp") is not None else 0.0,
+                "soil": round(float(r.get("soil") or 0), 1) if r.get("soil") is not None else 0.0,
                 "status": r.get("status") or "AMAN"
             })
 

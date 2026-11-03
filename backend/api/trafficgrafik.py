@@ -34,6 +34,13 @@ def traffic_monitoring():
         start_time = request.args.get("start")
         end_time = request.args.get("end")
 
+        camera_id = request.args.get("camera_id", "CAM02")
+
+        if camera_id not in ("CAM01", "CAM02"):
+            return jsonify({
+                "status": "error",
+                "message": "Camera ID tidak valid"
+            }), 400
 
         # ==================================================
         # DEFAULT DATE
@@ -59,8 +66,9 @@ def traffic_monitoring():
         cursor.execute("""
             SELECT DISTINCT tanggal
             FROM vehicle_hourly
+            WHERE camera_id = %s
             ORDER BY tanggal DESC
-        """)
+        """, (camera_id,))
 
         date_rows = cursor.fetchall()
 
@@ -75,9 +83,7 @@ def traffic_monitoring():
         # ==================================================
 
         hour_condition = ""
-        hour_params = [
-            selected_date
-        ]
+        hour_params = [selected_date,camera_id]
 
 
         if start_time:
@@ -110,9 +116,7 @@ def traffic_monitoring():
         # Ini tetap untuk menampilkan counter Jetson terakhir.
         # ==================================================
 
-        vehicle_summary_params = [
-            selected_date
-        ]
+        vehicle_summary_params = [selected_date, camera_id]
 
         vehicle_time_condition = ""
 
@@ -147,7 +151,7 @@ def traffic_monitoring():
                 truck,
                 total
             FROM vehicle_data
-            WHERE DATE(waktu) = %s
+            WHERE DATE(waktu) = %s AND camera_id = %s
             {vehicle_time_condition}
             ORDER BY waktu DESC, id DESC
             LIMIT 1
@@ -177,7 +181,7 @@ def traffic_monitoring():
 
             FROM vehicle_hourly
 
-            WHERE tanggal = %s
+            WHERE tanggal = %s AND camera_id = %s
 
             {hour_condition}
 
@@ -241,7 +245,7 @@ def traffic_monitoring():
                 truck,
                 total
             FROM vehicle_data
-            WHERE DATE(waktu) = %s
+            WHERE DATE(waktu) = %s AND camera_id = %s
             {vehicle_time_condition}
             ORDER BY waktu DESC, id DESC
             LIMIT 20
@@ -257,9 +261,7 @@ def traffic_monitoring():
         # Ambil emission terakhir.
         # ==================================================
 
-        emission_summary_params = [
-            selected_date
-        ]
+        emission_summary_params = [selected_date,camera_id]
 
 
         emission_time_condition = ""
@@ -298,6 +300,7 @@ def traffic_monitoring():
             FROM emission_hourly
 
             WHERE tanggal = %s
+                AND camera_id = %s
 
             {hour_condition}
         """, hour_params)
@@ -322,11 +325,12 @@ def traffic_monitoring():
                 truck,
                 total
 
-            FROM emission_hourly
+            FROM emission_hourly 
 
             WHERE tanggal = %s
+                AND camera_id = %s
 
-            {hour_condition}
+                {hour_condition}
 
             ORDER BY jam ASC
         """, hour_params)
@@ -385,7 +389,7 @@ def traffic_monitoring():
             INNER JOIN vehicle_data v
                 ON v.id = e.vehicle_id
 
-            WHERE DATE(v.waktu) = %s
+            WHERE DATE(v.waktu) = %s AND v.camera_id = %s
 
             {emission_time_condition}
 
@@ -433,6 +437,9 @@ def traffic_monitoring():
             "status": "success",
 
             "selected_date": selected_date,
+            "camera_id": camera_id,
+            
+            "location": "Lidah" if camera_id == "CAM01" else "Ketintang",
 
             "start_time": start_time,
 

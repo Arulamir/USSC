@@ -670,9 +670,19 @@
   }
 }
 
-/* 11. SUB BAB KONDISI BOX PANEL (UNIFIED CARD) */
+/* 11. SUB BAB KONDISI PANEL BOX */
 .flood-page-container .panel-section-title {
   margin-top: 30px;
+}
+
+.flood-page-container .monitor-grid.panel-monitor-grid {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (max-width: 520px) {
+  .flood-page-container .monitor-grid.panel-monitor-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .flood-page-container .panel-box-card {

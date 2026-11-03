@@ -84,15 +84,20 @@ export default function FloodLocationView({
   const tempChartInst = useRef<Chart | null>(null);
   const rainChartInst = useRef<Chart | null>(null);
 
-  const determineStatus = (water?: number, explicitStatus?: string) => {
+  const determineStatus = (
+    water?: number,
+    explicitStatus?: string
+  ): "DARURAT" | "WASPADA" | "NORMAL" => {
     if (explicitStatus) {
-      const s = explicitStatus.toUpperCase();
-      if (s === "BAHAYA" || s === "WASPADA" || s === "AMAN") return s;
+      const s = explicitStatus.trim().toUpperCase();
+      if (s === "DARURAT" || s === "BAHAYA") return "DARURAT";
+      if (s === "WASPADA") return "WASPADA";
+      if (s === "NORMAL" || s === "AMAN") return "NORMAL";
     }
-    if (water === undefined || water === null) return "AMAN";
-    if (water >= 100) return "BAHAYA";
+    if (water === undefined || water === null) return "NORMAL";
+    if (water >= 100) return "DARURAT";
     if (water >= 50) return "WASPADA";
-    return "AMAN";
+    return "NORMAL";
   };
 
   const currentStatus = determineStatus(
@@ -101,22 +106,22 @@ export default function FloodLocationView({
   );
 
   const statusClass =
-    currentStatus === "BAHAYA"
+    currentStatus === "DARURAT"
       ? "danger"
       : currentStatus === "WASPADA"
       ? "warning"
       : "safe";
 
   const statusTextClass =
-    currentStatus === "BAHAYA"
+    currentStatus === "DARURAT"
       ? "text-danger"
       : currentStatus === "WASPADA"
       ? "text-warning"
       : "text-safe";
 
   const statusDescription =
-    currentStatus === "BAHAYA"
-      ? "Peringatan! Ketinggian air telah melebihi batas kritis. Waspada banjir!"
+    currentStatus === "DARURAT"
+      ? "Peringatan darurat! Ketinggian air telah melebihi batas kritis. Waspada banjir!"
       : currentStatus === "WASPADA"
       ? "Perhatian! Ketinggian air meningkat. Pantau saluran air secara berkala."
       : "Kondisi lingkungan dan saluran air kampus dalam keadaan normal dan aman.";
@@ -186,19 +191,24 @@ export default function FloodLocationView({
 
     const currentWater = data?.jarak || 0;
     const currentSoil = data?.kelembapan_tanah || data?.soil || 0;
-    const currentTemp = data?.suhu_udara || 0;
+    const currentTemp =
+      data?.suhu_udara !== undefined
+        ? Number(Number(data.suhu_udara).toFixed(1))
+        : data?.suhu_air_1 !== undefined
+        ? Number(Number(data.suhu_air_1).toFixed(1))
+        : 0;
     const currentRain = data?.rain || 0;
 
     const waterData = history.length > 0 
-      ? history.map((h) => parseFloat(String(h.water || 0)))
+      ? history.map((h) => Number(Number(h.water || 0).toFixed(1)))
       : [12, 14, 15, 13, 14, currentWater];
 
     const soilData = history.length > 0 
-      ? history.map((h) => parseFloat(String(h.soil || 0)))
+      ? history.map((h) => Number(Number(h.soil || 0).toFixed(1)))
       : [45, 48, 50, 46, 44, currentSoil];
 
     const tempData = history.length > 0 
-      ? history.map((h) => parseFloat(String(h.temp || 0)))
+      ? history.map((h) => Number(Number(h.temp || 0).toFixed(1)))
       : [27, 28, 30, 31, 29, currentTemp];
 
     const rainData = history.length > 0 
@@ -230,7 +240,7 @@ export default function FloodLocationView({
           maintainAspectRatio: false,
           plugins: { legend: { display: false } },
           scales: {
-            y: { beginAtZero: true, suggestedMax: 100 },
+            y: { beginAtZero: true, min: 0, max: 180 },
             x: { grid: { display: false } },
           },
         },
@@ -262,7 +272,7 @@ export default function FloodLocationView({
           maintainAspectRatio: false,
           plugins: { legend: { display: false } },
           scales: {
-            y: { beginAtZero: true, suggestedMax: 100 },
+            y: { beginAtZero: true, min: 0, max: 100 },
             x: { grid: { display: false } },
           },
         },
@@ -292,9 +302,20 @@ export default function FloodLocationView({
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function (context: any) {
+                  const val = Number(context.parsed.y);
+                  const formatted = !isNaN(val) ? val.toFixed(1) : context.parsed.y;
+                  return `${context.dataset.label ? context.dataset.label + ": " : ""}${formatted} °C`;
+                },
+              },
+            },
+          },
           scales: {
-            y: { beginAtZero: false, suggestedMin: 20, suggestedMax: 40 },
+            y: { beginAtZero: true, min: 0, max: 50 },
             x: { grid: { display: false } },
           },
         },
@@ -344,9 +365,9 @@ export default function FloodLocationView({
   const waterVal = data?.jarak !== undefined ? `${data.jarak} cm` : "-- cm";
   const tempVal =
     data?.suhu_udara !== undefined
-      ? `${data.suhu_udara} °C`
+      ? `${Number(data.suhu_udara).toFixed(1)} °C`
       : data?.suhu_air_1 !== undefined
-      ? `${data.suhu_air_1} °C`
+      ? `${Number(data.suhu_air_1).toFixed(1)} °C`
       : "-- °C";
   const soilVal =
     data?.kelembapan_tanah !== undefined
@@ -580,8 +601,8 @@ export default function FloodLocationView({
         <span>{history.length} Catatan</span>
       </div>
 
-      <div className="ussc-table-scroll flood-table-card">
-        <table className="ussc-data-table flood-table">
+      <div className="flood-table-card">
+        <table className="flood-table">
           <thead>
             <tr>
               <th>Waktu</th>
@@ -594,9 +615,11 @@ export default function FloodLocationView({
           <tbody>
             {history.length > 0 ? (
               history.map((row, idx) => {
-                const rowStatus = (row.status || "AMAN").toUpperCase();
+                const rawStatus = (row.status || "NORMAL").trim().toUpperCase();
+                const rowStatus =
+                  rawStatus === "BAHAYA" ? "DARURAT" : rawStatus === "AMAN" ? "NORMAL" : rawStatus;
                 const badgeClass =
-                  rowStatus === "BAHAYA"
+                  rowStatus === "DARURAT"
                     ? "danger"
                     : rowStatus === "WASPADA"
                     ? "warning"

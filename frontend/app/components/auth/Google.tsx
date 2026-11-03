@@ -57,12 +57,12 @@ function loadGoogleIdentityScript() {
   return window.__usscGoogleScriptPromise
 }
 
-interface UserSession {
+export interface UserSession {
   uid: string
   name: string
   email: string
   picture: string
-  role: 'mahasiswa' | 'dosen'
+  role: 'admin' | 'mahasiswa' | 'dosen'
 }
 
 interface BackendResponse {
@@ -77,11 +77,27 @@ interface GoogleLoginButtonProps {
   onLoginFailure?: (errorMessage: string) => void
 }
 
+function isLocalDevelopmentBypass(): boolean {
+  return process.env.NODE_ENV === 'development'
+    && process.env.NEXT_PUBLIC_DEV_LOGIN_BYPASS === 'true'
+    && typeof window !== 'undefined'
+    && ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname)
+}
+
+const localTestSession: UserSession = {
+  uid: 'local-test-user',
+  name: 'Local Test User',
+  email: 'local-test@localhost.invalid',
+  picture: '',
+  role: 'mahasiswa',
+}
+
 export function isLoggedIn(): boolean {
-  return Boolean(Cookies.get('unesa_session') && Cookies.get('unesa_user'))
+  return isLocalDevelopmentBypass() || Boolean(Cookies.get('unesa_session') && Cookies.get('unesa_user'))
 }
 
 export function getLoginSession(): UserSession | null {
+  if (isLocalDevelopmentBypass()) return localTestSession
   const userData = Cookies.get('unesa_user')
   if (!Cookies.get('unesa_session') || !userData) return null
 

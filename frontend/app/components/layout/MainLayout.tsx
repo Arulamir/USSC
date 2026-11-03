@@ -45,12 +45,20 @@ const pageInfo: Record<string, { title: string; subtitle: string }> = {
     subtitle: 'Monitoring energi dan kontrol perangkat kantor',
   },
   '/pju-lidah-wetan': {
-    title: 'PJU Lidah Wetan',
-    subtitle: 'Monitoring kondisi PJU Lidah Wetan',
+    title: 'Digital Twin',
+    subtitle: 'Visualisasi dan monitoring kampus secara realtime',
   },
   '/tps-lidah-wetan': {
     title: 'TPS Lidah Wetan',
     subtitle: 'Monitoring energi listrik Depo Sampah Lidah Wetan',
+  },
+  '/admin-users': {
+    title: 'Manajemen Pengguna',
+    subtitle: 'Pengaturan peran dan akses pengguna',
+  },
+  '/node-manager': {
+    title: 'Pengelola Monitoring Node',
+    subtitle: 'Kelola node, metrik, dan pemetaan MQTT',
   },
 }
 

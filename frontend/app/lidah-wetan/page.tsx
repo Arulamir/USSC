@@ -78,6 +78,10 @@ type ChartPoint = {
 };
 
 export default function LidahWetanPage() {
+  const [location, setLocation] = useState<"lidah" | "ketintang">("lidah");
+  const [locationDropdownOpen, setLocationDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+
   const [data, setData] = useState<FloodSensorData | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [chartPoints, setChartPoints] = useState<ChartPoint[]>([]);
@@ -91,6 +95,29 @@ export default function LidahWetanPage() {
   const [todayDate, setTodayDate] = useState<string>("Hari ini");
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
 
+  // Sync dengan query param (?loc=ketintang atau ?location=ketintang) jika ada
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const loc = params.get("loc") || params.get("location");
+      if (loc === "ketintang") {
+        setLocation("ketintang");
+      } else if (loc === "lidah" || loc === "lidah-wetan") {
+        setLocation("lidah");
+      }
+    }
+  }, []);
+
+  // Tutup dropdown saat klik di luar
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setLocationDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Chart Canvas Refs
   const waterChartRef = useRef<HTMLCanvasElement | null>(null);
@@ -102,28 +129,39 @@ export default function LidahWetanPage() {
   const tempChartInst = useRef<Chart | null>(null);
   const soilChartInst = useRef<Chart | null>(null);
 
-  // Format Helper
-  const formatSensor = (val?: number, unit = "") => {
-    if (val === undefined || val === null || isNaN(val)) return `-- ${unit}`.trim();
-    return `${val} ${unit}`.trim();
+  // Format Helper (1 angka di belakang koma untuk suhu, atau dengan parameter decimals)
+  const formatSensor = (val?: number | string | null, unit = "", decimals?: number) => {
+    if (val === undefined || val === null || val === "" || isNaN(Number(val))) {
+      return `-- ${unit}`.trim();
+    }
+    const num = Number(val);
+    if (decimals !== undefined) {
+      return `${num.toFixed(decimals)} ${unit}`.trim();
+    }
+    if (unit === "°C") {
+      return `${num.toFixed(1)} ${unit}`.trim();
+    }
+    return `${Number.isInteger(num) ? num : num.toFixed(1)} ${unit}`.trim();
   };
 
-  // Status Logic sesuai jawa.js
+  // Status Logic sesuai status ESP32 (Fuzzy Sugeno) & fallback
   const determineFloodStatus = (water?: number | null, explicitStatus?: string) => {
     if (explicitStatus) {
-      const s = String(explicitStatus).toUpperCase();
-      if (s === "BAHAYA" || s === "WASPADA" || s === "AMAN") return s;
+      const s = String(explicitStatus).trim().toUpperCase();
+      if (s === "DARURAT" || s === "BAHAYA") return "DARURAT";
+      if (s === "WASPADA") return "WASPADA";
+      if (s === "NORMAL" || s === "AMAN") return "NORMAL";
     }
     if (water === null || water === undefined || isNaN(water)) return "--";
-    if (water >= 65) return "BAHAYA";
+    if (water >= 65) return "DARURAT";
     if (water >= 40) return "WASPADA";
-    return "AMAN";
+    return "NORMAL";
   };
 
   const getStatusClass = (status: string) => {
-    if (status === "BAHAYA") return "danger";
+    if (status === "DARURAT" || status === "BAHAYA") return "danger";
     if (status === "WASPADA") return "warning";
-    if (status === "AMAN") return "safe";
+    if (status === "NORMAL" || status === "AMAN") return "safe";
     return "offline";
   };
 
@@ -131,30 +169,32 @@ export default function LidahWetanPage() {
   const statusClass = getStatusClass(currentStatus);
 
   const statusDescription =
-    currentStatus === "BAHAYA"
-      ? "Level kritis, waspada potensi banjir."
+    currentStatus === "DARURAT"
+      ? "Level darurat/kritis, waspada potensi banjir."
       : currentStatus === "WASPADA"
         ? "Air meningkat, pantau berkala."
-        : currentStatus === "AMAN"
+        : currentStatus === "NORMAL"
           ? "Kondisi normal dan aman."
           : "Menunggu data sensor...";
 
   // 1. Ambil 10 data grafik terakhir langsung dari Database
   const fetchRecentChartData = useCallback(async () => {
     try {
-      const res = await ApiService.getFloodRecentChart("lidah", 10);
+      const res = await ApiService.getFloodRecentChart(location, 10);
       if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
         setChartPoints(res.data);
+      } else {
+        setChartPoints([]);
       }
     } catch (err) {
-      console.warn("[LidahWetan] Gagal mengambil data grafik dari DB:", err);
+      console.warn(`[${location}] Gagal mengambil data grafik dari DB:`, err);
     }
-  }, []);
+  }, [location]);
 
   // 2. Ambil riwayat log tabel langsung dari Database
   const fetchHistoryData = useCallback(async () => {
     try {
-      const res = await ApiService.getFloodHistory("lidah", 50);
+      const res = await ApiService.getFloodHistory(location, 50);
       if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
         const formatted = res.data.map((r: any) => ({
           id: r.id,
@@ -175,19 +215,21 @@ export default function LidahWetanPage() {
         setHistory(formatted);
       } else {
         const histRes = await ApiService.getTodayFloodHistory();
-        if (histRes?.data?.lidah && Array.isArray(histRes.data.lidah)) {
-          setHistory(histRes.data.lidah);
+        if (histRes?.data && histRes.data[location] && Array.isArray(histRes.data[location])) {
+          setHistory(histRes.data[location]);
+        } else {
+          setHistory([]);
         }
       }
     } catch (err) {
-      console.warn("[LidahWetan] Gagal mengambil riwayat tabel dari DB:", err);
+      console.warn(`[${location}] Gagal mengambil riwayat tabel dari DB:`, err);
     }
-  }, []);
+  }, [location]);
 
   // 3. Smart Fast-Check Polling Sensor dari Database (Delay Rendah 1.5s)
   const pollLatestSensorData = useCallback(async () => {
     try {
-      const res = await ApiService.getFloodLatest("lidah");
+      const res = await ApiService.getFloodLatest(location);
       if (res?.data) {
         const item = res.data;
         setData(item);
@@ -200,9 +242,9 @@ export default function LidahWetanPage() {
         }
       }
     } catch (err) {
-      console.warn("[LidahWetan] Gagal mengambil sensor terkini:", err);
+      console.warn(`[${location}] Gagal mengambil sensor terkini:`, err);
     }
-  }, [fetchRecentChartData, fetchHistoryData]);
+  }, [location, fetchRecentChartData, fetchHistoryData]);
 
   // Format tanggal hari ini
   useEffect(() => {
@@ -234,12 +276,16 @@ export default function LidahWetanPage() {
     loadWeather();
   }, []);
 
-  // Inisialisasi awal saat halaman dibuka
+  // Inisialisasi awal & saat lokasi berganti
   useEffect(() => {
+    lastRecordedIdRef.current = null;
+    setData(null);
+    setHistory([]);
+    setChartPoints([]);
     pollLatestSensorData();
     fetchRecentChartData();
     fetchHistoryData();
-  }, [pollLatestSensorData, fetchRecentChartData, fetchHistoryData]);
+  }, [location, pollLatestSensorData, fetchRecentChartData, fetchHistoryData]);
 
   // Fast-Check Polling Sensor: Cek database setiap 1.5 detik (delay rendah)
   useEffect(() => {
@@ -293,9 +339,10 @@ export default function LidahWetanPage() {
   };
 
   const getTableBadgeClass = (status: string) => {
-    if (status === "BAHAYA") return "badge-danger";
-    if (status === "WASPADA") return "badge-warning";
-    if (status === "AMAN") return "badge-safe";
+    const s = String(status).trim().toUpperCase();
+    if (s === "DARURAT" || s === "BAHAYA") return "badge-danger";
+    if (s === "WASPADA") return "badge-warning";
+    if (s === "NORMAL" || s === "AMAN") return "badge-safe";
     return "badge-offline";
   };
 
@@ -341,7 +388,8 @@ export default function LidahWetanPage() {
         item.ph !== undefined && item.ph !== "" && item.ph !== "--" && !isNaN(Number(item.ph))
           ? Number(item.ph).toFixed(1)
           : "--";
-      const status = (item.status || "AMAN").toUpperCase();
+      const rawStatus = (item.status || "NORMAL").trim().toUpperCase();
+      const status = rawStatus === "BAHAYA" ? "DARURAT" : rawStatus === "AMAN" ? "NORMAL" : rawStatus;
       const timestamp =
         item.timestamp ||
         (item.date && item.time ? `${item.date} ${item.time}` : `${todayDate} ${item.time || "--:--"}`);
@@ -372,15 +420,15 @@ export default function LidahWetanPage() {
 
     if (chartPoints.length > 0) {
       labels = chartPoints.map((item) => item.time);
-      waterSeries = chartPoints.map((item) => item.water);
-      tempSeries = chartPoints.map((item) => item.temp);
-      soilSeries = chartPoints.map((item) => item.soil);
+      waterSeries = chartPoints.map((item) => Number(Number(item.water).toFixed(1)));
+      tempSeries = chartPoints.map((item) => Number(Number(item.temp).toFixed(1)));
+      soilSeries = chartPoints.map((item) => Number(Number(item.soil).toFixed(1)));
     } else if (history.length > 0) {
       const slice = history.slice(0, 10).reverse();
       labels = slice.map((item) => item.time || "");
-      waterSeries = slice.map((item) => Number(item.water) || 0);
-      tempSeries = slice.map((item) => Number(item.temp) || 0);
-      soilSeries = slice.map((item) => Number(item.soil) || 0);
+      waterSeries = slice.map((item) => Number(Number(item.water || 0).toFixed(1)));
+      tempSeries = slice.map((item) => Number(Number(item.temp || 0).toFixed(1)));
+      soilSeries = slice.map((item) => Number(Number(item.soil || 0).toFixed(1)));
     } else if (data && data.jarak !== undefined && data.jarak !== null) {
       const timeNow = new Date().toLocaleTimeString("id-ID", {
         hour: "2-digit",
@@ -388,9 +436,9 @@ export default function LidahWetanPage() {
         second: "2-digit",
       });
       labels = [timeNow];
-      waterSeries = [Number(data.jarak)];
-      tempSeries = [Number(data.suhu_udara ?? data.suhu_air_1 ?? 0)];
-      soilSeries = [Number(data.kelembapan_tanah ?? data.soil ?? 0)];
+      waterSeries = [Number(Number(data.jarak).toFixed(1))];
+      tempSeries = [Number(Number(data.suhu_udara ?? data.suhu_air_1 ?? 0).toFixed(1))];
+      soilSeries = [Number(Number(data.kelembapan_tanah ?? data.soil ?? 0).toFixed(1))];
     } else {
       labels = ["Menunggu Database..."];
       waterSeries = [0];
@@ -398,7 +446,7 @@ export default function LidahWetanPage() {
       soilSeries = [0];
     }
 
-    const commonOptions = (unit: string) => ({
+    const commonOptions = (unit: string, max?: number, min?: number) => ({
       responsive: true,
       maintainAspectRatio: false,
       interaction: {
@@ -410,7 +458,9 @@ export default function LidahWetanPage() {
         tooltip: {
           callbacks: {
             label: function (context: any) {
-              return `${context.parsed.y} ${unit}`;
+              const val = Number(context.parsed.y);
+              const formatted = !isNaN(val) ? val.toFixed(1) : context.parsed.y;
+              return `${context.dataset.label ? context.dataset.label + ": " : ""}${formatted} ${unit}`;
             },
           },
         },
@@ -424,7 +474,9 @@ export default function LidahWetanPage() {
           },
         },
         y: {
-          beginAtZero: false,
+          beginAtZero: min !== undefined ? min === 0 : true,
+          min: min ?? 0,
+          max: max,
           grid: { color: "#edf1f5" },
           ticks: {
             font: { size: 9 },
@@ -434,7 +486,7 @@ export default function LidahWetanPage() {
       },
     });
 
-    // 1. Chart Ketinggian Air
+    // 1. Chart Ketinggian Air (Batas atas 180 cm)
     if (waterChartRef.current) {
       if (waterChartInst.current) waterChartInst.current.destroy();
       waterChartInst.current = new Chart(waterChartRef.current, {
@@ -455,11 +507,11 @@ export default function LidahWetanPage() {
             },
           ],
         },
-        options: commonOptions("cm"),
+        options: commonOptions("cm", 180, 0),
       });
     }
 
-    // 2. Chart Suhu
+    // 2. Chart Suhu (Batas atas 50 derajat)
     if (tempChartRef.current) {
       if (tempChartInst.current) tempChartInst.current.destroy();
       tempChartInst.current = new Chart(tempChartRef.current, {
@@ -480,11 +532,11 @@ export default function LidahWetanPage() {
             },
           ],
         },
-        options: commonOptions("°C"),
+        options: commonOptions("°C", 50, 0),
       });
     }
 
-    // 3. Chart Kelembaban Tanah
+    // 3. Chart Kelembaban Tanah (Batas atas 100%)
     if (soilChartRef.current) {
       if (soilChartInst.current) soilChartInst.current.destroy();
       soilChartInst.current = new Chart(soilChartRef.current, {
@@ -505,7 +557,7 @@ export default function LidahWetanPage() {
             },
           ],
         },
-        options: commonOptions("%"),
+        options: commonOptions("%", 100, 0),
       });
     }
 
@@ -569,13 +621,66 @@ export default function LidahWetanPage() {
       <div className="flood-page-container">
         <section className="page active" id="page-lidah-wetan">
           {/* =================================================
-               PAGE HEADING
+               PAGE HEADING DENGAN SELECTOR LOKASI
           ================================================== */}
           <div className="page-heading">
             <div>
               <span className="eyebrow">ENVIRONMENTAL MONITORING SYSTEM</span>
-              <h2>Lidah Wetan</h2>
-              <p>Monitoring kondisi lingkungan dan potensi banjir.</p>
+              <div className="location-heading-selector-wrap" ref={dropdownRef}>
+                <button
+                  type="button"
+                  className="location-heading-btn"
+                  onClick={() => setLocationDropdownOpen((prev) => !prev)}
+                  aria-expanded={locationDropdownOpen}
+                  title="Klik untuk memilih lokasi kampus"
+                >
+                  <h2>{location === "lidah" ? "Lidah Wetan" : "Ketintang"}</h2>
+                  <i className={`bi bi-chevron-down location-dropdown-icon ${locationDropdownOpen ? "open" : ""}`} />
+                </button>
+
+                {locationDropdownOpen && (
+                  <div className="location-heading-menu">
+                    <button
+                      type="button"
+                      className={`location-heading-option ${location === "lidah" ? "active" : ""}`}
+                      onClick={() => {
+                        setLocation("lidah");
+                        setLocationDropdownOpen(false);
+                        if (typeof window !== "undefined") {
+                          window.history.replaceState(null, "", "/lidah-wetan?loc=lidah");
+                        }
+                      }}
+                    >
+                      <i className="bi bi-geo-alt-fill text-emerald-600 text-lg" />
+                      <div>
+                        <span className="option-title">Lidah Wetan</span>
+                        <span className="option-sub">Kampus Lidah Wetan UNESA</span>
+                      </div>
+                      {location === "lidah" && <i className="bi bi-check-lg option-check" />}
+                    </button>
+
+                    <button
+                      type="button"
+                      className={`location-heading-option ${location === "ketintang" ? "active" : ""}`}
+                      onClick={() => {
+                        setLocation("ketintang");
+                        setLocationDropdownOpen(false);
+                        if (typeof window !== "undefined") {
+                          window.history.replaceState(null, "", "/lidah-wetan?loc=ketintang");
+                        }
+                      }}
+                    >
+                      <i className="bi bi-geo-alt-fill text-emerald-600 text-lg" />
+                      <div>
+                        <span className="option-title">Ketintang</span>
+                        <span className="option-sub">Kampus Ketintang UNESA</span>
+                      </div>
+                      {location === "ketintang" && <i className="bi bi-check-lg option-check" />}
+                    </button>
+                  </div>
+                )}
+              </div>
+              <p>Monitoring kondisi lingkungan dan potensi banjir Kampus {location === "lidah" ? "Lidah Wetan" : "Ketintang"}.</p>
             </div>
           </div>
 
@@ -622,7 +727,7 @@ export default function LidahWetanPage() {
               </div>
               <span>Suhu Udara</span>
               <strong id="lidahTemp">
-                {formatSensor(data?.suhu_udara ?? data?.suhu_air_1, "°C")}
+                {formatSensor(data?.suhu_udara ?? data?.suhu_air_1, "°C", 1)}
               </strong>
               <small>Sensor DS18B20 (Udara)</small>
             </div>
@@ -633,7 +738,7 @@ export default function LidahWetanPage() {
               </div>
               <span>Suhu Air</span>
               <strong id="lidahTemp2">
-                {formatSensor(data?.suhu_air ?? data?.suhu_air_2, "°C")}
+                {formatSensor(data?.suhu_air ?? data?.suhu_air_2, "°C", 1)}
               </strong>
               <small>Sensor DS18B20 (Air)</small>
             </div>
@@ -790,8 +895,8 @@ export default function LidahWetanPage() {
               </div>
             </div>
 
-            <div className="ussc-table-scroll realtime-table-wrapper">
-              <table className="ussc-data-table realtime-data-table">
+            <div className="realtime-table-wrapper">
+              <table className="realtime-data-table">
                 <thead>
                   <tr>
                     <th rowSpan={2} style={{ width: "45px" }}>No</th>
@@ -810,7 +915,8 @@ export default function LidahWetanPage() {
                 <tbody id="lidahHistoryBody">
                   {displayedRows && displayedRows.length > 0 ? (
                     displayedRows.map((item, index) => {
-                      const itemStatus = (item.status || "AMAN").toUpperCase();
+                      const rawStatus = (item.status || "NORMAL").trim().toUpperCase();
+                      const itemStatus = rawStatus === "BAHAYA" ? "DARURAT" : rawStatus === "AMAN" ? "NORMAL" : rawStatus;
                       const badgeClass = getTableBadgeClass(itemStatus);
                       const displayTimestamp =
                         item.timestamp ||
@@ -880,53 +986,34 @@ export default function LidahWetanPage() {
           </div>
 
           {/* =================================================
-               KONDISI BOX PANEL (SUB BAB BARU)
+               KONDISI PANEL BOX (SUB BAB BARU)
           ================================================== */}
           <div className="section-title panel-section-title">
-            <h3>Kondisi Box Panel</h3>
-            <span>Internal ESP32</span>
+            <h3>Kondisi Panel Box</h3>
+            <span>Realtime</span>
           </div>
 
-          <div className="panel-box-card">
-            <div className="panel-box-header">
-              <div className="panel-box-title">
-                <i className="bi bi-hdd-network"></i>
-                <span>Monitoring Box Panel Kontrol</span>
+          <div className="monitor-grid panel-monitor-grid">
+            <div className="monitor-card">
+              <div className="monitor-icon">
+                <i className="bi bi-cpu"></i>
               </div>
-              <span className="panel-box-badge">ESP32 &bull; DHT11</span>
+              <span>Suhu Panel</span>
+              <strong id="lidahPanelTemp">
+                {formatSensor(data?.temp_panel, "°C")}
+              </strong>
+              <small>Sensor DHT11</small>
             </div>
-            <div className="panel-box-content">
-              <div className="panel-box-item">
-                <div className="panel-box-item-left">
-                  <div className="panel-icon cpu">
-                    <i className="bi bi-cpu"></i>
-                  </div>
-                  <div>
-                    <span className="panel-item-label">Suhu Panel</span>
-                    <small className="panel-item-sensor">Sensor DHT11</small>
-                  </div>
-                </div>
-                <strong className="panel-item-value" id="lidahPanelTemp">
-                  {formatSensor(data?.temp_panel, "°C")}
-                </strong>
-              </div>
 
-              <div className="panel-box-divider"></div>
-
-              <div className="panel-box-item">
-                <div className="panel-box-item-left">
-                  <div className="panel-icon moisture">
-                    <i className="bi bi-droplet-half"></i>
-                  </div>
-                  <div>
-                    <span className="panel-item-label">Kelembaban Panel</span>
-                    <small className="panel-item-sensor">Sensor DHT11</small>
-                  </div>
-                </div>
-                <strong className="panel-item-value" id="lidahPanelHumidity">
-                  {formatSensor(data?.hum_panel, "%")}
-                </strong>
+            <div className="monitor-card">
+              <div className="monitor-icon">
+                <i className="bi bi-droplet-half"></i>
               </div>
+              <span>Kelembaban Panel</span>
+              <strong id="lidahPanelHumidity">
+                {formatSensor(data?.hum_panel, "%")}
+              </strong>
+              <small>Sensor DHT11</small>
             </div>
           </div>
         </section>
@@ -935,8 +1022,8 @@ export default function LidahWetanPage() {
         <FloodDownloadModal
           isOpen={isDownloadModalOpen}
           onClose={() => setIsDownloadModalOpen(false)}
-          locationKey="lidah"
-          locationName="Kampus Lidah Wetan"
+          locationKey={location}
+          locationName={location === "lidah" ? "Kampus Lidah Wetan" : "Kampus Ketintang"}
         />
 
     </MainLayout>

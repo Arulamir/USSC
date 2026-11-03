@@ -1,5 +1,5 @@
 import { io } from 'socket.io-client'
-import type { Marker, MarkerChanges, LocationPoint } from '../types/Marker'
+import type { Marker, MarkerChanges } from '../types/Marker'
 
 export class MarkerApi {
   static BASE_URL = '/admin/marker'
@@ -42,7 +42,7 @@ export class SocketConnection {
   private client: ReturnType<typeof io>
   constructor() {
     this.client = io(SocketConnection.BASE_URL, {
-      path: '/admin/socket.io',
+      path: '/admin/socket.io/',
       // Next.js route handlers cannot proxy the WebSocket upgrade; connect via
       // HTTP long-polling through the existing route instead.
       transports: ['polling'],

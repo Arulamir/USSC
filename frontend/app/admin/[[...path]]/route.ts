@@ -9,7 +9,12 @@ async function proxyRequest(request: NextRequest, { params }: { params: Promise<
     const backendPath = `/${pathname}`
     const targetUrl = `${BACKEND_ORIGIN}${backendPath}${request.nextUrl.search}`
     const headers = new Headers()
-    for (const name of ['content-type', 'authorization', 'cookie', 'range', 'if-none-match']) {
+    const forwardedHeaders = [
+      'content-type', 'authorization', 'cookie', 'range', 'if-none-match',
+      'x-upload-field', 'x-upload-id', 'x-upload-index', 'x-upload-total',
+      'x-upload-name', 'x-upload-type', 'cache-control', 'cdn-cache-control'
+    ]
+    for (const name of forwardedHeaders) {
       const value = request.headers.get(name)
       if (value) headers.set(name, value)
     }
@@ -17,7 +22,7 @@ async function proxyRequest(request: NextRequest, { params }: { params: Promise<
     const response = await fetch(targetUrl, { method: request.method, headers, body, cache: 'no-store', redirect: 'manual' })
 
     const responseHeaders = new Headers()
-    for (const name of ['content-type', 'cache-control', 'content-range', 'accept-ranges', 'etag', 'last-modified']) {
+    for (const name of ['content-type', 'cache-control', 'cdn-cache-control', 'content-range', 'accept-ranges', 'etag', 'last-modified']) {
       const value = response.headers.get(name)
       if (value) responseHeaders.set(name, value)
     }

@@ -181,18 +181,22 @@ function formatTime(
   timestamp?: string | null
 ): string {
   if (!timestamp) {
-    return "--.--";
+    return "--:--";
   }
 
   const match = timestamp.match(
-    /(\d{1,2}):(\d{2})(?::(\d{2}))?/
+    /(\d{1,2}):(\d{2})/
   );
 
   if (!match) {
-    return "--.--";
+    return "--:--";
   }
 
-  return `${match[1].padStart(2, "0")}:${match[2]}`;
+  const hour = match[1].padStart(2, "0");
+  const minute = match[2];
+  
+
+  return `${hour}:${minute}`;
 }
 
 function formatTimeAMPM(
@@ -317,6 +321,47 @@ function downloadCSV(
   document.body.removeChild(link);
 
   URL.revokeObjectURL(url);
+}
+
+
+function filterEvery5Minutes(
+  rows: AirQualityRow[]
+): AirQualityRow[] {
+
+  const grouped = new Map<string, AirQualityRow>();
+
+  for (const row of rows) {
+    if (!row.timestamp) continue;
+
+    const match = row.timestamp.match(
+      /(\d{4}-\d{2}-\d{2})[ T](\d{2}):(\d{2}):(\d{2})/
+    );
+
+    if (!match) continue;
+
+    const date = match[1];
+    const hour = match[2];
+    const minute = Number(match[3]);
+
+    const bucketMinute = Math.floor(minute / 5) * 5;
+
+    const key = `${date} ${hour}:${String(bucketMinute).padStart(2, "0")}`;
+
+    // Simpan record dengan timestamp paling akhir
+    const previous = grouped.get(key);
+
+    if (
+      !previous ||
+      row.timestamp > (previous.timestamp || "")
+    ) {
+      grouped.set(key, row);
+    }
+  }
+
+  return Array.from(grouped.values()).sort(
+    (a, b) =>
+      (a.timestamp || "").localeCompare(b.timestamp || "")
+  );
 }
 
 /*
@@ -1394,25 +1439,23 @@ export default function AirQualityPage() {
    * =========================================================
    */
 
-  const totalPages =
-    Math.ceil(
-      airQualityData.length /
-        ROWS_PER_PAGE
-    );
+  // Data khusus tabel: satu record setiap 5 menit
+  const tableData = filterEvery5Minutes(airQualityData);
+
+  const totalPages = Math.ceil(
+    tableData.length / ROWS_PER_PAGE
+  );
 
   const startIndex =
-    (currentPage - 1) *
-    ROWS_PER_PAGE;
+    (currentPage - 1) * ROWS_PER_PAGE;
 
   const endIndex =
-    startIndex +
-    ROWS_PER_PAGE;
+    startIndex + ROWS_PER_PAGE;
 
-  const pageData =
-    airQualityData.slice(
-      startIndex,
-      endIndex
-    );
+  const pageData = tableData.slice(
+    startIndex,
+    endIndex
+  );
 
   function getPaginationPages(
     current: number,

@@ -9,6 +9,7 @@ import DOMPurify from 'dompurify'
 import { isLoggedIn as checkIsLoggedIn } from '../components/auth/Google'
 import MainLayout from '../components/layout/MainLayout'
 import './markdown.css'
+import Hls from 'hls.js'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend)
 
@@ -399,15 +400,38 @@ export default function TpsLidahWetanPage() {
   const refreshAiSummary = useCallback(async () => {
     setAiSummaryLoading(true)
     setAiSummaryError('')
+    setAiSummary('')
     try {
       const response = await fetch('/admin/tps/summary', {
         method: 'POST',
         cache: 'no-store',
       })
-      const result = (await response.json()) as { summary?: string; generatedAt?: string; error?: string }
-      if (!response.ok || !result.summary) throw new Error(result.error || 'Gagal mengambil kesimpulan AI.')
-      setAiSummary(result.summary)
-      setAiSummaryUpdatedAt(result.generatedAt ?? '')
+      if (!response.ok || !response.body) throw new Error('Gagal mengambil kesimpulan AI.')
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let pending = ''
+      let receivedSummary = ''
+      let complete = false
+      while (!complete) {
+        const { value, done } = await reader.read()
+        pending += decoder.decode(value, { stream: !done })
+        const events = pending.split('\n\n')
+        pending = events.pop() ?? ''
+        for (const eventText of events) {
+          const line = eventText.split('\n').find((entry) => entry.startsWith('data:'))
+          if (!line) continue
+          const event = JSON.parse(line.slice(5).trim()) as { token?: string; done?: boolean; generatedAt?: string; error?: string }
+          if (event.error) throw new Error(event.error)
+          if (event.token) {
+            receivedSummary += event.token
+            setAiSummary((current) => current + event.token)
+          }
+          if (event.generatedAt) setAiSummaryUpdatedAt(event.generatedAt)
+          if (event.done) complete = true
+        }
+        if (done) break
+      }
+      if (!receivedSummary.trim()) throw new Error('Respons kesimpulan AI kosong.')
     } catch (err) {
       setAiSummaryError(err instanceof Error ? err.message : 'Kesimpulan AI tidak tersedia.')
     } finally {
@@ -774,12 +798,7 @@ export default function TpsLidahWetanPage() {
             </button>
           </div>
           <div className="p-4 sm:p-5">
-            {aiSummaryLoading && !aiSummary ? (
-              <div className="flex items-center gap-2 py-4 text-xs text-slate-500 dark:text-slate-400">
-                <i className="bi bi-arrow-repeat animate-spin text-sm text-teal-600" aria-hidden="true" />
-                <span>Sedang membuat kesimpulan dengan model ringkasan melalui 9router...</span>
-              </div>
-            ) : aiSummaryError ? (
+            {aiSummaryError ? (
               <div
                 role="alert"
                 className="flex items-start gap-2 rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300"
@@ -787,11 +806,20 @@ export default function TpsLidahWetanPage() {
                 <i className="bi bi-exclamation-circle mt-0.5" aria-hidden="true" />
                 <span>{aiSummaryError}</span>
               </div>
-            ) : aiSummary ? (
+            ) : aiSummary && !aiSummaryLoading ? (
               <article
                 className="markdown-body max-w-none overflow-x-auto text-[14px] leading-[1.65] text-slate-800 dark:text-slate-200"
                 dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(marked.parse(aiSummary) as string) }}
               />
+            ) : aiSummaryLoading ? (
+              <div className="flex items-center gap-2 py-4 text-xs text-teal-700 dark:text-teal-300" role="status" aria-live="polite">
+                <span className="flex gap-1" aria-hidden="true">
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-current [animation-delay:-0.2s]" />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-current [animation-delay:-0.1s]" />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-current" />
+                </span>
+                <span>AI sedang menulis kesimpulan...</span>
+              </div>
             ) : (
               <p className="text-xs text-slate-500 dark:text-slate-400">Belum ada kesimpulan untuk data TPS.</p>
             )}

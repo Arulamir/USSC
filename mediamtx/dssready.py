@@ -1188,6 +1188,10 @@ def start_live(token, channel):
     print("DSS CODE:", code)
     print("DSS DESC:", desc)
 
+    if code == 110291:
+        raise RuntimeError(
+            "DSS_CHANNEL_OFFLINE: 110291")
+
     if code != 1000:
         print("[ERROR] DSS gagal memulai stream.")
         return None

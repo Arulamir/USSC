@@ -82,3 +82,5 @@ desktop.ini
 /mediamtx/device_tree.json
 /mediamtx/device_tree_full.txt
 /mediamtx/mediamtx.yml
+
+*.backup-auth

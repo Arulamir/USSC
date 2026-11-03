@@ -54,6 +54,381 @@
 }
 
 
+/* USSC — Tambahkan di bagian paling bawah app/dashboard.css */
+.dashboard-page-container .vehicle-summary-card {
+  width: 100%; position: relative; text-align: left; font: inherit;
+  color: inherit; cursor: pointer; appearance: none;
+}
+.dashboard-page-container .vehicle-summary-card > div:not(.summary-icon) {
+  display: flex; flex: 1; min-width: 0; flex-direction: column;
+  align-items: flex-start; justify-content: center; gap: 3px;
+}
+.dashboard-page-container .vehicle-summary-card > div:not(.summary-icon) > * {
+  max-width: 100%; margin: 0;
+}
+.dashboard-page-container .vehicle-summary-card > div:not(.summary-icon) > span,
+.dashboard-page-container .vehicle-summary-card > div:not(.summary-icon) > small {
+  line-height: 1.4;
+}
+.dashboard-page-container .vehicle-summary-card #dashboardVehicleTotal {
+  font-variant-numeric: tabular-nums; line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.dashboard-page-container .vehicle-card-arrow {
+  flex: 0 0 auto; margin-left: auto; color: #94a3b8;
+  font-size: 12px; transition: transform .2s ease;
+}
+.dashboard-page-container .vehicle-summary-card:hover .vehicle-card-arrow { transform: translateX(3px); color: #059669; }
+.dashboard-page-container .vehicle-summary-card:focus-visible {
+  outline: 3px solid #10b981; outline-offset: 3px;
+}
+.vehicle-popup-overlay {
+  position: fixed; inset: 0; z-index: 10010;
+  display: flex; align-items: center; justify-content: center;
+  padding: 18px; background: rgba(15,23,42,.65);
+  backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+}
+.vehicle-popup {
+  --vehicle-bg: #fff; --vehicle-text: #0f172a;
+  --vehicle-muted: #64748b; --vehicle-border: #e2e8f0;
+  --vehicle-panel: #f8fafc; --vehicle-close: #f1f5f9;
+  width: 100%; max-width: 520px; max-height: calc(100dvh - 36px);
+  overflow-y: auto; padding: 24px; border-radius: 20px;
+  border: 1px solid var(--vehicle-border);
+  background: var(--vehicle-bg); color: var(--vehicle-text);
+  box-shadow: 0 24px 70px rgba(0,0,0,.25);
+  box-sizing: border-box;
+}
+:where(.dark, .dark *) .vehicle-popup {
+  --vehicle-bg: #0f2747; --vehicle-text: #f8fafc;
+  --vehicle-muted: #a8bfdc; --vehicle-border: #29486c;
+  --vehicle-panel: #163354; --vehicle-close: #1e4168;
+}
+.vehicle-popup-header {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-bottom: 18px;
+}
+.vehicle-popup-header h3 { margin: 0; font-size: 19px; font-weight: 700; color: var(--vehicle-text); }
+.vehicle-popup-header button {
+  width: 36px; height: 36px; flex-shrink: 0;
+  display: grid; place-items: center; border: 0; border-radius: 10px;
+  background: var(--vehicle-close); color: var(--vehicle-text);
+  cursor: pointer; transition: background .2s ease;
+}
+.vehicle-popup-header button:hover { background: var(--vehicle-border); }
+.vehicle-popup-header button:focus-visible { outline: 2px solid #10b981; outline-offset: 2px; }
+.vehicle-popup-total {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 7px;
+  padding: 22px; border-radius: 15px;
+  background: linear-gradient(120deg,#047857,#10b981);
+  color: #fff;
+}
+.vehicle-popup-total span { font-size: 12px; font-weight: 600; color: #d1fae5; }
+.vehicle-popup-total strong { font-size: clamp(30px,6vw,40px); line-height: 1.1; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }
+.vehicle-popup-locations {
+  display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; margin-top: 14px;
+}
+.vehicle-popup-locations > div {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+  min-width: 0; padding: 17px; border-radius: 14px;
+  background: var(--vehicle-panel); border: 1px solid var(--vehicle-border);
+}
+.vehicle-popup-locations > div > span { font-size: 12px; font-weight: 600; color: var(--vehicle-muted); }
+.vehicle-popup-locations > div > strong {
+  font-size: clamp(21px,4vw,27px); line-height: 1.15; font-weight: 750;
+  color: var(--vehicle-text); font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.vehicle-popup-locations > div > small {
+  display: inline-flex; padding: 4px 8px; border-radius: 6px;
+  font-size: 10px; font-weight: 700;
+  color: #047857; background: #d1fae5;
+}
+:where(.dark, .dark *) .vehicle-popup-locations > div > small {
+  background: rgba(16,185,129,.17); color: #6ee7b7;
+}
+
+/* Kartu kendaraan */
+.dashboard-page-container .mobility-summary-card {
+  position: relative;
+  padding-bottom: 16px;
+  box-sizing: border-box;
+}
+
+/* =========================================
+   KARTU KENDARAAN DAN EMISI HORIZONTAL
+   ========================================= */
+
+.dashboard-page-container .summary-grid > .mobility-summary-card {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  gap: 12px;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+/* Kontainer judul dan data */
+.dashboard-page-container .mobility-summary-card > .mobility-content {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  flex: 1 1 0;
+  min-width: 0;
+  gap: 10px;
+}
+
+/* Judul */
+.dashboard-page-container .mobility-summary-card .mobility-title {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  color: #93b4df;
+  line-height: 1.4;
+}
+
+/* Dua data sejajar */
+.dashboard-page-container .mobility-summary-card .mobility-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Masing-masing data */
+.dashboard-page-container .mobility-summary-card .mobility-stat {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* Ikon kendaraan dan emisi */
+.dashboard-page-container .mobility-summary-card .mobility-stat > .summary-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  border-radius: 10px;
+}
+
+/* Angka dan label */
+.dashboard-page-container .mobility-summary-card .mobility-stat-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  min-width: 0;
+}
+
+.dashboard-page-container .mobility-summary-card .mobility-stat-info > strong {
+  display: block;
+  margin: 0;
+  font-size: clamp(16px, 1.4vw, 22px);
+  line-height: 1.2;
+  color: #f8fafc;
+  white-space: nowrap;
+}
+
+.dashboard-page-container .mobility-summary-card .mobility-stat-info > small {
+  display: block;
+  font-size: 10px;
+  line-height: 1.4;
+  color: #94a3b8;
+}
+
+/* Panah */
+.dashboard-page-container .mobility-summary-card > .vehicle-card-arrow {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+/* HP kecil */
+@media (max-width: 480px) {
+  .dashboard-page-container .mobility-summary-card .mobility-stats {
+    gap: 8px;
+  }
+
+  .dashboard-page-container .mobility-summary-card .mobility-stat {
+    gap: 6px;
+  }
+
+  .dashboard-page-container .mobility-summary-card .mobility-stat > .summary-icon {
+    width: 30px;
+    height: 30px;
+    flex-basis: 30px;
+  }
+
+  .dashboard-page-container .mobility-summary-card .mobility-stat-info > strong {
+    font-size: 15px;
+  }
+}
+
+/* =====================================
+   KUALITAS UDARA - SERAGAM KENDARAAN
+   ===================================== */
+
+.dashboard-page-container .air-summary-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 14px 42px 27px 14px;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Konten utama */
+.dashboard-page-container
+.air-summary-card .air-card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  flex: 1;
+  min-width: 0;
+  gap: 7px;
+}
+
+/* Judul atas */
+.dashboard-page-container
+.air-summary-card .air-card-title {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  color: #93b4df;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+/* Ikon dan status sejajar */
+.dashboard-page-container
+.air-summary-card .air-card-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* Status dan label */
+.dashboard-page-container
+.air-summary-card .air-card-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-width: 0;
+}
+
+.dashboard-page-container
+.air-summary-card .air-card-info strong {
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.dashboard-page-container
+.air-summary-card .air-card-info small {
+  font-size: 10px;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+/* Lihat Detail tepat di tengah bawah */
+.dashboard-page-container
+.air-summary-card .air-card-detail {
+  position: absolute;
+  left: 50%;
+  bottom: 9px;
+  transform: translateX(-50%);
+
+  display: block;
+  margin: 0;
+  font-size: 9px;
+  font-weight: 400;
+  line-height: 1.3;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+/* Panah di kanan tengah */
+.dashboard-page-container
+.air-summary-card > .air-card-arrow {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  transform: translateY(-50%);
+
+  margin: 0;
+  font-size: 18px !important;
+  color: #f8fafc;
+}
+
+/* Hover panah */
+.dashboard-page-container
+.air-summary-card:hover > .air-card-arrow {
+  transform: translate(3px, -50%);
+  color: #10b981;
+}
+
+/* Samakan posisi detail kartu kendaraan */
+.dashboard-page-container
+.mobility-summary-card .vehicle-card-detail {
+  position: absolute;
+  left: 50%;
+  bottom: 9px;
+  transform: translateX(-50%);
+  align-self: auto;
+  margin: 0;
+  font-size: 9px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+/* Sisakan ruang bawah pada kartu kendaraan */
+.dashboard-page-container .mobility-summary-card {
+  padding-bottom: 27px;
+}
+
+/* Judul sama dengan kartu sebelah */
+.dashboard-page-container
+.mobility-summary-card .mobility-title {
+  color: #93b4df;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Angka kendaraan dan emisi */
+.dashboard-page-container
+.mobility-summary-card .mobility-stat-info > strong {
+  color: #ffffff;
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+/* Keterangan kendaraan dan estimasi emisi */
+.dashboard-page-container
+.mobility-summary-card .mobility-stat-info > small {
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+/* Ikon kendaraan dan emisi */
+.dashboard-page-container
+.mobility-summary-card .mobility-stat .summary-icon {
+  color: #10b981;
+}
+
 /* KARTU KUALITAS UDARA */
 /* .air-summary-card {
   width: 100%;
@@ -377,6 +752,49 @@
   font-size: 24px;
 }
 
+/* STATUS KONEKSI AIR QUALITY */
+
+.air-popup-connection {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.air-connection-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.air-connection-badge.online {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.air-connection-badge.offline {
+  background: #e5e7eb;
+  color: #6b7280;
+}
+
+.air-connection-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.air-popup-updated {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 
 
 
@@ -619,6 +1037,28 @@
   }
 }
 
+/* RESPONSIVE HP */
+
+@media (max-width: 600px) {
+  .dashboard-page-container .summary-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .dashboard-page-container .mobility-summary-card {
+    grid-column: auto;
+  }
+
+  .dashboard-page-container .mobility-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-page-container .mobility-stat strong {
+    font-size: 18px;
+  }
+}
+
+
 
 .dashboard-page-container .page-heading p {
   color: #64748b;
@@ -653,8 +1093,12 @@
 /* 3. SUMMARY GRID (Desktop: 1 Baris 4 Kartu) */
 .dashboard-page-container .summary-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+
+  /* Banjir 27%, Udara 27%, Kendaraan 46% */
+  grid-template-columns: 25fr 25fr 50fr;
+
   gap: 14px;
+  width: 100%;
   margin-bottom: 28px;
 }
 
@@ -749,9 +1193,7 @@
   color: #38bdf8;
 }
 
-.dashboard-page-container .summary-card div:last-child {
-  display: flex;
-  flex-direction: column;
+.dashboard-page-container .summary-card > div:not(.summary-icon) {
   min-width: 0;
 }
 
@@ -1098,11 +1540,14 @@
   color: #f8fafc;
 }
 
-/* 8. RESPONSIVE STYLES */
 @media (max-width: 1100px) {
   .dashboard-page-container .summary-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
+  }
+
+  .dashboard-page-container .mobility-summary-card {
+    grid-column: 1 / -1;
   }
 
   .dashboard-page-container .environment-grid {
@@ -1213,6 +1658,9 @@
   }
 }
 
+
+
+
 @media (max-width: 480px) {
   /* Di Mobile kecil: 2 kolom x 2 baris simetris */
   .dashboard-page-container .summary-grid {
@@ -1244,3 +1692,391 @@
     font-size: 8px;
   }
 }
+
+/* Ketiga kartu menggunakan struktur yang konsisten */
+.dashboard-page-container .summary-grid > .summary-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Ikon tidak boleh mengecil */
+.dashboard-page-container .summary-grid > .summary-card > .summary-icon {
+  flex: 0 0 43px;
+}
+
+/* Konten teks seluruh kartu harus vertikal */
+.dashboard-page-container.summary-grid > .summary-card:not(.air-summary-card):not(.mobility-summary-card)
+> div:not(.summary-icon) {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  flex: 1 1 0;
+  min-width: 0;
+  gap: 5px;
+  text-align: left;
+}
+
+/* ============================================
+   FINAL - SINKRONISASI KARTU DASHBOARD
+   ============================================ */
+
+/* Desktop */
+@media (min-width: 1101px) {
+  .dashboard-page-container .summary-grid {
+    grid-template-columns: 24fr 24fr 52fr;
+  }
+}
+
+/* Tinggi dan padding seragam */
+.dashboard-page-container .summary-grid > .summary-card {
+  min-height: 112px;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+/* Kartu udara dan kendaraan */
+.dashboard-page-container .summary-grid
+> .air-summary-card,
+.dashboard-page-container .summary-grid
+> .mobility-summary-card {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  padding: 13px 40px 25px 14px;
+  min-width: 0;
+}
+
+/* Konten kedua kartu */
+.dashboard-page-container .summary-grid
+> .air-summary-card > .air-card-content,
+.dashboard-page-container .summary-grid
+> .mobility-summary-card > .mobility-content {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+}
+
+/* Judul */
+.dashboard-page-container .air-card-title,
+.dashboard-page-container .mobility-title {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #93b4df;
+  text-transform: uppercase;
+}
+
+/* Baris ikon dan informasi */
+.dashboard-page-container .air-card-main,
+.dashboard-page-container .mobility-stats {
+  min-height: 40px;
+  align-items: center;
+}
+
+.dashboard-page-container .air-card-main {
+  display: flex;
+  gap: 9px;
+}
+
+.dashboard-page-container .mobility-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+
+.dashboard-page-container .mobility-stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* Angka dan keterangan */
+.dashboard-page-container .air-card-info,
+.dashboard-page-container .mobility-stat-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+}
+
+.dashboard-page-container .air-card-info strong,
+.dashboard-page-container .mobility-stat-info strong {
+  font-size: clamp(16px, 1.5vw, 21px);
+  line-height: 1.2;
+  margin: 0;
+}
+
+.dashboard-page-container .air-card-info small,
+.dashboard-page-container .mobility-stat-info small {
+  font-size: 10px;
+  line-height: 1.4;
+  color: #94a3b8;
+  margin: 0;
+}
+
+/* Lihat Detail: tengah bawah kedua kartu */
+.dashboard-page-container .summary-grid
+> .air-summary-card .air-card-detail,
+.dashboard-page-container .summary-grid
+> .mobility-summary-card .vehicle-card-detail {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  right: auto;
+  transform: translateX(-50%);
+  display: block;
+  width: max-content;
+  margin: 0;
+  padding: 0;
+  font-size: 9px;
+  font-weight: 400;
+  line-height: 1.3;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+/* Panah: posisi dan ukuran sama */
+.dashboard-page-container .summary-grid
+> .air-summary-card > .air-card-arrow,
+.dashboard-page-container .summary-grid
+> .mobility-summary-card > .vehicle-card-arrow {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  left: auto;
+  bottom: auto;
+  transform: translateY(-50%);
+  margin: 0;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px !important;
+  color: #f8fafc;
+}
+
+/* Hover */
+.dashboard-page-container .summary-grid
+> .air-summary-card:hover > .air-card-arrow,
+.dashboard-page-container .summary-grid
+> .mobility-summary-card:hover > .vehicle-card-arrow {
+  transform: translate(3px, -50%);
+  color: #10b981;
+}
+
+/* Tablet dan HP: mengikuti aturan grid responsif */
+@media (max-width: 600px) {
+  .dashboard-page-container .summary-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-page-container .mobility-summary-card {
+    grid-column: auto;
+  }
+}
+
+/* Judul */
+.dashboard-page-container .summary-grid > .summary-card > div:not(.summary-icon) > span {
+  display: block;
+  width: 100%;
+  font-size: 10px;
+  line-height: 1.4;
+  margin: 0;
+  white-space: normal;
+}
+
+/* Nilai utama */
+.dashboard-page-container .summary-grid > .summary-card > div:not(.summary-icon) > strong {
+  display: block;
+  max-width: 100%;
+  font-size: clamp(16px, 1.5vw, 21px);
+  line-height: 1.3;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Keterangan di bawah nilai */
+.dashboard-page-container .summary-grid > .summary-card > div:not(.summary-icon) > small {
+  display: block;
+  width: 100%;
+  font-size: 10px;
+  line-height: 1.4;
+  margin: 0;
+  white-space: normal;
+}
+
+/* Panah selalu di kanan */
+.dashboard-page-container .summary-grid > .summary-card > .air-card-arrow,
+.dashboard-page-container .summary-grid > .summary-card > .vehicle-card-arrow {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+/* Tablet */
+@media (max-width: 1100px) {
+  .dashboard-page-container .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-page-container .summary-grid > .vehicle-summary-card {
+    grid-column: 1 / -1;
+  }
+}
+
+/* HP: semua kartu satu kolom */
+@media (max-width: 600px) {
+  .dashboard-page-container .summary-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-page-container .summary-grid > .vehicle-summary-card {
+    grid-column: auto;
+  }
+
+  .dashboard-page-container .summary-grid > .summary-card > .summary-icon {
+    flex-basis: 38px;
+    width: 38px;
+    height: 38px;
+  }
+}
+
+/* Samakan ukuran tanda panah pada kartu dashboard */
+.summary-card .air-card-arrow,
+.summary-card .vehicle-card-arrow {
+  font-size: 18px !important;
+  width: 20px;
+  height: 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+/* =========================================
+   KARTU KENDARAAN - LIHAT DETAIL SERAGAM
+   ========================================= */
+
+.dashboard-page-container .mobility-summary-card {
+  position: relative;
+  padding-bottom: 16px;
+}
+
+/* Lihat Detail di bawah data emisi */
+.dashboard-page-container
+.mobility-summary-card .vehicle-card-detail {
+  position: static;
+  display: block;
+  margin: 0;
+  padding: 0;
+  line-height: 1.4;
+}
+
+/* Tulisan seperti kualitas udara */
+.dashboard-page-container
+.mobility-summary-card .vehicle-card-detail small {
+  font-size: 9px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+/* Panah di ujung kanan dan tengah secara vertikal */
+.dashboard-page-container
+.mobility-summary-card > .vehicle-card-arrow {
+  position: absolute;
+  right: 17px;
+  top: 50%;
+  transform: translateY(-50%);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 20px;
+  height: 20px;
+  margin: 0;
+
+  font-size: 18px !important;
+  color: #f8fafc;
+}
+
+/* Hover panah */
+.dashboard-page-container
+.mobility-summary-card:hover > .vehicle-card-arrow {
+  transform: translate(3px, -50%);
+  color: #10b981;
+}
+
+/* Efek hover */
+.dashboard-page-container
+.mobility-summary-card:hover
+.vehicle-card-detail .vehicle-card-arrow {
+  transform: translateX(3px);
+  color: #10b981;
+}
+
+/* Jarak antara judul dan data */
+.dashboard-page-container
+.mobility-summary-card .mobility-content {
+  gap: 8px;
+}
+
+/* Jarak antar data kendaraan dan emisi */
+.dashboard-page-container
+.mobility-summary-card .mobility-stats {
+  gap: 12px;
+}
+
+/* Desktop: lebar kartu disesuaikan dengan isi */
+@media (min-width: 1101px) {
+  .dashboard-page-container .summary-grid {
+    grid-template-columns: 25fr 25fr 50fr;
+    align-items: stretch;
+  }
+
+  .dashboard-page-container .summary-grid > .summary-card {
+    min-width: 0;
+    height: 100%;
+    box-sizing: border-box;
+  }
+}
+
+/* Tablet: dua kartu atas, kendaraan selebar baris */
+@media (min-width: 601px) and (max-width: 1100px) {
+  .dashboard-page-container .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-page-container .summary-grid > .mobility-summary-card {
+    grid-column: 1 / -1;
+  }
+}
+
+/* HP: kartu ditampilkan satu kolom */
+@media (max-width: 600px) {
+  .dashboard-page-container .summary-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+

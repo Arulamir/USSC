@@ -665,7 +665,9 @@ function createLineChart(
     label,
     data,
     labels,
-    unit
+    unit,
+    maxVal,
+    minVal
 ) {
 
     const canvas =
@@ -793,7 +795,11 @@ function createLineChart(
 
                     y: {
 
-                        beginAtZero: false,
+                        beginAtZero: minVal !== undefined ? minVal === 0 : false,
+
+                        min: minVal,
+
+                        max: maxVal,
 
                         grid: {
 
@@ -834,7 +840,9 @@ function initializeCharts() {
             "Ketinggian Air",
             chartData.lidah.water,
             chartData.lidah.labels,
-            "cm"
+            "cm",
+            180,
+            0
         );
 
 
@@ -844,7 +852,9 @@ function initializeCharts() {
             "Suhu",
             chartData.lidah.temp,
             chartData.lidah.labels,
-            "°C"
+            "°C",
+            50,
+            0
         );
 
 
@@ -854,7 +864,9 @@ function initializeCharts() {
             "Kelembaban Tanah",
             chartData.lidah.soil,
             chartData.lidah.labels,
-            "%"
+            "%",
+            100,
+            0
         );
 
 
@@ -864,7 +876,9 @@ function initializeCharts() {
             "Ketinggian Air",
             chartData.ketintang.water,
             chartData.ketintang.labels,
-            "cm"
+            "cm",
+            180,
+            0
         );
 
 
@@ -874,7 +888,9 @@ function initializeCharts() {
             "Suhu",
             chartData.ketintang.temp,
             chartData.ketintang.labels,
-            "°C"
+            "°C",
+            50,
+            0
         );
 
 
@@ -884,7 +900,9 @@ function initializeCharts() {
             "Kelembaban Tanah",
             chartData.ketintang.soil,
             chartData.ketintang.labels,
-            "%"
+            "%",
+            100,
+            0
         );
 
 

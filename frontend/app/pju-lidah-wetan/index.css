@@ -280,17 +280,28 @@
    ========================================================= */
 
 .pju-lidah-wetan-map-header {
-  min-height: 72px;
-
-  display: grid;
-  grid-template-columns: minmax(120px, 1fr) auto minmax(160px, 1fr);
-  align-items: center;
-  gap: 14px;
-  padding: 10px 20px;
-
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 18px;
   background: #ffffff;
-
   border-bottom: 1px solid #e2e8f0;
+}
+
+.pju-lidah-wetan-map-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.pju-lidah-wetan-map-header-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
 }
 
 .pju-lidah-wetan-map-header h2 {
@@ -376,6 +387,40 @@
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   background: #f8fafc;
+}
+
+.pju-lidah-wetan-view-picker {
+  display: inline-flex;
+  align-items: center;
+}
+
+.pju-lidah-wetan-view-select {
+  min-height: 34px;
+  padding: 6px 30px 6px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #334155;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.pju-lidah-wetan-view-select:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.pju-lidah-wetan-view-select:focus-visible {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
 }
 
 .pju-lidah-wetan-type-switch label {
@@ -1402,6 +1447,23 @@
   background: #0f172a;
 }
 
+.dark .pju-lidah-wetan-view-select {
+  background-color: #0f172a;
+  border-color: #475569;
+  color: #cbd5e1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+}
+
+.dark .pju-lidah-wetan-view-select:hover {
+  background-color: #1e293b;
+  border-color: #64748b;
+}
+
+.dark .pju-lidah-wetan-view-select:focus-visible {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.25);
+}
+
 .dark .pju-lidah-wetan-type-switch label {
   color: #cbd5e1;
 }
@@ -1681,7 +1743,7 @@
   }
 
   .pju-lidah-wetan-stats {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .pju-lidah-wetan-stat-card {
@@ -1884,3 +1946,461 @@
   color: #b42318;
   font-size: 0.85rem;
 }
+
+/* =========================================================
+   DIGITAL TWIN SPLIT SCREEN (MAP & CCTV)
+   ========================================================= */
+
+.dt-split-body {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 560px;
+  min-height: 420px;
+  overflow: hidden;
+  background: #0f172a;
+}
+
+.dt-split-pane {
+  position: relative;
+  height: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width 0.05s ease-out;
+}
+
+.dt-split-pane.is-collapsed {
+  display: none !important;
+}
+
+.dt-split-pane-map {
+  flex-shrink: 0;
+}
+
+.dt-split-pane-map .pju-lidah-wetan-map-stage {
+  height: 100%;
+  width: 100%;
+}
+
+.dt-split-pane-map .pju-lidah-wetan-map {
+  height: 100% !important;
+  min-height: 100% !important;
+}
+
+/* RESIZER DIVIDER */
+.dt-split-divider {
+  position: relative;
+  width: 12px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  background: #1e293b;
+  border-left: 1px solid #334155;
+  border-right: 1px solid #334155;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  touch-action: none;
+  z-index: 25;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.dt-split-divider:hover,
+.dt-split-divider.is-dragging {
+  background: #2563eb;
+  border-color: #3b82f6;
+}
+
+.dt-split-divider-handle {
+  width: 4px;
+  height: 36px;
+  border-radius: 999px;
+  background: #64748b;
+  transition: background 0.15s ease;
+}
+
+.dt-split-divider:hover .dt-split-divider-handle,
+.dt-split-divider.is-dragging .dt-split-divider-handle {
+  background: #ffffff;
+}
+
+/* CCTV PANE */
+.dt-split-pane-cctv {
+  flex: 1 1 0;
+  background: #0b0f19;
+  display: flex;
+  flex-direction: column;
+}
+
+.dt-cctv-header {
+  height: 46px;
+  min-height: 46px;
+  padding: 6px 14px;
+  background: #0f172a;
+  border-bottom: 1px solid #1e293b;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  z-index: 5;
+}
+
+.dt-cctv-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.dt-cctv-title {
+  color: #f8fafc;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dt-cctv-select {
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  max-width: 240px;
+  cursor: pointer;
+  outline: none;
+}
+
+.dt-cctv-select:focus {
+  border-color: #3b82f6;
+}
+
+.dt-cctv-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dt-cctv-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  padding: 0 8px;
+  background: #1e293b;
+  color: #94a3b8;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dt-cctv-btn:hover {
+  background: #334155;
+  color: #f8fafc;
+  border-color: #475569;
+}
+
+.dt-cctv-btn.active {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #3b82f6;
+}
+
+.dt-cctv-body {
+  position: relative;
+  flex: 1 1 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000000;
+  overflow: hidden;
+}
+
+.dt-cctv-video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000000;
+}
+
+.dt-cctv-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #64748b;
+  font-size: 0.85rem;
+  padding: 20px;
+  text-align: center;
+}
+
+.dt-cctv-live-tag {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dt-cctv-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 6px #ef4444;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+/* PRESET BUTTONS GROUP */
+.dt-split-presets {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #f1f5f9;
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.dt-split-presets button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  color: #475569;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dt-split-presets button:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.dt-split-presets button.active {
+  background: #ffffff;
+  color: #1d4ed8;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.dark .dt-split-presets {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+.dark .dt-split-presets button {
+  color: #94a3b8;
+}
+
+.dark .dt-split-presets button:hover {
+  background: #1e293b;
+  color: #f8fafc;
+}
+
+.dark .dt-split-presets button.active {
+  background: #1e293b;
+  color: #60a5fa;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+/* MODES & HEIGHTS */
+.dt-split-body.mode-map-only {
+  height: 520px;
+}
+
+.dt-split-body.mode-cctv-only {
+  height: 480px;
+}
+
+/* RESPONSIVE SPLIT & MOBILE OPTIMIZATIONS */
+@media (max-width: 900px) {
+  .pju-lidah-wetan-map-header-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .dt-split-presets {
+    width: 100%;
+    display: flex;
+  }
+
+  .dt-split-presets button {
+    flex: 1 1 0;
+    height: 36px;
+    font-size: 0.8rem;
+    justify-content: center;
+  }
+
+  .pju-lidah-wetan-map-tools {
+    width: 100%;
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 6px;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+
+  .pju-lidah-wetan-map-tools::-webkit-scrollbar {
+    display: none;
+  }
+
+  .pju-lidah-wetan-map-tools > * {
+    flex-shrink: 0;
+  }
+
+  /* Mode-specific split body on tablet & mobile */
+  .dt-split-body.mode-split {
+    flex-direction: column;
+    height: 600px;
+  }
+
+  .dt-split-body.mode-split .dt-split-pane-map {
+    height: 50% !important;
+    width: 100% !important;
+  }
+
+  .dt-split-body.mode-split .dt-split-pane-cctv {
+    height: 50% !important;
+    width: 100% !important;
+  }
+
+  .dt-split-body.mode-split .dt-split-divider {
+    width: 100%;
+    height: 10px;
+    cursor: row-resize;
+    border-left: none;
+    border-right: none;
+    border-top: 1px solid #334155;
+    border-bottom: 1px solid #334155;
+  }
+
+  .dt-split-body.mode-split .dt-split-divider-handle {
+    width: 36px;
+    height: 4px;
+  }
+
+  .dt-split-body.mode-map-only {
+    height: 460px;
+  }
+
+  .dt-split-body.mode-map-only .dt-split-pane-map {
+    height: 100% !important;
+    width: 100% !important;
+  }
+
+  .dt-split-body.mode-cctv-only {
+    height: 380px;
+  }
+
+  .dt-split-body.mode-cctv-only .dt-split-pane-cctv {
+    height: 100% !important;
+    width: 100% !important;
+  }
+
+  .dt-cctv-header {
+    padding: 6px 10px;
+    gap: 8px;
+  }
+
+  .dt-cctv-label {
+    display: none;
+  }
+
+  .dt-cctv-select {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
+    font-size: 0.74rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .pju-lidah-wetan-page-container {
+    padding: 10px 12px;
+  }
+
+  .pju-lidah-wetan-map-header {
+    padding: 10px 12px;
+  }
+
+  .pju-lidah-wetan-map-title h2 {
+    font-size: 0.92rem;
+  }
+
+  /* Compact 2-column stat cards on mobile */
+  .pju-lidah-wetan-stats,
+  .digital-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .pju-lidah-wetan-stat-card,
+  .digital-stat-card {
+    min-height: 68px !important;
+    padding: 8px 10px !important;
+  }
+
+  .pju-lidah-wetan-stat-icon,
+  .digital-stat-icon {
+    width: 34px !important;
+    height: 34px !important;
+    flex-basis: 34px !important;
+    font-size: 0.95rem !important;
+  }
+
+  .pju-lidah-wetan-stat-card strong,
+  .digital-stat-card strong {
+    font-size: 1.1rem !important;
+  }
+
+  .dt-split-body.mode-split {
+    height: 520px;
+  }
+
+  .dt-split-body.mode-map-only {
+    height: 390px;
+  }
+
+  .dt-split-body.mode-cctv-only {
+    height: 300px;
+  }
+}
+

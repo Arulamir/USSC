@@ -11,6 +11,7 @@ from backend.config import Config
 # Default konfigurasi AirGradient
 DEFAULT_TOKEN = getattr(Config, "AIRGRADIENT_TOKEN", "")
 DEFAULT_LOCATION_ID = 202132
+LAST_SENSOR_TIMESTAMP = None
 
 import threading
 
@@ -22,10 +23,14 @@ def get_latest_air_data():
     with AIR_LOCK:
         return LATEST_AIR_DATA
 
+
+
 def fetch_and_save_airgradient():
     """
     Mengambil data satu kali dari AirGradient API dan menyimpan ke DB.
     """
+    global LAST_SENSOR_TIMESTAMP
+    global LATEST_AIR_DATA
     token = getattr(Config, "AIRGRADIENT_TOKEN", DEFAULT_TOKEN) or DEFAULT_TOKEN
     location_id = getattr(Config, "AIRGRADIENT_LOCATION_ID", DEFAULT_LOCATION_ID) or DEFAULT_LOCATION_ID
     
@@ -43,6 +48,48 @@ def fetch_and_save_airgradient():
             
         data = response.json()
         if not data:
+            return
+        
+        # Ambil timestamp asli dari API AirGradient
+        sensor_timestamp = data.get("timestamp")
+
+        if not sensor_timestamp:
+            print("[AirGradient] Timestamp sensor tidak tersedia, data tidak disimpan")
+            return
+
+        # Konversi timestamp sensor
+        from datetime import datetime, timezone, timedelta
+
+        try:
+            sensor_time = datetime.fromisoformat(
+                sensor_timestamp.replace("Z", "+00:00")
+            )
+
+            if sensor_time.tzinfo is None:
+                print("[AirGradient] Timestamp tanpa timezone, data tidak disimpan")
+                return
+
+            now = datetime.now(timezone.utc)
+
+            # Hitung usia data sensor
+            age_seconds = (now - sensor_time).total_seconds()
+
+            # Jika data lebih dari 3 menit, anggap sensor offline
+            if age_seconds > 180:
+                print("[AirGradient] Sensor OFFLINE, data lama tidak disimpan")
+                return
+
+            if age_seconds < -60:
+                print("[AirGradient] Timestamp sensor tidak valid")
+                return
+
+            # Cek apakah timestamp sensor sudah pernah disimpan
+            if LAST_SENSOR_TIMESTAMP == sensor_timestamp:
+                print("[AirGradient] Data duplikat, tidak disimpan")
+                return
+
+        except (ValueError, TypeError, AttributeError) as e:
+            print(f"[AirGradient] Timestamp tidak valid: {e}")
             return
 
         # Simpan ke cache memory
@@ -66,7 +113,6 @@ def fetch_and_save_airgradient():
             "timestamp": current_time_str
         }
         with AIR_LOCK:
-            global LATEST_AIR_DATA
             LATEST_AIR_DATA = latest_record
 
         conn = None
@@ -76,7 +122,7 @@ def fetch_and_save_airgradient():
             cursor = conn.cursor()
             
             cursor.execute("""
-                INSERT INTO air_quality (
+                INSERT IGNORE INTO air_quality (
                     serialno,
                     location_name,
                     model,
@@ -91,8 +137,14 @@ def fetch_and_save_airgradient():
                     tvoc_index,
                     nox_index,
                     wifi,
-                    timestamp
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    timestamp,
+                    sensor_timestamp
+                ) VALUES (
+                    %s, %s, %s, %s,
+                    %s, %s, %s, %s,
+                    %s, %s, %s, %s,
+                    %s, %s, %s, %s
+                )
             """, (
                 data.get("serialno", "AG-UNESA"),
                 data.get("locationName", f"UNESA Location {location_id}"),
@@ -101,17 +153,27 @@ def fetch_and_save_airgradient():
                 data.get("pm01", 0),
                 data.get("pm02", 0),
                 data.get("pm10", 0),
-                data.get("atmp", 0),  # ambient temp
-                data.get("rhum", 0),  # relative humidity
-                data.get("rco2", 0),  # CO2
+                data.get("atmp", 0),
+                data.get("rhum", 0),
+                data.get("rco2", 0),
                 data.get("tvoc", 0),
                 data.get("tvocIndex", 0),
                 data.get("noxIndex", 0),
                 data.get("wifi", -60),
-                datetime.now()
+                datetime.now(),
+                sensor_time.astimezone(timezone.utc).replace(tzinfo=None)
             ))
+
+            inserted = cursor.rowcount
             conn.commit()
-            print(f"[AirGradient] Data tersimpan: PM2.5={data.get('pm02')}, CO2={data.get('rco2')}")
+
+            LAST_SENSOR_TIMESTAMP = sensor_timestamp
+
+            if inserted == 1:
+                print(f"[AirGradient] Data baru tersimpan: {sensor_timestamp}")
+            else:
+                print(f"[AirGradient] Data duplikat dilewati: {sensor_timestamp}")
+            
         except Exception as db_err:
             print(f"[AirGradient] Gagal simpan ke DB: {db_err}")
         finally:

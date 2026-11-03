@@ -40,6 +40,7 @@ export enum MODES {
   INDOOR = 'indoor',
   TREE = 'tree',
   PJU_LUAR = 'pju_luar',
+  PAVING_RUSAK = 'paving_rusak'
 }
 
 export const MODES_FORMAT = {
@@ -48,12 +49,19 @@ export const MODES_FORMAT = {
   tree: { label: 'Tanaman Hutan' },
   pju: { label: 'PJU Hutan', lux: true },
   pju_luar: { label: 'PJU Luar', lux: true },
+  paving_rusak: { label: 'Paving Rusak' },
 }
 
 export enum CONDITIONS {
+  // Cahaya
   GELAP = 'Gelap',
   REDUP = 'Redup',
   TERANG = 'Terang',
+  
+  // Kualitas
+  BURUK = 'Buruk',
+  KURANG_BAIK = 'Kurang Baik',
+  BAIK = 'Baik',
 }
 
 export const CONDITION_COLORS = {

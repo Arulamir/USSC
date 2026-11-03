@@ -101,13 +101,21 @@ def save_flood_to_db(location, data, raw_payload=None):
         status = data.get("status")
         if not status:
             if water >= 100:
-                status = "BAHAYA"
+                status = "DARURAT"
             elif water >= 50:
                 status = "WASPADA"
             else:
-                status = "AMAN"
+                status = "NORMAL"
         else:
-            status = str(status).strip().upper()
+            s = str(status).strip().upper()
+            if s in ["DARURAT", "BAHAYA"]:
+                status = "DARURAT"
+            elif s == "WASPADA":
+                status = "WASPADA"
+            elif s in ["NORMAL", "AMAN"]:
+                status = "NORMAL"
+            else:
+                status = s
 
         query = """
             INSERT INTO flood_data (

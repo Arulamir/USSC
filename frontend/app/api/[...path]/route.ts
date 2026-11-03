@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND_URL = (process.env.USSC_API_BACKEND_ORIGIN || "http://127.0.0.1:5000").replace(/\/$/, "");
+const DEFAULT_BACKEND_ORIGIN = "http://127.0.0.1:5000";
+const DEFAULT_NODE_MANAGER_ORIGIN = "http://127.0.0.1:5010";
+
+function getBackendUrl(path: string[]) {
+  if (path[0] === "monitoring") {
+    return (process.env.USSC_NODE_MANAGER_ORIGIN || DEFAULT_NODE_MANAGER_ORIGIN).replace(/\/$/, "");
+  }
+  return (process.env.USSC_API_BACKEND_ORIGIN || DEFAULT_BACKEND_ORIGIN).replace(/\/$/, "");
+}
 
 async function proxyRequest(
   request: NextRequest,
@@ -11,8 +19,14 @@ async function proxyRequest(
 
     const backendPath = `/api/${path.join("/")}`;
     const search = request.nextUrl.search;
-
-    const targetUrl = `${BACKEND_URL}${backendPath}${search}`;
+    const origin = getBackendUrl(path);
+    if (!origin) {
+      return NextResponse.json(
+        { status: "error", message: "Node Manager API origin is not configured" },
+        { status: 503 }
+      );
+    }
+    const targetUrl = `${origin}${backendPath}${search}`;
 
     const headers = new Headers();
 
@@ -39,6 +53,15 @@ async function proxyRequest(
       body,
       cache: "no-store",
     });
+
+    const upstreamType = response.headers.get("content-type") ?? "";
+    if (path[0] === "monitoring" && !upstreamType.toLowerCase().includes("json")) {
+      console.error(`[NODE MANAGER PROXY] Unexpected content type for ${request.method} ${backendPath}: ${upstreamType || "missing"} (${response.status})`);
+      return NextResponse.json(
+        { status: "error", message: "Node Manager returned a non-JSON response; check USSC_NODE_MANAGER_ORIGIN and service routes" },
+        { status: 502 }
+      );
+    }
 
     const responseBody = await response.arrayBuffer();
 

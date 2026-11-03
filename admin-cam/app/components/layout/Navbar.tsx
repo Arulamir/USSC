@@ -117,9 +117,9 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                 ? 'bg-slate-800/90 border-slate-700 text-slate-200 hover:bg-slate-800'
                 : 'bg-emerald-50/90 border-emerald-200/80 text-emerald-900 hover:bg-emerald-100/70'
             }`}
-            title={`Cuaca Surabaya (Open-Meteo): ${weatherText} (${
-              weather.temp !== null ? `\${weather.temp.toFixed(1)} °C` : '-- °C'
-            }${weather.humidity !== null ? `, Kelembaban \${weather.humidity}%` : ''})`}
+            title={`Cuaca Surabaya: ${weatherText} (${
+              weather.temp !== null ? `${weather.temp.toFixed(1)} °C` : '-- °C'
+            }${weather.humidity !== null ? `, Kelembaban ${weather.humidity}%` : ''})`}
           >
             <i className={`bi ${weatherIcon} text-sm sm:text-base`} />
             <span className="tabular-nums font-semibold">{weather.temp !== null ? `${weather.temp.toFixed(1)} °C` : '-- °C'}</span>

@@ -12,6 +12,7 @@ from functools import wraps
 from dotenv import load_dotenv
 from pathlib import Path
 from urllib.parse import urlsplit, parse_qs
+import logging
 
 import config
 import dssready
@@ -26,6 +27,14 @@ from account_routes import register_account_routes
 # ============================================================
 
 app = Flask(__name__)
+RECOVERY_INTERVAL = 30
+RECOVERY_COOLDOWN = 180
+RECOVERY_FAILURE_THRESHOLD = 2
+
+recovery_last_attempt = {}
+recovery_failures = {}
+
+recovery_logger = logging.getLogger("camera_recovery")
 
 
 # ============================================================
@@ -453,8 +462,10 @@ def get_camera(public_code):
 # ============================================================
 
 PUBLIC_CAMERA_NAMES = {
-    "CCTV GERBANG UTAMA LIDAH 2",
-    "CCTV GERBANG UTAMA KETINTANG 1",
+    "CCTV GERBANG LIDAH UTAMA DALAM 1",
+    "CCTV GERBANG LIDAH UTAMA DALAM 2",
+    "CCTV GERBANG KETINTANG UTAMA LUAR",
+    "CCTV GERBANG KETINTANG UTAMA DALAM",
 }
 
 @app.route("/api/public/cameras", methods=["GET"])
@@ -799,38 +810,44 @@ def start_camera(public_code):
             )
 
         if cached_stream:
+            mediamtx_path = cached_stream["mediamtx_path"]
 
-            print(
-                f"[CAMERA] Stream cache ditemukan: "
-                f"{public_code}"
-            )
+            try:
+                paths = mediamtx_client.list_paths().get("items", [])
 
-            urls = build_stream_urls(
-                cached_stream["mediamtx_path"]
-            )
+                active_path = next(
+                    (p for p in paths if p.get("name") == mediamtx_path),
+                    None
+                )
 
-            return jsonify({
-                "success": True,
+                if active_path and active_path.get("ready") is True:
+                    print(f"[CAMERA] Stream masih aktif: {public_code}")
 
-                "camera":
-                    camera,
+                    urls = build_stream_urls(mediamtx_path)
 
-                "stream": {
-                    "type":
-                        "mediamtx",
+                    return jsonify({
+                        "success": True,
+                        "camera": camera,
+                        "stream": {
+                            "type": "mediamtx",
+                            "path": mediamtx_path,
+                            "rtsp": urls["rtsp"],
+                            "webrtc": urls["webrtc"]
+                        }
+                    })
 
-                    "path":
-                        cached_stream[
-                            "mediamtx_path"
-                        ],
+                print(f"[CAMERA] Stream tidak aktif, refresh: {public_code}")
 
-                    "rtsp":
-                        urls["rtsp"],
+            except Exception as e:
+                print("[CAMERA] Gagal memeriksa stream:", type(e).__name__)
 
-                    "webrtc":
-                        urls["webrtc"]
-                }
-            })
+                return jsonify({
+                    "success": False,
+                    "error": "Tidak dapat memeriksa status MediaMTX"
+                }), 503
+
+            with stream_lock:
+                stream_cache.pop(public_code, None)
 
         # ====================================================
         # 3. MEDIAMTX PATH
@@ -1080,33 +1097,37 @@ def start_camera(public_code):
             # DELETE PATH LAMA
             # ------------------------------------------------
 
+            # ------------------------------------------------
+            # UPDATE ATAU ADD PATH MEDIAMTX
+            # ------------------------------------------------
+
             if existing:
+                print(
+                    f"[MEDIAMTX] Updating path: {mediamtx_path}"
+                )
+
+                mediamtx_client.update_path(
+                    mediamtx_path,
+                    rtsp_url
+                )
 
                 print(
-                    f"[MEDIAMTX] Path lama ditemukan: "
-                    f"{mediamtx_path}"
+                    f"[MEDIAMTX] UPDATE SUCCESS: {mediamtx_path}"
                 )
 
-                mediamtx_client.delete_path(
-                    mediamtx_path
+            else:
+                print(
+                    f"[MEDIAMTX] Adding path: {mediamtx_path}"
+                )
+
+                mediamtx_client.add_path(
+                    mediamtx_path,
+                    rtsp_url
                 )
 
                 print(
-                    "[MEDIAMTX] Path lama dihapus"
+                    f"[MEDIAMTX] ADD SUCCESS: {mediamtx_path}"
                 )
-
-            # ------------------------------------------------
-            # ADD PATH
-            # ------------------------------------------------
-
-            print(
-                "[MEDIAMTX] Adding path..."
-            )
-
-            mediamtx_client.add_path(
-                mediamtx_path,
-                rtsp_url
-            )
 
             print(
                 f"[MEDIAMTX] ADD SUCCESS "
@@ -1709,7 +1730,183 @@ def debug_routes():
         "routes": routes
     })
 
+def recovery_path_name(camera):
+    return (
+        camera.get("mediamtx_path")
+        or make_mediamtx_path(camera["public_code"])
+    )
 
+
+def recovery_get_cameras():
+    conn = get_db()
+    cursor = None
+
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT
+                public_code,
+                dss_camera_code,
+                dss_camera_name,
+                dss_device_code,
+                mediamtx_path
+            FROM dss_cameras
+            WHERE enabled = 1
+              AND dss_camera_code IS NOT NULL
+        """)
+        return cursor.fetchall()
+    finally:
+        if cursor:
+            cursor.close()
+        conn.close()
+
+
+def recovery_get_ready_paths():
+    result = mediamtx_client._request(
+        "GET", "/v3/paths/list"
+    )
+
+    return {
+        p["name"]: p.get("ready") is True
+        for p in result.get("items", [])
+    }
+
+
+def recovery_get_configured_paths():
+    result = mediamtx_client.list_paths()
+
+    return {
+        p["name"]
+        for p in result.get("items", [])
+    }
+
+
+def recovery_wait_ready(path, timeout=20):
+    deadline = time.monotonic() + timeout
+
+    while time.monotonic() < deadline:
+        ready = recovery_get_ready_paths()
+
+        if ready.get(path, False):
+            return True
+
+        time.sleep(1)
+
+    return False
+
+
+def recovery_camera(camera, configured):
+    path = recovery_path_name(camera)
+
+    channel = {
+        "channelCode": camera["dss_camera_code"],
+        "channelName": camera["dss_camera_name"],
+        "deviceCode": camera["dss_device_code"]
+    }
+
+    recovery_logger.warning(
+        "Memulihkan kamera %s", path
+    )
+
+    # Menggunakan sesi DSS milik backend-cam.
+    result = dss_session.start_live(channel)
+
+    rtsp_url = dssready.find_rtsp(result)
+
+    if not rtsp_url:
+        raise RuntimeError(
+            "DSS tidak memberikan URL RTSP"
+        )
+
+    # Jangan mengubah kamera yang sudah ready.
+    with stream_lock:
+        current_ready = recovery_get_ready_paths()
+
+        if current_ready.get(path, False):
+            recovery_logger.info(
+                "Kamera sudah ready: %s", path
+            )
+            return True
+
+        if path in configured:
+            mediamtx_client.update_path(
+                path, rtsp_url
+            )
+        else:
+            mediamtx_client.add_path(
+                path, rtsp_url
+            )
+
+    # Gunakan ready, bukan hanya online.
+    if recovery_wait_ready(path):
+        recovery_logger.info(
+            "RECOVERY SUCCESS: %s", path
+        )
+        return True
+
+    recovery_logger.warning(
+        "RECOVERY NOT READY: %s", path
+    )
+    return False
+
+
+def camera_recovery_worker():
+    recovery_logger.info(
+        "Integrated Camera Recovery started"
+    )
+
+    while True:
+        try:
+            cameras = recovery_get_cameras()
+            ready_paths = recovery_get_ready_paths()
+            configured = recovery_get_configured_paths()
+
+            for camera in cameras:
+                path = recovery_path_name(camera)
+
+                if ready_paths.get(path, False):
+                    recovery_failures[path] = 0
+                    continue
+
+                recovery_failures[path] = (
+                    recovery_failures.get(path, 0) + 1
+                )
+
+                if (
+                    recovery_failures[path]
+                    < RECOVERY_FAILURE_THRESHOLD
+                ):
+                    continue
+
+                now = time.monotonic()
+
+                last = recovery_last_attempt.get(
+                    path, -1e12
+                )
+
+                if now - last < RECOVERY_COOLDOWN:
+                    continue
+
+                recovery_last_attempt[path] = now
+
+                try:
+                    if recovery_camera(
+                        camera, configured
+                    ):
+                        recovery_failures[path] = 0
+                        configured.add(path)
+
+                except Exception:
+                    recovery_logger.exception(
+                        "Recovery gagal: %s", path
+                    )
+
+        except Exception:
+            recovery_logger.exception(
+                "Camera recovery cycle failed"
+            )
+
+        time.sleep(RECOVERY_INTERVAL)
 # ============================================================
 # RUN
 # ============================================================
@@ -1763,9 +1960,22 @@ if __name__ == "__main__":
     # START FLASK
     # ========================================================
 
+    # Jalankan satu sesi DSS untuk backend.
+    dss_session.start()
+
+    # Recovery otomatis menggunakan sesi yang sama.
+    recovery_thread = threading.Thread(
+        target=camera_recovery_worker,
+        name="Camera-Recovery",
+        daemon=True
+    )
+
+    recovery_thread.start()
+
     app.run(
         host="0.0.0.0",
         port=5003,
-        debug=False
+        debug=False,
+        use_reloader=False
     )
 

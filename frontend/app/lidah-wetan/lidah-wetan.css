@@ -55,6 +55,149 @@
   color: #f8fafc;
 }
 
+/* LOCATION HEADING DROPDOWN */
+.flood-page-container .location-heading-selector-wrap {
+  position: relative;
+  display: inline-block;
+  margin-top: 2px;
+}
+
+.flood-page-container .location-heading-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 2px 10px 2px 0;
+  margin: 0;
+  cursor: pointer;
+  text-align: left;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.flood-page-container .location-heading-btn:hover {
+  opacity: 0.9;
+  background: rgba(16, 185, 129, 0.08);
+  padding-left: 8px;
+}
+
+:where(.dark, .dark *) .flood-page-container .location-heading-btn:hover {
+  background: rgba(16, 185, 129, 0.15);
+}
+
+.flood-page-container .location-heading-btn h2 {
+  font-size: 27px;
+  margin: 0;
+  color: #0f172a;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+:where(.dark, .dark *) .flood-page-container .location-heading-btn h2 {
+  color: #f8fafc;
+}
+
+.flood-page-container .location-dropdown-icon {
+  font-size: 18px;
+  color: #059669;
+  transition: transform 0.25s ease;
+  display: inline-block;
+}
+
+:where(.dark, .dark *) .flood-page-container .location-dropdown-icon {
+  color: #34d399;
+}
+
+.flood-page-container .location-dropdown-icon.open {
+  transform: rotate(180deg);
+}
+
+.flood-page-container .location-heading-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 100;
+  min-width: 250px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+:where(.dark, .dark *) .flood-page-container .location-heading-menu {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+}
+
+.flood-page-container .location-heading-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.flood-page-container .location-heading-option:hover {
+  background: #f1f5f9;
+}
+
+:where(.dark, .dark *) .flood-page-container .location-heading-option:hover {
+  background: #334155;
+}
+
+.flood-page-container .location-heading-option.active {
+  background: #ecfdf5;
+}
+
+:where(.dark, .dark *) .flood-page-container .location-heading-option.active {
+  background: rgba(6, 78, 59, 0.4);
+}
+
+.flood-page-container .location-heading-option .option-title {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+:where(.dark, .dark *) .flood-page-container .location-heading-option .option-title {
+  color: #f8fafc;
+}
+
+.flood-page-container .location-heading-option .option-sub {
+  display: block;
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 1px;
+}
+
+:where(.dark, .dark *) .flood-page-container .location-heading-option .option-sub {
+  color: #94a3b8;
+}
+
+.flood-page-container .location-heading-option .option-check {
+  margin-left: auto;
+  color: #059669;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+:where(.dark, .dark *) .flood-page-container .location-heading-option .option-check {
+  color: #34d399;
+}
+
 .flood-page-container .page-heading p {
   color: #64748b;
   font-size: 12px;
@@ -1028,9 +1171,19 @@
   }
 }
 
-/* 11. SUB BAB KONDISI BOX PANEL (UNIFIED CARD) */
+/* 11. SUB BAB KONDISI PANEL BOX */
 .flood-page-container .panel-section-title {
   margin-top: 30px;
+}
+
+.flood-page-container .monitor-grid.panel-monitor-grid {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (max-width: 520px) {
+  .flood-page-container .monitor-grid.panel-monitor-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .flood-page-container .panel-box-card {
