@@ -266,12 +266,6 @@ export default function SmartOfficePage() {
                 : hasChartData ? <Bar data={chartData} options={chartOptions} />
                 : <div className="office-chart-empty"><i className="bi bi-bar-chart" aria-hidden="true" />Belum ada data energi untuk periode ini.</div>}
             </div>
-            <p className="office-chart-note">
-              {period === "daily" ? "Energi per jam." : period === "yearly" ? "Energi per bulan." : "Energi per hari."}
-              {period === "weekly" && " Minggu dimulai pada hari Senin."}
-              {" "}Waktu mengikuti WIB. Interval tanpa data dibiarkan kosong; interval berjalan belum final.
-              {(history?.totals.ac_partial || history?.totals.lamp_partial) && " Angka periode adalah subtotal data yang tersedia karena sebagian meter atau interval belum lengkap."}
-            </p>
           </div>
         </section>
         <OfficeControls />

@@ -196,13 +196,13 @@ export default function OfficeControls() {
                 <DeviceStateSlider label={device.label} value={awaitingReport ? command.state : report?.state ?? null} disabled={!unlocked || busy}
                   pending={pending?.device === device.id ? pending.state : null}
                   onChange={(state, requestedAt) => { void sendCommand(device, state, requestedAt); }} />
-                <span className="office-controls-state-copy">
+                {device.id !== "WS502_ALL" && <span className="office-controls-state-copy">
                   {awaitingReport ? `Perintah ${command.state.toUpperCase()} terkirim · Menunggu laporan`
                     : !report?.state ? "Status belum tersedia" : report.state === "mixed" ? "Sebagian ON, sebagian OFF"
                     : `${device.group === "ac" ? "IR Tasmota" : "Status"} ${report.state.toUpperCase()}${report.stale || stateError ? " · Laporan sebelumnya" : ""}`}
                   {awaitingReport && report?.state && <span>Laporan terakhir: {report.state === "mixed" ? "Sebagian ON, sebagian OFF" : report.state.toUpperCase()}</span>}
                   {observed && <span>{observed}</span>}
-                </span>
+                </span>}
               </div>
             </div>
           );})}
@@ -211,9 +211,6 @@ export default function OfficeControls() {
           {pending && <p className="office-controls-notice office-controls-notice-warning">Mengirim perintah {pending.state.toUpperCase()} dan menunggu balasan...</p>}
           {notice && <p className={`office-controls-notice office-controls-notice-${notice.kind}`}>{notice.text}</p>}
         </div>
-        <p className="office-controls-note">Klik ON di kiri (hijau) atau OFF di kanan (merah). Penanda bergeser ke pilihan saat perintah dikirim; status perangkat diperbarui dari laporan berikutnya.
-          {" "}Status AC mengikuti IR Tasmota — kondisi AC belum dikonfirmasi. Perintah manual mengikuti aturan otomatisasi kantor.
-          {stateError && " Laporan status belum dapat diperbarui."}</p>
       </div>
     </section>
   );
