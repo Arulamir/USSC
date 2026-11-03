@@ -30,8 +30,14 @@ setelah kedua Function monitoring UG65 diperbarui.
 Sesuai perubahan automasi berikutnya, tersedia [automasi AC bersama lampu
 utama](nodered/ac-main-timer/README.md): tap mengirim ON melalui Function HVAC
 dan MQTT lama; akhir 10 jam memeriksa region_1. Vacant menghasilkan OFF lampu
-A/B dan AC melalui IRHVAC, occupied memperpanjang 35 menit, data unknown
+A/B dan AC melalui IRHVAC, occupied memperpanjang 120 menit, data unknown
 menunggu. WS523 tetap hanya meter daya, bukan jalur kontrol AC.
+
+Sesudah 10 jam, laporan vacant baru selama periode tambahan langsung mematikan
+lampu/AC. Timer pintu terpisah: tap membuka satu jam, close dua menit, lalu
+region_1 occupied membuka maksimum dua jam dan mengulang close dua menit;
+vacant setelah jam pertama mengakhiri siklus. Lihat
+[flow pintu region_1 dan pemulihan mode normal](nodered/door-cycle-region1/README.md).
 
 Kolom `ac_jam_wh` / `lampu_jam_wh` dan periode lainnya berisi **energi**, sehingga
 tidak dipakai sebagai daya. Nilai nol tetap ditampilkan sebagai nol; data yang
@@ -209,6 +215,19 @@ header beku, format angka, serta pengaturan cetak. Nilai hilang tidak menjadi
 nol. Laporan tidak menjumlahkan kolom kumulatif harian antarsnapshot.
 
 ## Kontrol Node-RED melalui Tailscale
+
+Kontrol memakai sakelar geser: kanan ON hijau, kiri OFF merah. Klik tanpa
+geseran tidak mengirim perintah. Posisi mengikuti laporan terakhir relay WS502;
+AC mengikuti state IR Tasmota dengan keterangan bahwa kondisi AC belum
+dikonfirmasi. Status campuran/tidak tersedia tampil netral. Autentikasi,
+request ID, timeout tanpa retry dan jalur perintah tetap sama.
+
+Untuk membaca status termasuk perubahan otomatis, pasang
+[tambahan monitoring status](nodered/device-state-monitoring/README.md).
+Tambahan ini terpisah dari flow pintu dan kontrol; tidak perlu `.env` baru.
+Sesudah membuka akses operator, browser membaca `/api/smart-office/control/states`
+setiap lima detik. ACK perintah tidak mengganti laporan perangkat. Sampai
+laporan pertama diterima, sakelar tidak mengasumsikan ON/OFF.
 
 Alamat default mini PC mengikuti IP yang diberikan pengguna:
 

@@ -1,0 +1,13 @@
+// Preserve TCP protocol; attach cycle metadata only to the local pending cache.
+var xml=String(msg.payload||'');
+var match=xml.match(/<cmd>\s*(alwaysOpen|close)\s*<\/cmd>/);
+if(!match){node.error('Perintah pintu tidak dikenali',msg);return null;}
+var seq=(context.get('seq')||0)+1;context.set('seq',seq);
+var id=context.get('session')+'-'+seq;
+var pending=flow.get('door_bridge_pending')||{};
+pending[id]={command:match[1],sentAt:Date.now(),doorCycle:msg.doorCycle||null,doorAction:msg.doorAction||null};
+flow.set('door_bridge_pending',pending);
+return [
+    {payload:JSON.stringify({type:'door_command',id:id,command:match[1]})+'\n'},
+    {topic:id,bridgeRequestId:id,payload:'wait'}
+];

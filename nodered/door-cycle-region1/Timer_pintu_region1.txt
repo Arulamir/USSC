@@ -1,0 +1,90 @@
+// Outputs stay: OPEN, CLOSE, timer, accepted_tap, log. No physical state claims.
+// First hour is guaranteed; after that fresh region_1 vacant ends the cycle.
+var s=context.get('runtime');
+if(!s||s.version!==2)s={version:2,active:false,phase:'idle',generation:0};
+var now=Date.now(),out=[null,null,null,null,null];
+function occupancy(){
+    var config=flow.get('automation_config')||{},rec=flow.get('vs321_occupancy');
+    var age=(config.occupancyMaxAgeMinutes||15)*60000;
+    if(!rec||rec.source!=='region_1'||rec.eui!==(config.occupancyEui||'24E124443F431957')||
+       !Number.isFinite(rec.updatedAt)||rec.updatedAt>now||now-rec.updatedAt>age)return 'unknown';
+    return rec.value==='occupied'||rec.value==='vacant'?rec.value:'unknown';
+}
+function token(){s.generation++;s.token=String(context.get('session'))+':'+s.generation;}
+function log(event){out[4]={topic:'automasi/pintu',payload:{event:event,phase:s.phase,
+    active:s.active,deadline:s.deadline||null,occupancy:occupancy(),physical_state_confirmed:false}};}
+function resetTimer(){s.deadline=null;out[2]={reset:true};}
+function arm(phase,duration){
+    s.phase=phase;token();s.deadline=now+duration;
+    out[2]=[{reset:true},{topic:'door_due',cycle:s.token,payload:'arm',delay:duration}];
+}
+function idle(){s.active=false;s.phase='idle';s.token=null;s.action=null;s.closeAfterOpen=false;s.finishAfterClose=false;resetTimer();}
+function command(action){
+    token();resetTimer();s.action=action;s.phase=action.indexOf('open_')===0?'open_pending':'close_pending';
+    if(s.phase==='close_pending')s.finishAfterClose=action==='close_finish';
+    var open=s.phase==='open_pending';
+    out[open?0:1]={topic:'automasi/pintu/'+(open?'open':'close'),
+        doorCycle:s.token,doorAction:action,payload:{state:open?'on':'off'}};
+}
+function decideClosed(){
+    var occ=occupancy();
+    if(occ==='occupied'){command('open_extended');log('occupied region_1: minta OPEN tambahan 120 menit');}
+    else if(occ==='vacant'){idle();log('vacant region_1: selesai; tidak meminta OPEN lagi');}
+    else{s.phase='waiting_occupancy';resetTimer();log('CLOSE sudah diterima; menunggu region_1 baru tanpa membuka');}
+}
+if(msg.topic==='manual_off'||msg.topic==='door_close'){
+    if(s.phase==='open_pending'){
+        s.closeAfterOpen=true;log('CLOSE manual: menunggu hasil OPEN yang sedang berjalan agar urutan perintah tetap');
+    }else{command('close_finish');log('CLOSE manual: menunggu balasan; siklus dibatalkan');}
+}else if(msg.topic==='door_result'){
+    if(msg.doorCycle!==s.token||msg.doorAction!==s.action||
+       (s.phase!=='open_pending'&&s.phase!=='close_pending'))return out;
+    var reply=msg.payload||{},expected=s.phase==='open_pending'?'alwaysOpen':'close';
+    if(reply.command!==expected)return out;
+    if(reply.accepted!==true){
+        s.active=false;s.phase='fault';s.action=null;resetTimer();
+        log('Perintah pintu gagal/timeout; keadaan fisik belum diketahui; tidak mengulang otomatis');
+    }else if(s.phase==='open_pending'&&s.closeAfterOpen){
+        s.closeAfterOpen=false;command('close_finish');log('OPEN selesai: jalankan CLOSE yang menunggu');
+    }else if(s.action==='open_initial'){
+        arm('open_initial',60*60000);s.action=null;
+        log('OPEN diterima ISAPI: mulai 1 jam pertama; vacant belum mengakhiri periode ini');
+    }else if(s.action==='open_extended'){
+        if(s.closeAfterOpen||occupancy()==='vacant'){
+            s.closeAfterOpen=false;command('close_finish');log('vacant saat menunggu OPEN: minta CLOSE');
+        }else{arm('open_extended',120*60000);s.action=null;log('OPEN diterima ISAPI: tambahan maksimum 120 menit');}
+    }else if(s.action==='close_finish'||s.finishAfterClose||occupancy()==='vacant'){
+        idle();log('CLOSE diterima ISAPI: siklus selesai; menunggu tap baru');
+    }else{
+        arm('closed_gap',2*60000);s.action=null;
+        log('CLOSE diterima ISAPI: jeda 2 menit sebelum pemeriksaan berikutnya');
+    }
+}else if(msg.topic==='door_due'&&s.active&&msg.cycle===s.token&&now>=s.deadline){
+    if(s.phase==='open_initial'||s.phase==='open_extended'){
+        command(occupancy()==='vacant'?'close_finish':'close_gap');
+        log('Periode OPEN selesai: minta CLOSE dahulu; belum membuka ulang');
+    }else if(s.phase==='closed_gap')decideClosed();
+}else if(msg.topic==='occupancy_update'&&s.active){
+    var occ=occupancy();
+    if(s.phase==='open_extended'&&occ==='vacant'){
+        command('close_finish');log('vacant region_1: langsung minta CLOSE pada periode tambahan');
+    }else if(s.phase==='open_pending'&&s.action==='open_extended'&&occ==='vacant'){
+        s.closeAfterOpen=true;log('vacant: menunggu hasil OPEN yang sedang berjalan sebelum CLOSE');
+    }else if(s.phase==='close_pending'&&occ==='vacant'){
+        // Keep the outstanding request identity; its ACK ends rather than reopens.
+        s.finishAfterClose=true;
+    }else if(s.phase==='closed_gap'&&occ==='vacant'){
+        idle();log('vacant saat jeda CLOSE: siklus selesai tanpa membuka ulang');
+    }else if(s.phase==='waiting_occupancy')decideClosed();
+}else if(msg.topic==='tap'||(msg.payload&&msg.payload.state==='on')){
+    if(s.active)log('tap berulang: tidak mereset timer dan tidak melewati jeda CLOSE');
+    else{
+        s.active=true;s.closeAfterOpen=false;s.finishAfterClose=false;
+        command('open_initial');out[3]={topic:'accepted_tap',payload:{state:'on'}};
+        log('tap awal: minta alwaysOpen; timer 1 jam dimulai setelah balasan diterima');
+    }
+}
+context.set('runtime',s);
+node.status({fill:s.phase==='fault'?'red':s.active?'green':'grey',shape:s.phase==='waiting_occupancy'?'ring':'dot',
+    text:s.phase+(s.deadline?' sampai '+new Date(s.deadline).toLocaleTimeString():'')});
+return out;

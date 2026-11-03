@@ -1,0 +1,13 @@
+// Same read-only source/auth policy as /office1/power. No control operation.
+if(!msg.req||!msg.res)return null;
+msg.headers={'Content-Type':'application/json','Cache-Control':'no-store'};
+function reply(code,body){msg.statusCode=code;msg.payload=body;return msg;}
+var ip=String(msg.req.socket&&msg.req.socket.remoteAddress||'').replace(/^::ffff:/,'');
+if(['100.86.6.76','127.0.0.1','::1'].indexOf(ip)===-1)return reply(403,{status:'error',message:'Sumber permintaan tidak diizinkan'});
+var key=String(env.get('OFFICE_CONTROL_KEY')||'');
+if(key.length<32)return reply(503,{status:'error',message:'Key belum dikonfigurasi'});
+if(String(msg.req.headers.authorization||'')!=='Bearer '+key)return reply(401,{status:'error',message:'Token tidak valid'});
+var relays=flow.get('office_relay_latest_v1','telemetryRuntime');
+var ac=flow.get('office_tasmota_ir_state_v1','telemetryRuntime')||null;
+return reply(200,{status:'success',data:{type:'office_device_states',version:1,source_id:'ug65-ussc',
+    served_at_utc:new Date().toISOString(),relays:relays?relays.data:null,ac:ac}});

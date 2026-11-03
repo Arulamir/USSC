@@ -1,0 +1,222 @@
+[
+  {
+    "id": "0f726f15fca00761",
+    "type": "function",
+    "z": "4e88b253dca29971",
+    "g": "76927dd1d9277d88",
+    "name": "VS321: simpan + occupancy aktual",
+    "func": "// Door occupancy uses region_1. Keep the existing separate region_1 lights/AC branch.\nvar data=msg.payload;\nif(!data||typeof data!=='object')return null;\nvar eui=String(msg.deveui||'').trim().toUpperCase();\nif(eui!=='24E124443F431957')return [msg,null];\nvar now=Date.now(),event=null;\nif(Object.prototype.hasOwnProperty.call(data,'region_1')){\n    var occ=data.region_1;\n    if(occ==='occupied'||occ==='vacant'){\n        var record={eui:eui,value:occ,updatedAt:now,source:'region_1'};\n        flow.set('vs321_occupancy',record);\n        data.occupancy=occ;data.state=occ==='occupied'?'on':'off';\n    }else{\n        flow.set('vs321_occupancy',null);\n        data.occupancy=null;data.state=null;\n    }\n    event={topic:'occupancy_update',deveui:eui,payload:{occupancy:data.occupancy,source:'region_1'}};\n}\nvar all=global.get('milesight_devices')||{},previous=all[eui]||{};\nall[eui]=Object.assign({},previous,msg.deviceMeta,{updatedAt:now,payload:Object.assign({},previous.payload||{},data)});\nglobal.set('milesight_devices',all);\nreturn [msg,event];\n",
+    "outputs": 2,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 990,
+    "y": 780,
+    "wires": [
+      [
+        "2375f85b1e453c9b",
+        "8f2bfa79f87cfd92"
+      ],
+      [
+        "a2971f6c9ccd8043"
+      ]
+    ]
+  },
+  {
+    "id": "a2971f6c9ccd8043",
+    "type": "function",
+    "z": "4e88b253dca29971",
+    "g": "1c88158ee0bf80cd",
+    "name": "Pintu: 1 jam, jeda CLOSE 2 menit, ulang 2 jam",
+    "func": "// Outputs stay: OPEN, CLOSE, timer, accepted_tap, log. No physical state claims.\n// First hour is guaranteed; after that fresh region_1 vacant ends the cycle.\nvar s=context.get('runtime');\nif(!s||s.version!==2)s={version:2,active:false,phase:'idle',generation:0};\nvar now=Date.now(),out=[null,null,null,null,null];\nfunction occupancy(){\n    var config=flow.get('automation_config')||{},rec=flow.get('vs321_occupancy');\n    var age=(config.occupancyMaxAgeMinutes||15)*60000;\n    if(!rec||rec.source!=='region_1'||rec.eui!==(config.occupancyEui||'24E124443F431957')||\n       !Number.isFinite(rec.updatedAt)||rec.updatedAt>now||now-rec.updatedAt>age)return 'unknown';\n    return rec.value==='occupied'||rec.value==='vacant'?rec.value:'unknown';\n}\nfunction token(){s.generation++;s.token=String(context.get('session'))+':'+s.generation;}\nfunction log(event){out[4]={topic:'automasi/pintu',payload:{event:event,phase:s.phase,\n    active:s.active,deadline:s.deadline||null,occupancy:occupancy(),physical_state_confirmed:false}};}\nfunction resetTimer(){s.deadline=null;out[2]={reset:true};}\nfunction arm(phase,duration){\n    s.phase=phase;token();s.deadline=now+duration;\n    out[2]=[{reset:true},{topic:'door_due',cycle:s.token,payload:'arm',delay:duration}];\n}\nfunction idle(){s.active=false;s.phase='idle';s.token=null;s.action=null;s.closeAfterOpen=false;s.finishAfterClose=false;resetTimer();}\nfunction command(action){\n    token();resetTimer();s.action=action;s.phase=action.indexOf('open_')===0?'open_pending':'close_pending';\n    if(s.phase==='close_pending')s.finishAfterClose=action==='close_finish';\n    var open=s.phase==='open_pending';\n    out[open?0:1]={topic:'automasi/pintu/'+(open?'open':'close'),\n        doorCycle:s.token,doorAction:action,payload:{state:open?'on':'off'}};\n}\nfunction decideClosed(){\n    var occ=occupancy();\n    if(occ==='occupied'){command('open_extended');log('occupied region_1: minta OPEN tambahan 120 menit');}\n    else if(occ==='vacant'){idle();log('vacant region_1: selesai; tidak meminta OPEN lagi');}\n    else{s.phase='waiting_occupancy';resetTimer();log('CLOSE sudah diterima; menunggu region_1 baru tanpa membuka');}\n}\nif(msg.topic==='manual_off'||msg.topic==='door_close'){\n    if(s.phase==='open_pending'){\n        s.closeAfterOpen=true;log('CLOSE manual: menunggu hasil OPEN yang sedang berjalan agar urutan perintah tetap');\n    }else{command('close_finish');log('CLOSE manual: menunggu balasan; siklus dibatalkan');}\n}else if(msg.topic==='door_result'){\n    if(msg.doorCycle!==s.token||msg.doorAction!==s.action||\n       (s.phase!=='open_pending'&&s.phase!=='close_pending'))return out;\n    var reply=msg.payload||{},expected=s.phase==='open_pending'?'alwaysOpen':'close';\n    if(reply.command!==expected)return out;\n    if(reply.accepted!==true){\n        s.active=false;s.phase='fault';s.action=null;resetTimer();\n        log('Perintah pintu gagal/timeout; keadaan fisik belum diketahui; tidak mengulang otomatis');\n    }else if(s.phase==='open_pending'&&s.closeAfterOpen){\n        s.closeAfterOpen=false;command('close_finish');log('OPEN selesai: jalankan CLOSE yang menunggu');\n    }else if(s.action==='open_initial'){\n        arm('open_initial',60*60000);s.action=null;\n        log('OPEN diterima ISAPI: mulai 1 jam pertama; vacant belum mengakhiri periode ini');\n    }else if(s.action==='open_extended'){\n        if(s.closeAfterOpen||occupancy()==='vacant'){\n            s.closeAfterOpen=false;command('close_finish');log('vacant saat menunggu OPEN: minta CLOSE');\n        }else{arm('open_extended',120*60000);s.action=null;log('OPEN diterima ISAPI: tambahan maksimum 120 menit');}\n    }else if(s.action==='close_finish'||s.finishAfterClose||occupancy()==='vacant'){\n        idle();log('CLOSE diterima ISAPI: siklus selesai; menunggu tap baru');\n    }else{\n        arm('closed_gap',2*60000);s.action=null;\n        log('CLOSE diterima ISAPI: jeda 2 menit sebelum pemeriksaan berikutnya');\n    }\n}else if(msg.topic==='door_due'&&s.active&&msg.cycle===s.token&&now>=s.deadline){\n    if(s.phase==='open_initial'||s.phase==='open_extended'){\n        command(occupancy()==='vacant'?'close_finish':'close_gap');\n        log('Periode OPEN selesai: minta CLOSE dahulu; belum membuka ulang');\n    }else if(s.phase==='closed_gap')decideClosed();\n}else if(msg.topic==='occupancy_update'&&s.active){\n    var occ=occupancy();\n    if(s.phase==='open_extended'&&occ==='vacant'){\n        command('close_finish');log('vacant region_1: langsung minta CLOSE pada periode tambahan');\n    }else if(s.phase==='open_pending'&&s.action==='open_extended'&&occ==='vacant'){\n        s.closeAfterOpen=true;log('vacant: menunggu hasil OPEN yang sedang berjalan sebelum CLOSE');\n    }else if(s.phase==='close_pending'&&occ==='vacant'){\n        // Keep the outstanding request identity; its ACK ends rather than reopens.\n        s.finishAfterClose=true;\n    }else if(s.phase==='closed_gap'&&occ==='vacant'){\n        idle();log('vacant saat jeda CLOSE: siklus selesai tanpa membuka ulang');\n    }else if(s.phase==='waiting_occupancy')decideClosed();\n}else if(msg.topic==='tap'||(msg.payload&&msg.payload.state==='on')){\n    if(s.active)log('tap berulang: tidak mereset timer dan tidak melewati jeda CLOSE');\n    else{\n        s.active=true;s.closeAfterOpen=false;s.finishAfterClose=false;\n        command('open_initial');out[3]={topic:'accepted_tap',payload:{state:'on'}};\n        log('tap awal: minta alwaysOpen; timer 1 jam dimulai setelah balasan diterima');\n    }\n}\ncontext.set('runtime',s);\nnode.status({fill:s.phase==='fault'?'red':s.active?'green':'grey',shape:s.phase==='waiting_occupancy'?'ring':'dot',\n    text:s.phase+(s.deadline?' sampai '+new Date(s.deadline).toLocaleTimeString():'')});\nreturn out;\n",
+    "outputs": 5,
+    "noerr": 0,
+    "initialize": "context.set('runtime', null); context.set('session', Date.now().toString(36) + Math.random().toString(36).slice(2)); if (!flow.get('automation_config')) flow.set('automation_config', {occupancyEui:'24E124443F431957', occupancyMaxAgeMinutes:15});",
+    "finalize": "",
+    "libs": [],
+    "x": 730,
+    "y": 1030,
+    "wires": [
+      [
+        "0cd58f5b4cd54d22"
+      ],
+      [
+        "b2863bdefa3bd20a"
+      ],
+      [
+        "294e39ca0a98cb66"
+      ],
+      [
+        "d24b9627054d4094",
+        "9464eed63c09bb41"
+      ],
+      [
+        "5f793c7eab09fbfc"
+      ]
+    ]
+  },
+  {
+    "id": "294e39ca0a98cb66",
+    "type": "trigger",
+    "z": "4e88b253dca29971",
+    "g": "1c88158ee0bf80cd",
+    "name": "Pintu: timer dinamis 1 jam / 2 menit / 2 jam",
+    "op1": "",
+    "op2": "door_due",
+    "op1type": "nul",
+    "op2type": "str",
+    "duration": "60",
+    "extend": false,
+    "overrideDelay": true,
+    "units": "min",
+    "reset": "",
+    "bytopic": "all",
+    "topic": "topic",
+    "outputs": 1,
+    "x": 1030,
+    "y": 1120,
+    "wires": [
+      [
+        "a2971f6c9ccd8043"
+      ]
+    ]
+  },
+  {
+    "id": "d24b9627054d4094",
+    "type": "function",
+    "z": "4e88b253dca29971",
+    "g": "1c88158ee0bf80cd",
+    "name": "Utama: lampu A/B + AC 10 jam",
+    "func": "// Outputs 1..6 sama dengan flow lama. Output 7 menuju Dispatch kontrol web.\n// RUANG_UTAMA A/B dan keputusan OFF AC memakai satu timer dan region_1.\n// Output 8: OFF AC otomatis -> Function HVAC lama -> MQTT IRHVAC.\nvar s=context.get('runtime')||{active:false,waiting:false,generation:0};\nvar out=[null,null,null,null,null,null,null,null],now=Date.now();\nfunction log(text){out[5]={topic:'automasi/lampu',payload:{event:text,active:s.active,waitingOccupancy:s.waiting,deadline:s.deadline||null,pauseUntil:s.pause?s.pause.until:null}};}\nfunction occupancy(){\n    var config=flow.get('automation_config')||{},rec=flow.get('vs321_lights_region1');\n    var maxAge=(config.occupancyMaxAgeMinutes||15)*60000;\n    if(!rec||rec.source!=='region_1'||rec.eui!==(config.occupancyEui||'24E124443F431957')||now-rec.updatedAt>maxAge||rec.updatedAt>now)return 'unknown';\n    return rec.value;\n}\nfunction arm(duration){\n    s.waiting=false;s.generation++;\n    s.token=String(context.get('session'))+':'+s.generation;\n    s.deadline=now+duration;\n    out[3]=[{reset:true},{topic:'lights_due',cycle:s.token,payload:'arm',delay:duration}];\n}\nfunction off(){\n    s.active=false;s.waiting=false;s.deadline=null;s.token=null;s.pause=null;s.occupancyEligible=false;\n    out[2]={payload:{state:'off'}};out[3]={reset:true};\n}\nfunction decide(){\n    s.occupancyEligible=true;\n    var occ=occupancy();\n    if(occ==='vacant'){off();out[7]={topic:'automation_ac_off',payload:{state:'off'}};log('vacant region_1: RUANG_UTAMA A/B dan AC OFF');}\n    else if(occ==='occupied'){arm(120*60000);log('occupied: tetap ON; cek lagi 120 menit');}\n    else{s.waiting=true;log('menunggu occupancy VS321 baru');}\n}\nif(msg.topic==='web_override'&&msg.control){\n    var p=msg.control;\n    if(p.expires_at<=now)return out;\n    var seen=flow.get('office_web_control_seen')||{};\n    if(seen[p.id]){\n        if(seen[p.id].device===p.device&&seen[p.id].state===p.state){msg.automation=seen[p.id].automation;out[6]=msg;}\n        return out;\n    }\n    if(!s.pause)s.pause={remaining:s.active?Math.max(0,(s.deadline||now)-now):null};\n    s.pause.until=now+60*60000;\n    arm(60*60000);\n    msg.automation={timer_paused:true,scope:'RUANG_UTAMA_A_B',pause_minutes:60,resume_at_utc:new Date(s.pause.until).toISOString(),remaining_seconds:s.pause.remaining===null?null:Math.ceil(s.pause.remaining/1000)};\n    out[6]=msg;log('kontrol web: timer dibekukan 60 menit');\n}else if(msg.topic==='manual_off'||msg.topic==='main_off'){\n    off();if(msg.topic==='manual_off')out[4]={payload:{state:'off'}};\n    log('OFF manual lokal; timer dan jeda web dibatalkan');\n}else if(msg.topic==='accepted_tap'){\n    out[1]={payload:{state:'on'}};\n    if(!s.active){\n        s.active=true;\n        if(s.pause){s.pause.remaining=10*3600000;log('tap saat jeda web: timer 10 jam dimulai setelah jeda');}\n        else{arm(10*3600000);out[0]={payload:{state:'on'}};log('tap awal: RUANG_UTAMA ON 10 jam');}\n    }else log(s.pause?'tap berulang saat jeda; sisa timer tetap':'siklus aktif; timer 10 jam tetap');\n}else if(msg.topic==='lights_due'&&msg.cycle===s.token&&now>=s.deadline){\n    if(s.pause){\n        var remaining=s.pause.remaining;\n        s.pause=null;\n        if(s.active&&remaining!==null){\n            if(remaining>0){\n                if(s.occupancyEligible&&occupancy()==='vacant')decide();\n                else{out[0]={payload:{state:'on'}};arm(remaining);log('jeda web selesai: kembali ON, lanjut sisa timer');}\n            }\n            else{\n                if(occupancy()!=='vacant')out[0]={payload:{state:'on'}};\n                decide();\n            }\n        }else{s.deadline=null;s.token=null;s.waiting=false;log('jeda web selesai; tidak ada siklus MinMoe aktif');}\n    }else if(s.active)decide();\n}else if(msg.topic==='occupancy_update'&&s.active&&!s.pause&&\n    (s.waiting||(s.occupancyEligible&&occupancy()==='vacant')))decide();\ncontext.set('runtime',s);\nnode.status({fill:s.pause?'yellow':s.active?'green':'grey',shape:s.waiting?'ring':'dot',text:s.pause?'jeda web sampai '+new Date(s.pause.until).toLocaleTimeString():s.active?(s.waiting?'ON / menunggu occupancy':'ON sampai '+new Date(s.deadline).toLocaleTimeString()):'tidak ada timer aktif'});\nreturn out;\n",
+    "outputs": 8,
+    "noerr": 0,
+    "initialize": "context.set('runtime', null); context.set('session', Date.now().toString(36) + Math.random().toString(36).slice(2));",
+    "finalize": "",
+    "libs": [],
+    "x": 730,
+    "y": 1330,
+    "wires": [
+      [
+        "f5af083c3833d5ab",
+        "8ca49a128ec5aca5"
+      ],
+      [
+        "aefd1e995f558e5d",
+        "0eafc0c2b99c46dc"
+      ],
+      [
+        "12c08cb8a788e97c",
+        "11fba6fda2754789"
+      ],
+      [
+        "bba243a50b2f7d03"
+      ],
+      [
+        "77df190607e715ef",
+        "454fa8f8e98e20f6"
+      ],
+      [
+        "d7e4c2511d5e5a7c"
+      ],
+      [
+        "9c4c199c8a2e6573"
+      ],
+      [
+        "9464eed63c09bb41"
+      ]
+    ]
+  },
+  {
+    "id": "bba243a50b2f7d03",
+    "type": "trigger",
+    "z": "4e88b253dca29971",
+    "g": "1c88158ee0bf80cd",
+    "name": "Utama: 10 jam / ulang 120 menit",
+    "op1": "",
+    "op2": "lights_due",
+    "op1type": "nul",
+    "op2type": "str",
+    "duration": "10",
+    "extend": false,
+    "overrideDelay": true,
+    "units": "hr",
+    "reset": "",
+    "bytopic": "all",
+    "topic": "topic",
+    "outputs": 1,
+    "x": 1030,
+    "y": 1450,
+    "wires": [
+      [
+        "d24b9627054d4094"
+      ]
+    ]
+  },
+  {
+    "id": "eb407415d4abc81b",
+    "type": "function",
+    "z": "4e88b253dca29971",
+    "g": "9c697b895a2ca918",
+    "name": "Pintu: periksa balasan mini PC",
+    "func": "// Send verified ACK/timeout to the door controller and the existing Debug output.\nvar pending=flow.get('door_bridge_pending')||{};\nvar timedOut=msg.payload==='ack_timeout',data=timedOut?null:msg.payload;\nvar id=timedOut?msg.bridgeRequestId:data&&data.id,request=pending[id];\nif(!request)return [{payload:{accepted:false,id:id||null,error:'Balasan terlambat/tidak memiliki request aktif'}},null];\nif(!timedOut&&data.command!==request.command)return [{payload:{accepted:false,id:id,error:'Perintah pada balasan tidak cocok'}},null];\ndelete pending[id];flow.set('door_bridge_pending',pending);\nif(timedOut)data={id:id,command:request.command,accepted:false,error:'Tidak ada respons dalam 30 detik; keadaan pintu belum terkonfirmasi'};\nnode.status({fill:data.accepted?'green':'red',shape:timedOut?'ring':'dot',text:data.command+(data.accepted?' diterima ISAPI':' gagal/belum terkonfirmasi')});\nreturn [{topic:'door_result',doorCycle:request.doorCycle,doorAction:request.doorAction,payload:data},\n    timedOut?null:{topic:id,reset:true}];\n",
+    "outputs": 2,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 1610,
+    "y": 2040,
+    "wires": [
+      [
+        "25491d2454f04a8d",
+        "a2971f6c9ccd8043"
+      ],
+      [
+        "61b043ee86110da6"
+      ]
+    ]
+  },
+  {
+    "id": "0389cefc495868e6",
+    "type": "function",
+    "z": "4e88b253dca29971",
+    "g": "9c697b895a2ca918",
+    "name": "OPEN/CLOSE: JSON satu baris",
+    "func": "// Preserve TCP protocol; attach cycle metadata only to the local pending cache.\nvar xml=String(msg.payload||'');\nvar match=xml.match(/<cmd>\\s*(alwaysOpen|close)\\s*<\\/cmd>/);\nif(!match){node.error('Perintah pintu tidak dikenali',msg);return null;}\nvar seq=(context.get('seq')||0)+1;context.set('seq',seq);\nvar id=context.get('session')+'-'+seq;\nvar pending=flow.get('door_bridge_pending')||{};\npending[id]={command:match[1],sentAt:Date.now(),doorCycle:msg.doorCycle||null,doorAction:msg.doorAction||null};\nflow.set('door_bridge_pending',pending);\nreturn [\n    {payload:JSON.stringify({type:'door_command',id:id,command:match[1]})+'\\n'},\n    {topic:id,bridgeRequestId:id,payload:'wait'}\n];\n",
+    "outputs": 2,
+    "noerr": 0,
+    "initialize": "context.set('seq', 0); context.set('session', Date.now().toString(36) + Math.random().toString(36).slice(2)); flow.set('door_bridge_pending', {});",
+    "finalize": "",
+    "libs": [],
+    "x": 1600,
+    "y": 1840,
+    "wires": [
+      [
+        "a1a51eb92ab6653d"
+      ],
+      [
+        "61b043ee86110da6"
+      ]
+    ]
+  },
+  {
+    "id": "93dde0bc8c83e852",
+    "type": "function",
+    "z": "4e88b253dca29971",
+    "name": "Daya W: baca cache meter",
+    "func": "// Read the existing power and observed energy-counter cache only. No SQL or control commands.\r\nvar now=Date.now(),cache=flow.get('telemetry_latest_v1')||{};\r\nvar meters=[\"24E124148060C6A0\",\"24E12414806031FC\",\"24E124148060D73E\",\"24E1241480609886\",\"24E1247710630110\",\"24E124771063F466\",\"24E1247710633F88\",\"24E1247710638799\"];\r\nvar records=meters.map(function(eui){\r\n    var entry=(cache[eui]||{}).power_w;\r\n    // Retain each last actual value; backend marks old observations as previous.\r\n    var valid=entry&&typeof entry.value==='number'&&Number.isFinite(entry.value)&&entry.value>=0&&entry.value<=4294967295&&Number.isFinite(entry.receivedAt)&&entry.receivedAt<=now;\r\n    var energy=(cache[eui]||{}).energy_minute_points;\r\n    var points=Array.isArray(energy)?energy.filter(function(p){return p&&Number.isFinite(p.at)&&p.at<=now&&now-p.at<=2700000&&Number.isFinite(p.wh)&&p.wh>=0&&p.wh<=4294967295;}).slice(-16).map(function(p){return {at:new Date(p.at).toISOString(),wh:p.wh};}):[];\r\n    return {device_eui:eui,power_w:valid?entry.value:null,power_w_at:entry&&Number.isFinite(entry.receivedAt)&&Number.isFinite(new Date(entry.receivedAt).getTime())?new Date(entry.receivedAt).toISOString():null,energy_points:points};\r\n});\r\nreturn {topic:'office1/monitoring/power',qos:'0',retain:true,payload:JSON.stringify({type:'office_power',version:1,source_id:'ug65-ussc',sampled_at_utc:new Date(now).toISOString(),interval_minutes:1,records:records})};\r\n",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 530,
+    "y": 3350,
+    "wires": [
+      [
+        "eb98650f49ee7548"
+      ]
+    ]
+  }
+]

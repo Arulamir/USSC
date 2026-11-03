@@ -21,10 +21,10 @@ assert.equal(output[0].payload.state,'on');assert.equal(output[3][1].delay,10*36
 const firstDeadline=active.state.get('runtime').deadline;
 now+=3600000;active.tick(tap);assert.equal(active.state.get('runtime').deadline,firstDeadline);
 now=firstDeadline;region('occupied');output=due(active);
-assert.equal(output[7],null);assert.equal(output[2],null);assert.equal(output[3][1].delay,35*60000);
-now+=35*60000;region('occupied');output=due(active);
-assert.equal(output[7],null);assert.equal(output[3][1].delay,35*60000);
-now+=35*60000;region('vacant');output=due(active);
+assert.equal(output[7],null);assert.equal(output[2],null);assert.equal(output[3][1].delay,120*60000);
+now+=120*60000;region('occupied');output=due(active);
+assert.equal(output[7],null);assert.equal(output[3][1].delay,120*60000);
+now+=120*60000;region('vacant');output=due(active);
 assert.equal(output[2].payload.state,'off');assert.equal(output[7].payload.state,'off');
 assert.equal(hvacCommand(output[7]).payload.Power,'Off');
 assert.equal(hvacCommand(output[7]).payload.Vendor,'DAIKIN');
@@ -42,4 +42,4 @@ assert.deepEqual(timer.wires[7],[hvac.id]);assert.deepEqual(hvac.wires,[[mqtt.id
 assert.equal(mqtt.type,'mqtt out');assert.equal(mqtt.topic,'cmnd/ussc/IRHVAC');
 assert.ok(!timer.wires[7].some(id=>nodes.find(n=>n.id===id)?.type==='LoRa Output'));
 assert.equal(timer.outputs,8);assert.equal(timer.wires.length,8);
-console.log('PASS: shared 10h/35m decision, DAIKIN MQTT ON/OFF, stale wait, web pause, manual route preservation, and no WS523 control path.');
+console.log('PASS: shared 10h/120m decision, DAIKIN MQTT ON/OFF, stale wait, web pause, manual route preservation, and no WS523 control path.');

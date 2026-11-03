@@ -13,11 +13,16 @@ menyalakan atau mematikan AC. WS523 tetap hanya monitoring.
 2. Timer lampu Ruang Utama A/B tetap 10 jam. Tap berulang tidak mereset deadline.
 3. Pada akhir timer, region_1 vacant mematikan lampu A+B dan mengirim Power Off
    melalui Function HVAC yang sama dan node MQTT yang sama.
-4. Region_1 occupied mempertahankan keadaan ON dan memperpanjang 35 menit;
+4. Region_1 occupied mempertahankan keadaan ON dan memperpanjang 120 menit;
    pemeriksaan yang sama diulang sampai vacant. Tidak perlu mengirim ulang ON
    pada setiap pemeriksaan occupied.
 5. Region_1 tidak tersedia, tidak valid, atau kedaluwarsa membuat timer menunggu
    laporan baru; tidak dianggap vacant dan tidak diganti nilai people count.
+
+Sesudah evaluasi awal 10 jam, laporan vacant yang baru pada periode tambahan
+langsung mematikan lampu/AC. Sebelum 10 jam, laporan vacant tidak memotong
+periode awal. Jeda kontrol web tetap dihormati. Aturan pintu kini terpisah:
+[1 jam, close 2 menit, ulang 2 jam](../door-cycle-region1/README.md).
 
 ## Perubahan flow
 
@@ -61,7 +66,7 @@ jangan mengimpornya sebagai salinan paralel dari Function timer lama.
 ## Verifikasi
 
 Jalankan `node nodered/ac-main-timer/test.cjs`. Simulasi mempercepat jam di RAM
-pengujian saja: ON tap -> DAIKIN MQTT, 10 jam + occupied -> 35 menit, vacant ->
+pengujian saja: ON tap -> DAIKIN MQTT, 10 jam + occupied -> 120 menit, vacant ->
 OFF lampu dan DAIKIN MQTT OFF, stale -> menunggu, serta preservasi jeda web dan
 jalur manual. Tidak ada perintah MQTT/LoRa/IR nyata dikirim saat pengembangan.
 Pengiriman MQTT berarti perintah diteruskan, bukan bukti keadaan fisik AC.

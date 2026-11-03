@@ -1,0 +1,22 @@
+// Door occupancy uses region_1. Keep the existing separate region_1 lights/AC branch.
+var data=msg.payload;
+if(!data||typeof data!=='object')return null;
+var eui=String(msg.deveui||'').trim().toUpperCase();
+if(eui!=='24E124443F431957')return [msg,null];
+var now=Date.now(),event=null;
+if(Object.prototype.hasOwnProperty.call(data,'region_1')){
+    var occ=data.region_1;
+    if(occ==='occupied'||occ==='vacant'){
+        var record={eui:eui,value:occ,updatedAt:now,source:'region_1'};
+        flow.set('vs321_occupancy',record);
+        data.occupancy=occ;data.state=occ==='occupied'?'on':'off';
+    }else{
+        flow.set('vs321_occupancy',null);
+        data.occupancy=null;data.state=null;
+    }
+    event={topic:'occupancy_update',deveui:eui,payload:{occupancy:data.occupancy,source:'region_1'}};
+}
+var all=global.get('milesight_devices')||{},previous=all[eui]||{};
+all[eui]=Object.assign({},previous,msg.deviceMeta,{updatedAt:now,payload:Object.assign({},previous.payload||{},data)});
+global.set('milesight_devices',all);
+return [msg,event];

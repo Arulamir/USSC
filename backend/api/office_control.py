@@ -89,6 +89,20 @@ def devices():
     return jsonify(status="success", devices=list(DEVICES), physical_state_confirmed=False)
 
 
+@office_control_bp.get("/states")
+def states():
+    config, error = _access()
+    if error:
+        return error
+    # Lazy import avoids the existing smart_office -> office_control dependency.
+    from .office_state import StateUnavailable, read_device_states
+    try:
+        values = read_device_states(*config, current_app.config.get("SMART_OFFICE_SOURCE_ID", "ug65-ussc"))
+    except StateUnavailable:
+        return _reply("unavailable", "Laporan status perangkat belum tersedia.", 503)
+    return jsonify(status="success", states=values, physical_state_confirmed=False)
+
+
 @office_control_bp.post("")
 def control():
     config, error = _access()

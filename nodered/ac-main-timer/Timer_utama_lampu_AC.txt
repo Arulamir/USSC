@@ -17,13 +17,14 @@ function arm(duration){
     out[3]=[{reset:true},{topic:'lights_due',cycle:s.token,payload:'arm',delay:duration}];
 }
 function off(){
-    s.active=false;s.waiting=false;s.deadline=null;s.token=null;s.pause=null;
+    s.active=false;s.waiting=false;s.deadline=null;s.token=null;s.pause=null;s.occupancyEligible=false;
     out[2]={payload:{state:'off'}};out[3]={reset:true};
 }
 function decide(){
+    s.occupancyEligible=true;
     var occ=occupancy();
     if(occ==='vacant'){off();out[7]={topic:'automation_ac_off',payload:{state:'off'}};log('vacant region_1: RUANG_UTAMA A/B dan AC OFF');}
-    else if(occ==='occupied'){arm(35*60000);log('occupied: tetap ON; cek lagi 35 menit');}
+    else if(occ==='occupied'){arm(120*60000);log('occupied: tetap ON; cek lagi 120 menit');}
     else{s.waiting=true;log('menunggu occupancy VS321 baru');}
 }
 if(msg.topic==='web_override'&&msg.control){
@@ -54,14 +55,18 @@ if(msg.topic==='web_override'&&msg.control){
         var remaining=s.pause.remaining;
         s.pause=null;
         if(s.active&&remaining!==null){
-            if(remaining>0){out[0]={payload:{state:'on'}};arm(remaining);log('jeda web selesai: kembali ON, lanjut sisa timer');}
+            if(remaining>0){
+                if(s.occupancyEligible&&occupancy()==='vacant')decide();
+                else{out[0]={payload:{state:'on'}};arm(remaining);log('jeda web selesai: kembali ON, lanjut sisa timer');}
+            }
             else{
                 if(occupancy()!=='vacant')out[0]={payload:{state:'on'}};
                 decide();
             }
         }else{s.deadline=null;s.token=null;s.waiting=false;log('jeda web selesai; tidak ada siklus MinMoe aktif');}
     }else if(s.active)decide();
-}else if(msg.topic==='occupancy_update'&&s.active&&s.waiting&&!s.pause)decide();
+}else if(msg.topic==='occupancy_update'&&s.active&&!s.pause&&
+    (s.waiting||(s.occupancyEligible&&occupancy()==='vacant')))decide();
 context.set('runtime',s);
 node.status({fill:s.pause?'yellow':s.active?'green':'grey',shape:s.waiting?'ring':'dot',text:s.pause?'jeda web sampai '+new Date(s.pause.until).toLocaleTimeString():s.active?(s.waiting?'ON / menunggu occupancy':'ON sampai '+new Date(s.deadline).toLocaleTimeString()):'tidak ada timer aktif'});
 return out;
