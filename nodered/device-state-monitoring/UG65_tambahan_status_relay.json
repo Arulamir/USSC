@@ -1,0 +1,64 @@
+[
+  {
+    "id": "b0311a0000000001",
+    "type": "inject",
+    "z": "4e88b253dca29971",
+    "name": "Status relay: kirim cache tiap 1 menit",
+    "props": [
+      {
+        "p": "payload"
+      },
+      {
+        "p": "topic",
+        "vt": "str"
+      }
+    ],
+    "repeat": "60",
+    "crontab": "",
+    "once": true,
+    "onceDelay": "5",
+    "topic": "relay_status_tick",
+    "payload": "",
+    "payloadType": "date",
+    "x": 240,
+    "y": 3620,
+    "wires": [
+      [
+        "b0311a0000000002"
+      ]
+    ]
+  },
+  {
+    "id": "b0311a0000000002",
+    "type": "function",
+    "z": "4e88b253dca29971",
+    "name": "Status relay: baca laporan WS502",
+    "func": "// Monitoring branch only. Connect Decoder WS502 output here; do not replace control wires.\nvar allowed=['24E1247710630110','24E124771063F466','24E1247710633F88','24E1247710638799'];\nvar now=Date.now(),cache=flow.get('office_relay_states_v1')||{};\nvar eui=String(msg.deveui||'').trim().toUpperCase(),data=msg.payload;\nif(allowed.indexOf(eui)!==-1&&data&&typeof data==='object'){\n    var saved=cache[eui]||{};\n    [1,2].forEach(function(channel){\n        var field='switch_'+channel;\n        if(!Object.prototype.hasOwnProperty.call(data,field))return;\n        if(data[field]==='on'||data[field]==='off')saved[field]={value:data[field],at:now};\n        else delete saved[field];\n    });\n    cache[eui]=saved;flow.set('office_relay_states_v1',cache);\n}else if(msg.topic!=='relay_status_tick')return null;\nvar records=allowed.map(function(id){\n    var entry=cache[id]||{},record={device_eui:id};\n    [1,2].forEach(function(channel){\n        var field='switch_'+channel,p=entry[field];\n        var valid=p&&(p.value==='on'||p.value==='off')&&Number.isFinite(p.at)&&p.at<=now;\n        record[field]=valid?p.value:null;\n        record[field+'_at_utc']=valid?new Date(p.at).toISOString():null;\n    });return record;\n});\nreturn {topic:'office1/monitoring/relays',qos:'0',retain:true,payload:JSON.stringify({\n    type:'office_relay_state',version:1,source_id:'ug65-ussc',sampled_at_utc:new Date(now).toISOString(),records:records\n})};\n",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 550,
+    "y": 3620,
+    "wires": [
+      [
+        "b0311a0000000003"
+      ]
+    ]
+  },
+  {
+    "id": "b0311a0000000003",
+    "type": "mqtt out",
+    "z": "4e88b253dca29971",
+    "name": "MQTT status relay (baca saja)",
+    "topic": "office1/monitoring/relays",
+    "qos": "0",
+    "retain": "true",
+    "broker": "5022b98a499a9a81",
+    "x": 870,
+    "y": 3620,
+    "wires": []
+  }
+]

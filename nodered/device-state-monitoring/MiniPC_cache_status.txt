@@ -1,0 +1,48 @@
+// Read reports only: no command publication, no power-based state inference.
+var packet;
+try{var raw=Buffer.isBuffer(msg.payload)?msg.payload.toString():String(msg.payload);if(raw.length>32768)return null;packet=JSON.parse(raw);}catch(e){
+    if(msg.topic==='tele/ussc/LWT'){
+        var last=flow.get('office_tasmota_ir_state_v1','telemetryRuntime')||{};
+        var text=String(msg.payload).trim();
+        if(text==='Online'||text==='Offline'){last.online=text==='Online';flow.set('office_tasmota_ir_state_v1',last,'telemetryRuntime');}
+    }
+    return null;
+}
+if(!packet||typeof packet!=='object'||Array.isArray(packet))return null;
+var now=Date.now();
+if(msg.topic==='office1/monitoring/relays'){
+    if(!packet||packet.type!=='office_relay_state'||packet.version!==1||packet.source_id!=='ug65-ussc'||!Array.isArray(packet.records)||packet.records.length>4)return null;
+    var sampled=Date.parse(packet.sampled_at_utc);
+    if(!Number.isFinite(sampled)||sampled>now+180000)return null;
+    var previous=flow.get('office_relay_latest_v1','telemetryRuntime');
+    if(previous&&sampled<previous.sampled)return null;
+    var allowed=['24E1247710630110','24E124771063F466','24E1247710633F88','24E1247710638799'],seen={};
+    if(packet.records.some(function(r){if(!r||allowed.indexOf(r.device_eui)===-1||seen[r.device_eui])return true;seen[r.device_eui]=true;return false;}))return null;
+    var old=previous?previous.data.records:[],records=[];
+    allowed.forEach(function(eui){
+        var row=packet.records.find(function(r){return r.device_eui===eui;})||{};
+        var retained=old.find(function(r){return r.device_eui===eui;})||{},record={device_eui:eui};
+        [1,2].forEach(function(ch){
+            var f='switch_'+ch,at=Date.parse(row[f+'_at_utc']),oldAt=Date.parse(retained[f+'_at_utc']);
+            var valid=(row[f]==='on'||row[f]==='off')&&Number.isFinite(at)&&at<=sampled;
+            if(valid&&(!Number.isFinite(oldAt)||at>=oldAt)){record[f]=row[f];record[f+'_at_utc']=new Date(at).toISOString();}
+            else{record[f]=retained[f]||null;record[f+'_at_utc']=retained[f+'_at_utc']||null;}
+        });records.push(record);
+    });
+    flow.set('office_relay_latest_v1',{sampled:sampled,data:{type:'office_relay_state',version:1,source_id:'ug65-ussc',sampled_at_utc:new Date(sampled).toISOString(),records:records}},'telemetryRuntime');
+    node.status({fill:'green',shape:'dot',text:'status relay diterima'});
+    return null;
+}
+// A retained Tasmota RESULT without its original observation time is not a new report.
+if(msg.retain)return null;
+var sent=msg.topic==='stat/ussc/RESULT'||msg.topic==='stat/ussc/IRHVAC';
+var received=msg.topic==='tele/ussc/RESULT';
+if(!sent&&!received)return null;
+var ir=sent&&packet.IRHVAC||received&&packet.IrReceived&&packet.IrReceived.IRHVAC;
+if(!ir||typeof ir!=='object'||String(ir.Vendor||ir.Protocol||'').toUpperCase()!=='DAIKIN')return null;
+var power=String(ir.Power||'').toLowerCase();
+if(power!=='on'&&power!=='off')return null;
+flow.set('office_tasmota_ir_state_v1',{state:power,source:sent?'tasmota_ir_sent':'tasmota_ir_received',
+    observed_at_utc:new Date(now).toISOString(),online:true},'telemetryRuntime');
+node.status({fill:'green',shape:'dot',text:'IR Tasmota '+power+'; fisik AC belum terkonfirmasi'});
+return null;

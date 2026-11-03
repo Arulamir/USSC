@@ -1,0 +1,26 @@
+// Monitoring branch only. Connect Decoder WS502 output here; do not replace control wires.
+var allowed=['24E1247710630110','24E124771063F466','24E1247710633F88','24E1247710638799'];
+var now=Date.now(),cache=flow.get('office_relay_states_v1')||{};
+var eui=String(msg.deveui||'').trim().toUpperCase(),data=msg.payload;
+if(allowed.indexOf(eui)!==-1&&data&&typeof data==='object'){
+    var saved=cache[eui]||{};
+    [1,2].forEach(function(channel){
+        var field='switch_'+channel;
+        if(!Object.prototype.hasOwnProperty.call(data,field))return;
+        if(data[field]==='on'||data[field]==='off')saved[field]={value:data[field],at:now};
+        else delete saved[field];
+    });
+    cache[eui]=saved;flow.set('office_relay_states_v1',cache);
+}else if(msg.topic!=='relay_status_tick')return null;
+var records=allowed.map(function(id){
+    var entry=cache[id]||{},record={device_eui:id};
+    [1,2].forEach(function(channel){
+        var field='switch_'+channel,p=entry[field];
+        var valid=p&&(p.value==='on'||p.value==='off')&&Number.isFinite(p.at)&&p.at<=now;
+        record[field]=valid?p.value:null;
+        record[field+'_at_utc']=valid?new Date(p.at).toISOString():null;
+    });return record;
+});
+return {topic:'office1/monitoring/relays',qos:'0',retain:true,payload:JSON.stringify({
+    type:'office_relay_state',version:1,source_id:'ug65-ussc',sampled_at_utc:new Date(now).toISOString(),records:records
+})};

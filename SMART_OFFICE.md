@@ -216,6 +216,19 @@ nol. Laporan tidak menjumlahkan kolom kumulatif harian antarsnapshot.
 
 ## Kontrol Node-RED melalui Tailscale
 
+Kontrol memakai sakelar geser: kanan ON hijau, kiri OFF merah. Klik tanpa
+geseran tidak mengirim perintah. Posisi mengikuti laporan terakhir relay WS502;
+AC mengikuti state IR Tasmota dengan keterangan bahwa kondisi AC belum
+dikonfirmasi. Status campuran/tidak tersedia tampil netral. Autentikasi,
+request ID, timeout tanpa retry dan jalur perintah tetap sama.
+
+Untuk membaca status termasuk perubahan otomatis, pasang
+[tambahan monitoring status](nodered/device-state-monitoring/README.md).
+Tambahan ini terpisah dari flow pintu dan kontrol; tidak perlu `.env` baru.
+Sesudah membuka akses operator, browser membaca `/api/smart-office/control/states`
+setiap lima detik. ACK perintah tidak mengganti laporan perangkat. Sampai
+laporan pertama diterima, sakelar tidak mengasumsikan ON/OFF.
+
 Alamat default mini PC mengikuti IP yang diberikan pengguna:
 
 ```dotenv
