@@ -54,6 +54,12 @@ def device_states(packet, source_id="ug65-ussc", now=None):
                     observations[(eui, channel)] = (value, stamp)
         for target, meters in GROUPS.items():
             values = [observations.get((eui, channel)) for eui in meters for channel in (1, 2)]
+            if target == "WS502_BU_DINI":
+                # The director's lamp is ON when either relay channel reports ON.
+                # Both channels must explicitly report OFF before showing OFF.
+                reported_on = [value for value in values if value and value[0] == "on"]
+                if reported_on:
+                    values = reported_on
             if not all(values):
                 continue
             states = {value[0] for value in values}

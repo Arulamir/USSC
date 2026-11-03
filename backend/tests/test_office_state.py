@@ -45,6 +45,33 @@ class DeviceStateTests(unittest.TestCase):
         record["switch_2"] = None
         self.assertIsNone(device_states(payload, now=NOW)["WS502_RUANG_MAGANG"]["state"])
 
+    def test_director_lamp_is_on_when_either_channel_is_on(self):
+        for first, second, expected in (
+                ("on", "on", "on"), ("on", "off", "on"),
+                ("off", "on", "on"), ("off", "off", "off"),
+                ("on", None, "on"), (None, "on", "on"),
+                ("off", None, None), (None, "off", None), (None, None, None)):
+            with self.subTest(first=first, second=second):
+                payload = packet()
+                record = next(r for r in payload["relays"]["records"]
+                              if r["device_eui"] == "24E1247710638799")
+                record.update(switch_1=first, switch_2=second)
+                data = device_states(payload, now=NOW)
+                self.assertEqual(data["WS502_BU_DINI"]["state"], expected)
+                if {first, second} == {"on", "off"}:
+                    self.assertEqual(data["WS502_ALL"]["state"], "mixed")
+
+    def test_director_on_preserves_the_on_channel_time_and_staleness(self):
+        payload = packet()
+        record = next(r for r in payload["relays"]["records"]
+                      if r["device_eui"] == "24E1247710638799")
+        old = stamp(NOW - timedelta(hours=1))
+        record.update(switch_1="off", switch_2="on", switch_2_at_utc=old)
+        data = device_states(payload, now=NOW)["WS502_BU_DINI"]
+        self.assertEqual(data["state"], "on")
+        self.assertEqual(data["observed_at_utc"], old.replace("Z", ".000Z"))
+        self.assertTrue(data["stale"])
+
     def test_old_observation_keeps_state_and_original_time(self):
         payload = packet()
         old = stamp(NOW - timedelta(hours=1))
