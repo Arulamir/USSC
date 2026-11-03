@@ -67,12 +67,17 @@ untuk menebak atau menginisialisasi ON/OFF.
   kanal yang belum diketahui, grup juga belum diketahui; jangan menganggap
   kanal yang hilang sebagai OFF. Perubahan otomatis ikut terbaca karena jalur
   ini mendengar laporan perangkat, tidak hanya tombol website.
-- Geser ke kanan untuk ON, ke kiri untuk OFF. Klik/tap tanpa geseran, geseran
-  pendek, atau gesture dibatalkan tidak mengirim perintah. Keyboard panah
-  kiri/kanan atau Home/End tersedia. Selama mengirim, kontrol dikunci sementara.
-- ACK hanya berarti UG65 menerima perintah. Posisi kembali mengikuti laporan
-  yang tersedia sampai laporan perangkat berikutnya masuk. Timeout tidak
-  mengirim ulang otomatis. Status lama tetap disertai waktu aslinya dan penanda.
+- Klik/tap **ON di kiri** untuk penanda hijau, atau **OFF di kanan** untuk
+  penanda merah. Penanda bergerak saat mengirim; setelah ACK diterima, pilihan
+  tetap terlihat dengan keterangan menunggu laporan. Laporan lama tidak
+  mengembalikan posisi pilihan. Laporan dengan waktu observasi sejak perintah
+  dikirim kembali menentukan posisi berdasarkan status yang dilaporkan.
+- Geser kiri/kanan, panah kiri/kanan, Home/End, serta Enter/Space juga tersedia.
+  Geseran pendek atau gesture dibatalkan tidak mengirim perintah; satu gesture
+  tidak mengirim dua kali. Selama mengirim, kontrol dikunci sementara.
+- ACK hanya berarti UG65 menerima perintah. Jika perintah ditolak atau balasan
+  tidak dapat dipastikan, pilihan kembali ke posisi sebelumnya. Timeout tidak
+  mengirim ulang otomatis. Laporan lama tetap disertai waktu aslinya dan penanda.
 
 Status lampu adalah laporan relay perangkat, bukan bukti semua bohlam menyala.
 Status AC diberi label **IR Tasmota — kondisi AC belum dikonfirmasi**, sesuai
@@ -104,7 +109,8 @@ Referensi primer:
 `node nodered/device-state-monitoring/test.cjs` dan
 `python -m unittest backend.tests.test_office_state` memeriksa laporan aktual,
 dua kanal, grup campuran, waktu asli, invalid/retained/future, autentikasi, dan
-perbedaan relay vs IR. QA browser lokal memeriksa drag, klik tanpa command,
-reload, laporan otomatis, nol command saat GET, timeout tanpa retry, keyboard,
-tema terang/gelap, ponsel dan reduced motion. Semua memakai fixture; tidak ada
+perbedaan relay vs IR. QA browser lokal memeriksa klik/tap ON-OFF, satu command
+per geseran, pembatalan gesture, pilihan setelah ACK, laporan otomatis, nol
+command saat GET, penolakan/timeout tanpa retry, keyboard, tema terang/gelap,
+dan ponsel. Semua memakai fixture; tidak ada
 perintah perangkat nyata dikirim saat pengembangan.

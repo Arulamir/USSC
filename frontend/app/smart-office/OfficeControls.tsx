@@ -49,6 +49,7 @@ export default function OfficeControls() {
   const [devices, setDevices] = useState<ControlDevice[]>(TARGETS);
   const [unlocking, setUnlocking] = useState(false);
   const [pending, setPending] = useState<{ device: string; state: CommandState } | null>(null);
+  const [commands, setCommands] = useState<Record<string, { state: CommandState; requestedAt: number }>>({});
   const [notice, setNotice] = useState<Notice | null>(null);
   const { states, error: stateError, refresh: refreshStates } = useOfficeDeviceStates(operatorKey);
   const busyRef = useRef(false);
@@ -63,6 +64,7 @@ export default function OfficeControls() {
     setOperatorKey("");
     setKeyInput("");
     setDevices(TARGETS);
+    setCommands({});
     setNotice(null);
   }
 
@@ -99,7 +101,7 @@ export default function OfficeControls() {
     }
   }
 
-  async function sendCommand(device: ControlDevice, state: CommandState) {
+  async function sendCommand(device: ControlDevice, state: CommandState, requestedAt: number) {
     if (!operatorKey || busyRef.current) return;
     let requestId: string;
     try {
@@ -126,6 +128,7 @@ export default function OfficeControls() {
       const body = await readBody(response);
       if (response.ok && body.status === "accepted_by_ug65" && body.device === device.id
         && body.state === state && body.request_id === requestId && body.physical_state_confirmed === false) {
+        setCommands((current) => ({ ...current, [device.id]: { state, requestedAt } }));
         setNotice({ kind: "success", text: `Perintah ${state.toUpperCase()} ${device.label} diterima UG65. Menunggu laporan status perangkat; kondisi fisik belum dikonfirmasi.` });
         refreshStates();
       } else if (response.ok || body.status === "unknown" || response.status === 504) {
@@ -134,6 +137,7 @@ export default function OfficeControls() {
         setNotice({ kind: "error", text: detail(body, "Perintah belum dapat diproses. Periksa kondisi perangkat sebelum mencoba kembali.") });
       }
       if (response.status === 401 || response.status === 403 || response.status === 503) {
+        setCommands({});
         setOperatorKey("");
         setKeyInput("");
       }
@@ -176,6 +180,9 @@ export default function OfficeControls() {
         <div className="office-controls-grid">
           {devices.map((device) => {
             const report = states[device.id];
+            const command = commands[device.id];
+            const reportedAt = report?.observed_at_utc ? Date.parse(report.observed_at_utc) : NaN;
+            const awaitingReport = command && !(Number.isFinite(reportedAt) && reportedAt >= command.requestedAt);
             const observed = report?.observed_at_utc ? new Date(report.observed_at_utc).toLocaleString("id-ID", {
               timeZone: "Asia/Jakarta", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
             }) + " WIB" : null;
@@ -186,12 +193,14 @@ export default function OfficeControls() {
                 <span>{device.label}</span>
               </div>
               <div className="office-controls-actions">
-                <DeviceStateSlider label={device.label} value={report?.state ?? null} disabled={!unlocked || busy}
+                <DeviceStateSlider label={device.label} value={awaitingReport ? command.state : report?.state ?? null} disabled={!unlocked || busy}
                   pending={pending?.device === device.id ? pending.state : null}
-                  onChange={(state) => { void sendCommand(device, state); }} />
+                  onChange={(state, requestedAt) => { void sendCommand(device, state, requestedAt); }} />
                 <span className="office-controls-state-copy">
-                  {!report?.state ? "Status belum tersedia" : report.state === "mixed" ? "Sebagian ON, sebagian OFF"
+                  {awaitingReport ? `Perintah ${command.state.toUpperCase()} terkirim · Menunggu laporan`
+                    : !report?.state ? "Status belum tersedia" : report.state === "mixed" ? "Sebagian ON, sebagian OFF"
                     : `${device.group === "ac" ? "IR Tasmota" : "Status"} ${report.state.toUpperCase()}${report.stale || stateError ? " · Laporan sebelumnya" : ""}`}
+                  {awaitingReport && report?.state && <span>Laporan terakhir: {report.state === "mixed" ? "Sebagian ON, sebagian OFF" : report.state.toUpperCase()}</span>}
                   {observed && <span>{observed}</span>}
                 </span>
               </div>
@@ -202,7 +211,7 @@ export default function OfficeControls() {
           {pending && <p className="office-controls-notice office-controls-notice-warning">Mengirim perintah {pending.state.toUpperCase()} dan menunggu balasan...</p>}
           {notice && <p className={`office-controls-notice office-controls-notice-${notice.kind}`}>{notice.text}</p>}
         </div>
-        <p className="office-controls-note">Geser ke kanan untuk ON (hijau), ke kiri untuk OFF (merah). Posisi mengikuti laporan terakhir perangkat.
+        <p className="office-controls-note">Klik ON di kiri (hijau) atau OFF di kanan (merah). Penanda bergeser ke pilihan saat perintah dikirim; status perangkat diperbarui dari laporan berikutnya.
           {" "}Status AC mengikuti IR Tasmota — kondisi AC belum dikonfirmasi. Perintah manual mengikuti aturan otomatisasi kantor.
           {stateError && " Laporan status belum dapat diperbarui."}</p>
       </div>
