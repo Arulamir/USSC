@@ -923,34 +923,34 @@ const airChartItems = [
                Mobile/Tablet: 2 Kelompok (Lingkungan & Mobilitas)
           ================================================== */}
           <div className="summary-grid">
-          <div className="summary-card flood-summary-card">
-  <div className="flood-card-content">
+            <div className="summary-card flood-summary-card">
+              <div className="flood-card-content">
 
-    <span className="flood-card-title">
-      PEMANTAUAN BANJIR
-    </span>
+                <span className="flood-card-title">
+                  PEMANTAUAN BANJIR
+                </span>
 
-    <div className="flood-card-main">
-      <div className="summary-icon blue">
-        <i className="bi bi-water"></i>
-      </div>
+                <div className="flood-card-main">
+                  <div className="summary-icon blue">
+                    <i className="bi bi-water"></i>
+                  </div>
 
-      <div className="flood-card-info">
-        <strong
-          id="dashboardFloodStatus"
-          style={{ color: floodTextColor }}
-        >
-          {finalFloodStatus}
-        </strong>
+                  <div className="flood-card-info">
+                    <strong
+                      id="dashboardFloodStatus"
+                      style={{ color: floodTextColor }}
+                    >
+                      {finalFloodStatus}
+                    </strong>
 
-        <small id="dashboardFloodDesc">
-          {finalFloodDesc}
-        </small>
-      </div>
-    </div>
+                    <small id="dashboardFloodDesc">
+                      {finalFloodDesc}
+                    </small>
+                  </div>
+                </div>
 
-  </div>
-</div>
+              </div>
+            </div>
             
             <button
               type="button"
