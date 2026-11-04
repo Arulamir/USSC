@@ -80,7 +80,7 @@ export default function MonthlySummary() {
           </div>
           <p className="office-monthly-narrative" role="status">{visible.summary}</p>
           <p className="office-monthly-meta">
-            {visible.mode === "qwen" ? "Ringkasan AI · Qwen" : visible.mode === "no_data" ? "Menunggu data energi" : "Ringkasan perhitungan · AI sementara belum tersedia"}
+            {visible.mode === "qwen" ? "Ringkasan AI" : visible.mode === "no_data" ? "Menunggu data energi" : "Ringkasan perhitungan · AI sementara belum tersedia"}
             {` · ${new Date(visible.generated_at_utc).toLocaleString("id-ID", {day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit",timeZone:"Asia/Jakarta"})} WIB`}
             {visible.stale && " · Menampilkan ringkasan sebelumnya"}
           </p>
