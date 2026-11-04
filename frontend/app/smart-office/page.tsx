@@ -269,8 +269,8 @@ export default function SmartOfficePage() {
             </div>
           </div>
         </section>
-        <MonthlySummary />
         <OfficeControls />
+        <MonthlySummary />
       </div>
     </MainLayout>
   );
