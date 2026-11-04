@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useSmartOfficeSnapshot } from "../../hooks/useSmartOfficeSnapshot";
 import "./smart-office.css";
 
@@ -24,15 +25,6 @@ export default function SmartOfficeMonitoring() {
   const updatedAt = formatTime(data?.sampled_at_utc);
   const powerUpdatedAt = formatTime(data?.lamp_power_observed_at_utc);
   const acUpdatedAt = formatTime(data?.power_observed_at_by_group?.ac);
-  const status = loading ? "Memuat data..."
-    : failed ? "Koneksi terputus"
-    : !data ? "Belum ada data"
-    : data.ac_power_w == null ? "Menunggu data daya AC"
-    : data.lamp_power_w == null ? "Daya lampu belum terbaru"
-    : data.power_previous ? "Menampilkan pembacaan daya sebelumnya"
-    : data.stale ? "Data terlambat"
-    : data.power_interval_minutes === 1 ? "Pembacaan daya terakhir"
-    : `Snapshot ${data.interval_minutes} menit`;
   const metrics = [
     { label: "Daya AC", icon: "bi-snow", value: formatValue(data?.ac_power_w, "W") },
     { label: "Daya Lampu", icon: "bi-lightbulb", value: formatValue(data?.lamp_power_w, "W") },
@@ -48,7 +40,9 @@ export default function SmartOfficeMonitoring() {
     <section className="smart-office-section" aria-labelledby="smart-office-title">
       <div className="section-title smart-office-heading">
         <h3 id="smart-office-title">Smart Office Monitoring</h3>
-        <span role="status">{status}</span>
+        <Link href="/smart-office" className="smart-office-detail-link">
+          Lihat Detail <i className="bi bi-arrow-right" aria-hidden="true" />
+        </Link>
       </div>
       <div className="location-card smart-office-panel" aria-busy={loading}>
         <div className="smart-office-grid">
