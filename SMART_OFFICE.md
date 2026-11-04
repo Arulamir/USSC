@@ -290,3 +290,28 @@ Pengujian lokal memakai database dan balasan kontrol tiruan. Koneksi database
 produksi, kunci akses, sumber IP server, dan perubahan kondisi perangkat fisik
 tetap perlu diverifikasi saat penerapan. Tidak ada perintah ON/OFF dikirim ke
 perangkat nyata selama pengembangan.
+# Ringkasan energi dan estimasi emisi bulanan
+
+Halaman Smart Office menyediakan pilihan bulan dan ringkasan singkat 3–4 kalimat.
+Backend menghitung energi dari riwayat counter meter yang sama dengan grafik,
+mengonversi Wh ke kWh, lalu menghitung estimasi emisi jaringan Jamali:
+`emisi kg CO2 = total kWh × 0.87` atau `emisi t CO2 = total kWh / 1000 × 0.87`.
+Faktor 0,87 tCO2/MWh memakai tahun acuan 2019; ini faktor referensi, bukan klaim
+faktor terbaru. Periksa publikasi DJK/ESDM sebelum memakai hasil untuk inventarisasi.
+Referensi: https://gatrik.esdm.go.id/assets/uploads/download_index/files/96d7c-nilai-fe-grk-sistem-ketenagalistrikan-tahun-2019.pdf
+dan https://gec.jp/jcm/jp/kobo/r07/mp/jcmsbsdR7_koboyoryo_rev5.pdf.
+
+Konfigurasi server saja: `GROQ_API_KEY` dan opsional
+`GROQ_SUMMARY_MODEL=qwen/qwen3.8-27b`. Simpan pada `.env` yang dimuat backend;
+jangan masukkan key ke frontend, variabel `NEXT_PUBLIC_*`, atau GitHub.
+`GET /api/smart-office/summary?month=YYYY-MM` hanya menerima pilihan bulan,
+tidak menerima prompt atau angka konsumsi dari browser. Hanya agregat bulanan
+dikirim ke Groq; narasi referensi, contoh hitungan, baris database, ID perangkat,
+dan kredensial tidak dimasukkan ke prompt.
+
+Cache server 30 menit, maksimal 36 bulan tersimpan, dengan jeda global 30 detik
+antar pembuatan ringkasan baru untuk membatasi pemakaian API. Jika Groq gagal,
+angka dan ringkasan perhitungan tetap tersedia; kegagalan disimpan 5 menit.
+Jika database gagal setelah ada cache, ringkasan sebelumnya ditandai demikian.
+Data hilang tidak dianggap nol. Bulan berjalan, data sebagian, dan interpolasi
+ditandai; angka hanya mencakup AC serta lampu yang terpantau, bukan seluruh kampus.

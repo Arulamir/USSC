@@ -38,6 +38,7 @@ try:
     from backend.api.office_history import office_history_bp
     from backend.api.office_export import office_export_bp
     from backend.api.office_control import office_control_bp
+    from backend.api.office_summary import office_summary_bp
 
 except ImportError:
     from api.traffic import traffic_bp
@@ -54,6 +55,7 @@ except ImportError:
     from api.office_history import office_history_bp
     from api.office_export import office_export_bp
     from api.office_control import office_control_bp
+    from api.office_summary import office_summary_bp
 
 
 # =====================================================
@@ -113,6 +115,7 @@ app.register_blueprint(smart_office_bp)
 app.register_blueprint(office_history_bp)
 app.register_blueprint(office_export_bp)
 app.register_blueprint(office_control_bp)
+app.register_blueprint(office_summary_bp)
 
 
 

@@ -51,6 +51,25 @@
   line-height: 1.7;
 }
 
+.office-page .office-monthly-summary { margin-top: 28px; }
+.office-page .office-monthly-panel { display: block; }
+.office-page .office-monthly-topline { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.office-page .office-monthly-topline > span { color: #64748b; font-size: 12px; }
+.office-page .office-monthly-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.office-page .office-monthly-facts > div { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+.office-page .office-monthly-facts span, .office-page .office-monthly-facts small { color: #64748b; font-size: 12px; }
+.office-page .office-monthly-facts strong { font-size: 24px; overflow-wrap: anywhere; }
+.office-page .office-monthly-narrative { margin: 22px 0 12px; padding-top: 18px; border-top: 1px solid #e2e8f0; font-size: 14px; line-height: 1.9; }
+.office-page .office-monthly-meta { color: #64748b; font-size: 11px; line-height: 1.8; margin: 8px 0 0; }
+.office-page .office-monthly-meta a { color: #047857; text-decoration: underline; }
+:where(.dark, .dark *) .office-page .office-monthly-topline > span,
+:where(.dark, .dark *) .office-page .office-monthly-facts span,
+:where(.dark, .dark *) .office-page .office-monthly-facts small,
+:where(.dark, .dark *) .office-page .office-monthly-meta { color: #94a3b8; }
+:where(.dark, .dark *) .office-page .office-monthly-narrative { border-color: #334155; }
+:where(.dark, .dark *) .office-page .office-monthly-meta a { color: #34d399; }
+@media (max-width: 600px) { .office-page .office-monthly-facts { grid-template-columns: minmax(0, 1fr); } }
+
 .office-page .office-section-heading {
   gap: 12px;
   flex-wrap: wrap;

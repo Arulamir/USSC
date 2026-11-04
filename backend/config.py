@@ -14,6 +14,9 @@ else:
     load_dotenv()
 
 class Config:
+    # Server-only Groq credential; never sent to browsers or committed in .env.
+    GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+    GROQ_SUMMARY_MODEL = os.getenv("GROQ_SUMMARY_MODEL", "qwen/qwen3.8-27b")
 
     SECRET_KEY = os.getenv("SECRET_KEY", "")
 
@@ -60,4 +63,4 @@ class Config:
     MQTT_USERNAME = os.getenv("MQTT_USERNAME", os.getenv("EMQX_USERNAME", "esp32unesa"))
     MQTT_PASSWORD = os.getenv("MQTT_PASSWORD", os.getenv("EMQX_PASSWORD", ""))
     MQTT_TOPIC_MONITORING = os.getenv("MQTT_TOPIC_MONITORING", os.getenv("EMQX_TOPIC", "unesa/monitoring"))
-    MQTT_TOPIC_AIR = os.getenv("MQTT_TOPIC_AIR", "unesa/airquality")
+    MQTT_TOPIC_AIR = os.getenv("MQTT_TOPIC_AIR", "unesa/airquality")

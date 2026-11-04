@@ -12,6 +12,7 @@ import { ApiService } from "../../lib/api";
 import { useSmartOfficeSnapshot } from "../hooks/useSmartOfficeSnapshot";
 import type { OfficeHistory, OfficePeriod } from "../../lib/smart-office";
 import OfficeControls from "./OfficeControls";
+import MonthlySummary from "./MonthlySummary";
 import "../dashboard.css";
 import "./office.css";
 
@@ -268,6 +269,7 @@ export default function SmartOfficePage() {
             </div>
           </div>
         </section>
+        <MonthlySummary />
         <OfficeControls />
       </div>
     </MainLayout>
