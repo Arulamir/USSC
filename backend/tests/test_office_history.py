@@ -117,6 +117,45 @@ class HistoryCalculationTests(unittest.TestCase):
                          START + timedelta(minutes=45))
         self.assertEqual(result["data"][0]["ac_status"], "missing_current")
 
+    def test_hour_rollover_retains_measured_subtotal_until_next_uplink(self):
+        rows = [point(START, 100), point(START + timedelta(minutes=50), 150)]
+        before = history(rows, START + timedelta(minutes=59))["data"][0]
+        after = history(rows, START + timedelta(minutes=61))["data"][0]
+        self.assertEqual(before["ac_wh"], 50)
+        self.assertEqual(after["ac_wh"], 50)
+        self.assertEqual(after["ac_status"], "partial")
+        self.assertTrue(after["ac_detail"]["end_incomplete"])
+        # A later reading brackets the end, replacing the subtotal with the
+        # interpolated complete interval. No energy is invented while waiting.
+        rows.append(point(START + timedelta(minutes=70), 170))
+        finalized = history(rows, START + timedelta(minutes=71))["data"][0]
+        self.assertEqual(finalized["ac_wh"], 60)
+        self.assertEqual(finalized["ac_status"], "partial_estimated")
+        self.assertNotIn("end_incomplete", finalized["ac_detail"])
+
+    def test_all_meter_subtotals_are_marked_partial_even_without_excluded_meters(self):
+        rows = [point(at, value, eui) for eui in AC_METERS | LAMP_METERS
+                for at, value in ((START, 0), (START + timedelta(minutes=50), 50))]
+        result = history(rows, START + timedelta(minutes=61))
+        for key in ("ac", "lamp"):
+            self.assertEqual(result["data"][0][key + "_status"], "partial")
+            self.assertTrue(result["totals"][key + "_partial"])
+
+    def test_partial_end_never_hides_missing_start_stale_data_reset_or_conflict(self):
+        cases = [
+            ([point(START + timedelta(minutes=10), 10), point(START + timedelta(minutes=50), 50)], "missing_baseline"),
+            ([point(START, 0), point(START + timedelta(minutes=29), 29)], "missing_baseline"),
+            ([point(START, 100), point(START + timedelta(minutes=50), 50)], "counter_reset"),
+            ([point(START, 0), point(START + timedelta(minutes=50), 50, high=51)], "conflict"),
+        ]
+        for rows, expected in cases:
+            with self.subTest(expected=expected):
+                bucket = history(rows, START + timedelta(minutes=61))["data"][0]
+                self.assertIsNone(bucket["ac_wh"])
+                reason = next(item["reason"] for item in bucket["ac_detail"]["excluded"]
+                              if item["device_eui"] == METER)
+                self.assertEqual(reason, expected)
+
     def test_week_starts_monday_and_crosses_year(self):
         result = build_history("weekly", "2027-01-01", [], NOW)
         self.assertEqual(result["data"][0]["label"], "2026-12-28")

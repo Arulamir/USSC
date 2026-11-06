@@ -108,12 +108,21 @@ def _boundary(times, points, target, live):
             "first": before_index, "last": after_index, "estimated": True}
 
 
-def _meter(group, start, end, live):
+def _meter(group, start, end, live, allow_partial_end=False):
     if group is None:
         return None, "missing_current"
     times, points = group
     first = _boundary(times, points, start, False)
     last = _boundary(times, points, end, live)
+    partial_end = False
+    if allow_partial_end and not live and last.get("error") == "missing_baseline":
+        # At the hour rollover, the next uplink may not yet bracket its end.
+        # Retain only measured consumption up to the last valid observation;
+        # never extrapolate to the boundary or call this a complete hour.
+        observed_end = _boundary(times, points, end, True)
+        if not observed_end.get("error") and times[observed_end["last"]] > start:
+            last = observed_end
+            partial_end = True
     if first.get("error") or last.get("error"):
         return None, first.get("error") or last["error"]
     if live and times[last["last"]] < start:
@@ -126,24 +135,30 @@ def _meter(group, start, end, live):
     delta = last["value"] - first["value"]
     if delta < 0:
         return None, "counter_reset"
-    return delta, "estimated" if first["estimated"] or last["estimated"] else "complete"
+    estimated = first["estimated"] or last["estimated"]
+    if partial_end:
+        return delta, "partial_estimated" if estimated else "partial"
+    return delta, "estimated" if estimated else "complete"
 
 
-def _total(euis, groups, start, end, live, future):
-    values, excluded, estimated = [], [], False
+def _total(euis, groups, start, end, live, future, allow_partial_end=False):
+    values, excluded, estimated, partial_end = [], [], False, False
     for eui in sorted(euis):
-        value, status = (None, "future") if future else _meter(groups.get(eui), start, end, live)
+        value, status = (None, "future") if future else _meter(groups.get(eui), start, end, live, allow_partial_end)
         if value is None:
             excluded.append({"device_eui": eui, "reason": status})
         else:
             values.append(value)
-            estimated |= status == "estimated"
+            estimated |= "estimated" in status
+            partial_end |= status.startswith("partial")
     detail = {"meter_used": len(values), "meter_expected": len(euis), "excluded": excluded}
+    if partial_end:
+        detail["end_incomplete"] = True
     if not values:
         priority = ("future", "conflict", "counter_reset", "missing_current", "missing_baseline")
         return None, next(reason for reason in priority if any(item["reason"] == reason for item in excluded)), detail
     status = "partial_estimated" if estimated else "partial"
-    if not excluded:
+    if not excluded and not partial_end:
         status = "estimated" if estimated else "complete"
     return round(sum(values), 3), status, detail
 
@@ -160,8 +175,8 @@ def build_history(period, selected_date, rows, now=None):
         future = start >= now
         live = not future and now < scheduled_end
         end = min(scheduled_end, now) if live else scheduled_end
-        ac, ac_status, ac_detail = _total(AC_METERS, groups, start, end, live, future)
-        lamp, lamp_status, lamp_detail = _total(LAMP_METERS, groups, start, end, live, future)
+        ac, ac_status, ac_detail = _total(AC_METERS, groups, start, end, live, future, period == "daily")
+        lamp, lamp_status, lamp_detail = _total(LAMP_METERS, groups, start, end, live, future, period == "daily")
         data.append({"label": label, "start_utc": _stamp(start), "end_utc": _stamp(end),
                      "ac_wh": ac, "lamp_wh": lamp, "ac_status": ac_status, "lamp_status": lamp_status,
                      "ac_detail": ac_detail, "lamp_detail": lamp_detail,
