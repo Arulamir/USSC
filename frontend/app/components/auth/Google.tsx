@@ -108,6 +108,20 @@ export function getLoginSession(): UserSession | null {
   }
 }
 
+export async function getLoginSessionFromServer(): Promise<{ role: string } | null> {
+  if (isLocalDevelopmentBypass()) return localTestSession
+  const token = Cookies.get('unesa_session')
+  if (!token || !Cookies.get('unesa_user')) return null
+  const response = await fetch(`${apiBaseUrl}/auth/google/me`, {
+    headers: { Authorization: `Bearer ${token}` }, cache: 'no-store',
+  })
+  if (response.status === 401 || response.status === 403) return null
+  if (!response.ok) throw new Error('Gagal memuat sesi pengguna dari server.')
+  const result = await response.json() as { user?: { role?: unknown } }
+  if (typeof result.user?.role !== 'string') throw new Error('Data sesi pengguna tidak valid.')
+  return { role: result.user.role }
+}
+
 export async function logout() {
   const cookieOptions = sharedSessionCookieOptions()
   Cookies.remove('unesa_session', cookieOptions)

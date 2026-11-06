@@ -20,6 +20,7 @@ from dss_session import dss_session
 from mediamtx_client import MediaMTXClient
 from auth_routes import register_auth_routes
 from account_routes import register_account_routes
+from public_hls import create_public_hls_blueprint
 
 
 # ============================================================
@@ -1304,6 +1305,10 @@ def start_camera(public_code):
 
             db.close()
 
+app.register_blueprint(create_public_hls_blueprint(
+    MEDIAMTX_INTERNAL_HOST, MEDIAMTX_VIEWER_USERNAME, MEDIAMTX_VIEWER_PASSWORD,
+))
+
 @app.route("/api/whep/<path:camera_path>",methods=["POST"])
 def whep_proxy(camera_path):
 
@@ -1978,4 +1983,3 @@ if __name__ == "__main__":
         debug=False,
         use_reloader=False
     )
-

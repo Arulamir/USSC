@@ -39,6 +39,7 @@ try:
     from backend.api.office_export import office_export_bp
     from backend.api.office_control import office_control_bp
     from backend.api.office_summary import office_summary_bp
+    from backend.api.camera import camera_bp
 
 except ImportError:
     from api.traffic import traffic_bp
@@ -56,6 +57,7 @@ except ImportError:
     from api.office_export import office_export_bp
     from api.office_control import office_control_bp
     from api.office_summary import office_summary_bp
+    from api.camera import camera_bp
 
 
 # =====================================================
@@ -116,6 +118,7 @@ app.register_blueprint(office_history_bp)
 app.register_blueprint(office_export_bp)
 app.register_blueprint(office_control_bp)
 app.register_blueprint(office_summary_bp)
+app.register_blueprint(camera_bp)
 
 
 

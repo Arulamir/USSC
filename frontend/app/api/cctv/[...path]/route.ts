@@ -10,7 +10,7 @@ async function proxyRequest(
       ? `/${path.map(encodeURIComponent).join("/")}`
       : `/api/${path.map(encodeURIComponent).join("/")}`;
 
-  const backendUrl = `${BACKEND_URL}${backendPath}`;
+  const backendUrl = `${BACKEND_URL}${backendPath}${new URL(request.url).search}`;
 
   console.log(
     "[CCTV PROXY]",
@@ -107,4 +107,3 @@ export async function DELETE(
 
   return proxyRequest(request, path);
 }
-
