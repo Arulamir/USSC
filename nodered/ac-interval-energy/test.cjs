@@ -10,7 +10,7 @@ const FakeDate=class extends Date {static now(){return now;}};
 const data=new Map();
 const flow={get:(key,store)=>data.get((store||'default')+':'+key),set:(key,value,store)=>data.set((store||'default')+':'+key,value)};
 const run=(code,msg)=>new Function('msg','flow','node','Date','Buffer',code)(msg,flow,{status(){}},FakeDate,Buffer);
-const ac=['24E124148060C6A0','24E12414806031FC','24E124148060D73E','24E1241480609886'];
+const ac=['24E124148060C6A0','24E12414806031FC','24E124148060D73E','24E1241480609B86'];
 const read=()=>flow.get('office_power_latest_v1','telemetryRuntime').data;
 function uplink(wh){for(const eui of ac){const out=run(collector,{deveui:eui,payload:{active_power:2,power_consumption:wh}});assert.equal(out.topic,'ac_energy_updated');}}
 uplink(1000);now+=600000;uplink(1015);

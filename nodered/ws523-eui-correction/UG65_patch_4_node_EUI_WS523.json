@@ -1,0 +1,78 @@
+[
+  {
+    "id": "8f2bfa79f87cfd92",
+    "type": "function",
+    "z": "4e88b253dca29971",
+    "name": "Telemetry: simpan nilai aktual + umur",
+    "func": "// Cabang monitoring saja; tidak mengubah pesan atau timer automasi.\nvar devices = {\n  \"24E124148060C6A0\": {\n    \"model\": \"WS523\",\n    \"room\": \"RUANG_UTAMA\",\n    \"name\": \"WS523_RUANG_UTAMA_A\"\n  },\n  \"24E12414806031FC\": {\n    \"model\": \"WS523\",\n    \"room\": \"RUANG_UTAMA\",\n    \"name\": \"WS523_RUANG_UTAMA_B\"\n  },\n  \"24E124148060D73E\": {\n    \"model\": \"WS523\",\n    \"room\": \"BU_DINI\",\n    \"name\": \"WS523_BU_DINI\"\n  },\n  \"24E1241480609B86\": {\n    \"model\": \"WS523\",\n    \"room\": \"RUANG_MAGANG\",\n    \"name\": \"WS523_RUANG_MAGANG\"\n  },\n  \"24E1241480608D1A\": {\n    \"model\": \"WS523\",\n    \"room\": \"ATAS_PINTU\",\n    \"name\": \"WS523_ATAS_PINTU\"\n  },\n  \"24E124443F431957\": {\n    \"model\": \"VS321\",\n    \"room\": \"RUANG_UTAMA\",\n    \"name\": \"VS321\"\n  },\n  \"24E1247710630110\": {\n    \"model\": \"WS502\",\n    \"room\": \"RUANG_UTAMA\",\n    \"name\": \"WS502_RUANG_UTAMA_A\"\n  },\n  \"24E124771063F466\": {\n    \"model\": \"WS502\",\n    \"room\": \"RUANG_UTAMA\",\n    \"name\": \"WS502_RUANG_UTAMA_B\"\n  },\n  \"24E1247710633F88\": {\n    \"model\": \"WS502\",\n    \"room\": \"RUANG_MAGANG\",\n    \"name\": \"WS502_RUANG_MAGANG\"\n  },\n  \"24E1247710638799\": {\n    \"model\": \"WS502\",\n    \"room\": \"BU_DINI\",\n    \"name\": \"WS502_BU_DINI\"\n  }\n};\nvar eui = String(msg.deveui || '').toUpperCase();\nvar device = devices[eui];\nvar data = msg.payload;\n\n// Temporary read-only diagnostics around the existing monitoring writes.\nfunction acCounterDebug(stage, extra) {\n  var message = {\n    diagnostic: stage, node_id: node.id || null, device_eui: eui || null,\n    flow_id: typeof env !== 'undefined' ? env.get('NR_FLOW_ID') || null : null\n  };\n  Object.keys(extra || {}).forEach(function (key) { message[key] = extra[key]; });\n  node.warn(JSON.stringify(message));\n}\nvar debugWs523 = (device && device.model === 'WS523') || msg.deviceType === 'WS523';\nif (debugWs523) {\n  var obj = data && typeof data === 'object' ? data : {};\n  acCounterDebug('ac_counter_input', {\n    device_known: !!device, payload_type: typeof data, payload_fields: Object.keys(obj),\n    counter_present: Object.prototype.hasOwnProperty.call(obj, 'power_consumption'),\n    counter_wh: obj.power_consumption === undefined ? null : obj.power_consumption,\n    counter_type: typeof obj.power_consumption,\n    power_w: obj.active_power === undefined ? null : obj.active_power\n  });\n}\nif (!device || !data || typeof data !== 'object') return null;\nvar cache = flow.get('telemetry_latest_v1') || {};\nvar saved = cache[eui] || {};\nvar now = Date.now(), acEnergyUpdated = false;\nfunction save(key, value) { saved[key] = { value: value, receivedAt: now }; }\nfunction number(key, value, min, max) {\n  if (typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max) save(key, value);\n}\nif (device.model === 'WS523' || device.model === 'WS502') {\n  number('power_w', data.active_power, 0, 4294967295);\n  number('energy_wh', data.power_consumption, 0, 4294967295);\n  // Keep genuine counter observations for the latest 10-minute AC reports.\n  // Publishing the cache never adds a point or renews its observation time.\n  if (device.model === 'WS523' && device.room !== 'ATAS_PINTU' && typeof data.power_consumption === 'number' && Number.isFinite(data.power_consumption) && data.power_consumption >= 0 && data.power_consumption <= 4294967295) {\n    var points = Array.isArray(saved.energy_minute_points) ? saved.energy_minute_points : [];\n    points = points.filter(function (p) { return p && Number.isFinite(p.at) && p.at < now && now - p.at <= 2700000 && Number.isFinite(p.wh); });\n    points.push({ at: now, wh: data.power_consumption });\n    saved.energy_minute_points = points.slice(-16);\n    acEnergyUpdated = true;\n  }\n} else {\n  number('temperature_c', data.temperature, -100, 150);\n  number('humidity_pct', data.humidity, 0, 100);\n  // Monitoring website uses only the current region_1 sensor status.\n  // Clear values produced by the old people-count/combined-region rule once.\n  if (saved.occupancy_source !== 'region_1') { delete saved.occupancy; saved.occupancy_source = 'region_1'; }\n  if (Object.prototype.hasOwnProperty.call(data, 'region_1')) {\n    if (data.region_1 === 'occupied' || data.region_1 === 'vacant') save('occupancy', data.region_1);\n    else delete saved.occupancy;\n  }\n  // Only an explicit light report can update its value and observation time.\n  if (Object.prototype.hasOwnProperty.call(data, 'illuminance_status') || Object.prototype.hasOwnProperty.call(data, 'illumination')) {\n    var light = Object.prototype.hasOwnProperty.call(data, 'illuminance_status') ? data.illuminance_status : data.illumination;\n    if (light === 'bright' || light === 'dim') save('illumination', light);\n    else delete saved.illumination;\n  }\n}\n// History-only atau battery-only tidak memperbarui umur nilai sebelumnya.\ncache[eui] = saved;\nflow.set('telemetry_latest_v1', cache);\nif (debugWs523) {\n  var readBack = flow.get('telemetry_latest_v1') || {}, readRecord = readBack[eui] || {};\n  var entry = readRecord.energy_wh || {};\n  var samples = Array.isArray(readRecord.energy_minute_points) ? readRecord.energy_minute_points : [];\n  var last = samples[samples.length - 1], previous = samples[samples.length - 2];\n  acCounterDebug('ac_counter_saved', {\n    cache_device_count: Object.keys(readBack).length,\n    record_exists: Object.prototype.hasOwnProperty.call(readBack, eui),\n    record_fields: Object.keys(readRecord),\n    stored_counter_wh: entry.value === undefined ? null : entry.value,\n    stored_counter_at_utc: typeof entry.receivedAt === 'number' ? new Date(entry.receivedAt).toISOString() : null,\n    history_count: samples.length,\n    gap_seconds: last && previous ? (last.at - previous.at) / 1000 : null,\n    delta_wh: last && previous ? last.wh - previous.wh : null,\n    new_counter_sample: !!acEnergyUpdated\n  });\n}\n\nreturn acEnergyUpdated ? { topic: 'ac_energy_updated' } : null;\n",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 760,
+    "y": 2320,
+    "wires": [
+      [
+        "93dde0bc8c83e852"
+      ]
+    ]
+  },
+  {
+    "id": "60ba0b3c8cfac7c6",
+    "type": "function",
+    "z": "4e88b253dca29971",
+    "name": "Telemetry: snapshot setiap 10 menit",
+    "func": "// Ubah 15 menjadi 10 jika ingin interval 10 menit.\nvar intervalMinutes = 10;\nvar powerMaxAgeMinutes = 30;\nvar environmentMaxAgeMinutes = 30;\nvar occupancyMaxAgeMinutes = 15;\nvar devices = {\n  \"24E124148060C6A0\": {\n    \"model\": \"WS523\",\n    \"room\": \"RUANG_UTAMA\",\n    \"name\": \"WS523_RUANG_UTAMA_A\"\n  },\n  \"24E12414806031FC\": {\n    \"model\": \"WS523\",\n    \"room\": \"RUANG_UTAMA\",\n    \"name\": \"WS523_RUANG_UTAMA_B\"\n  },\n  \"24E124148060D73E\": {\n    \"model\": \"WS523\",\n    \"room\": \"BU_DINI\",\n    \"name\": \"WS523_BU_DINI\"\n  },\n  \"24E1241480609B86\": {\n    \"model\": \"WS523\",\n    \"room\": \"RUANG_MAGANG\",\n    \"name\": \"WS523_RUANG_MAGANG\"\n  },\n  \"24E1241480608D1A\": {\n    \"model\": \"WS523\",\n    \"room\": \"ATAS_PINTU\",\n    \"name\": \"WS523_ATAS_PINTU\"\n  },\n  \"24E124443F431957\": {\n    \"model\": \"VS321\",\n    \"room\": \"RUANG_UTAMA\",\n    \"name\": \"VS321\"\n  },\n  \"24E1247710630110\": {\n    \"model\": \"WS502\",\n    \"room\": \"RUANG_UTAMA\",\n    \"name\": \"WS502_RUANG_UTAMA_A\"\n  },\n  \"24E124771063F466\": {\n    \"model\": \"WS502\",\n    \"room\": \"RUANG_UTAMA\",\n    \"name\": \"WS502_RUANG_UTAMA_B\"\n  },\n  \"24E1247710633F88\": {\n    \"model\": \"WS502\",\n    \"room\": \"RUANG_MAGANG\",\n    \"name\": \"WS502_RUANG_MAGANG\"\n  },\n  \"24E1247710638799\": {\n    \"model\": \"WS502\",\n    \"room\": \"BU_DINI\",\n    \"name\": \"WS502_BU_DINI\"\n  }\n};\nvar now = Date.now();\nvar slot = Math.floor(now / (intervalMinutes * 60000));\nif (msg.topic !== 'sample_now') {\n    if (context.get('lastSlot') === slot) return null;\n    context.set('lastSlot', slot);\n}\nvar cache = flow.get('telemetry_latest_v1') || {};\nvar fields = ['power_w', 'energy_wh', 'temperature_c', 'humidity_pct', 'occupancy', 'illumination'];\nvar records = Object.keys(devices).map(function(eui) {\n    var device = devices[eui];\n    var saved = cache[eui] || {};\n    var row = { device_eui: eui, device_name: device.name, model: device.model, room: device.room };\n    var isMeter = device.model === 'WS523' || device.model === 'WS502';\n    var required = isMeter ? ['power_w', 'energy_wh'] : ['temperature_c', 'humidity_pct', 'occupancy', 'illumination'];\n    var fresh = 0, seen = 0;\n    fields.forEach(function(key) {\n        var entry = saved[key];\n        var applicable = required.indexOf(key) !== -1;\n        var ageMinutes = key === 'occupancy' ? occupancyMaxAgeMinutes : isMeter ? powerMaxAgeMinutes : environmentMaxAgeMinutes;\n        var valid = applicable && entry && entry.receivedAt <= now && now - entry.receivedAt <= ageMinutes * 60000;\n        row[key] = valid ? entry.value : null;\n        row[key + '_at'] = applicable && entry ? new Date(entry.receivedAt).toISOString() : null;\n        if (applicable && entry) seen++;\n        if (valid) fresh++;\n    });\n    row.quality = !seen ? 'missing' : !fresh ? 'stale' : fresh === required.length ? 'fresh' : 'partial';\n    return row;\n});\nvar id = 'ug65-ussc-' + (msg.topic === 'sample_now' ? 'manual-' + now + '-' + Math.random().toString(36).slice(2, 8) : intervalMinutes + 'm-' + slot);\nreturn { telemetryAction: 'enqueue', payload: { type: 'telemetry_snapshot', version: 2, source: 'ug65-ussc', id: id,\n    sampled_at: new Date(now).toISOString(), interval_minutes: intervalMinutes, records: records } };\n",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "context.set('lastSlot', Math.floor(Date.now() / (10 * 60000)));",
+    "finalize": "",
+    "libs": [],
+    "x": 760,
+    "y": 2420,
+    "wires": [
+      [
+        "3eb868e7c9117197"
+      ]
+    ]
+  },
+  {
+    "id": "93dde0bc8c83e852",
+    "type": "function",
+    "z": "4e88b253dca29971",
+    "name": "Daya W: baca cache meter",
+    "func": "// // Read the existing power and observed energy-counter cache only. No SQL or control commands.\n// var now=Date.now(),cache=flow.get('telemetry_latest_v1')||{};\n// var meters=[\"24E124148060C6A0\",\"24E12414806031FC\",\"24E124148060D73E\",\"24E1241480609B86\",\"24E1247710630110\",\"24E124771063F466\",\"24E1247710633F88\",\"24E1247710638799\"];\n// var records=meters.map(function(eui){\n//     var entry=(cache[eui]||{}).power_w;\n//     var valid=entry&&typeof entry.value==='number'&&Number.isFinite(entry.value)&&entry.value>=0&&entry.value<=4294967295&&Number.isFinite(entry.receivedAt)&&entry.receivedAt<=now&&now-entry.receivedAt<=180000;\n//     var energy=(cache[eui]||{}).energy_minute_points;\n//     var points=Array.isArray(energy)?energy.filter(function(p){return p&&Number.isFinite(p.at)&&p.at<=now&&now-p.at<=2700000&&Number.isFinite(p.wh)&&p.wh>=0&&p.wh<=4294967295;}).slice(-16).map(function(p){return {at:new Date(p.at).toISOString(),wh:p.wh};}):[];\n//     return {device_eui:eui,power_w:valid?entry.value:null,power_w_at:entry&&Number.isFinite(entry.receivedAt)&&Number.isFinite(new Date(entry.receivedAt).getTime())?new Date(entry.receivedAt).toISOString():null,energy_points:points};\n// });\n// return {topic:'office1/monitoring/power',qos:'0',retain:true,payload:JSON.stringify({type:'office_power',version:1,source_id:'ug65-ussc',sampled_at_utc:new Date(now).toISOString(),interval_minutes:1,records:records})};\n\n\n// Read the existing power and observed energy-counter cache only. No SQL or control commands.\nvar now = Date.now(), cache = flow.get('telemetry_latest_v1') || {};\nvar meters = [\"24E124148060C6A0\", \"24E12414806031FC\", \"24E124148060D73E\", \"24E1241480609B86\", \"24E1247710630110\", \"24E124771063F466\", \"24E1247710633F88\", \"24E1247710638799\"];\nvar records = meters.map(function (eui) {\n    var entry = (cache[eui] || {}).power_w;\n    // Retain each last actual value; backend marks old observations as previous.\n    var valid = entry && typeof entry.value === 'number' && Number.isFinite(entry.value) && entry.value >= 0 && entry.value <= 4294967295 && Number.isFinite(entry.receivedAt) && entry.receivedAt <= now;\n    var energy = (cache[eui] || {}).energy_minute_points;\n    var points = Array.isArray(energy) ? energy.filter(function (p) { return p && Number.isFinite(p.at) && p.at <= now && now - p.at <= 2700000 && Number.isFinite(p.wh) && p.wh >= 0 && p.wh <= 4294967295; }).slice(-16).map(function (p) { return { at: new Date(p.at).toISOString(), wh: p.wh }; }) : [];\n    return { device_eui: eui, power_w: valid ? entry.value : null, power_w_at: entry && Number.isFinite(entry.receivedAt) && Number.isFinite(new Date(entry.receivedAt).getTime()) ? new Date(entry.receivedAt).toISOString() : null, energy_points: points };\n});\nreturn { topic: 'office1/monitoring/power', qos: '0', retain: true, payload: JSON.stringify({ type: 'office_power', version: 1, source_id: 'ug65-ussc', sampled_at_utc: new Date(now).toISOString(), interval_minutes: 1, records: records }) };\n",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 530,
+    "y": 3350,
+    "wires": [
+      [
+        "eb98650f49ee7548"
+      ]
+    ]
+  },
+  {
+    "id": "a10e00d000000002",
+    "type": "function",
+    "z": "4e88b253dca29971",
+    "name": "Diagnostik riwayat counter UG65",
+    "func": "// READ ONLY: no context writes, MQTT, downlink, SQL, keys, or control.\nvar location='UG65',packetAt=null;\nvar cache=flow.get('telemetry_latest_v1')||{};\nfunction lookup(eui){var r=cache[eui]||{},v=r.energy_wh||{};return {wh:v.value===undefined?null:v.value,at:v.receivedAt,points:Array.isArray(r.energy_minute_points)?r.energy_minute_points:[]};}\nvar now=Date.now();\nvar meters=['24E124148060C6A0','24E12414806031FC','24E124148060D73E','24E1241480609B86'];\nfunction iso(t){return typeof t==='number'&&Number.isFinite(t)?new Date(t).toISOString():null;}\nvar records=meters.map(function(eui){\n    var r=lookup(eui),points=r.points||[];\n    var clean=points.filter(function(p){return p&&Number.isFinite(p.at)&&Number.isFinite(p.wh);}).slice().sort(function(a,b){return a.at-b.at;});\n    var end=clean[clean.length-1],start=clean[clean.length-2];\n    var gap=start&&end?(end.at-start.at)/1000:null;\n    var age=end?(now-end.at)/1000:null,delta=start&&end?end.wh-start.wh:null;\n    var reason=!points.length?'history_empty':clean.length<2?'need_two_reports':gap<510?'reports_less_than_8m30s':gap>690?'reports_more_than_11m30s':delta<0?'counter_reset':age<0?'future_time':age>900?'last_counter_older_than_15m':'pair_looks_valid';\n    return {device_eui:eui,counter_wh:r.wh,counter_at_utc:iso(r.at),history_count:points.length,valid_points:clean.length,gap_seconds:gap,delta_wh:delta,last_age_seconds:age,reason:reason,last_points:clean.slice(-6).map(function(p){return {at_utc:iso(p.at),wh:p.wh};})};\n});\nmsg.payload={diagnostic:'ac_counter_readonly',location:location,checked_at_utc:iso(now),packet_at_utc:packetAt||null,records:records};\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 570,
+    "y": 3020,
+    "wires": [
+      [
+        "a10e00d000000003"
+      ]
+    ]
+  }
+]

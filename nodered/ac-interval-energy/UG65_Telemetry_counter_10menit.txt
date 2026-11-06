@@ -15,12 +15,12 @@ var devices = {
     "room": "BU_DINI",
     "name": "WS523_BU_DINI"
   },
-  "24E1241480609886": {
+  "24E1241480609B86": {
     "model": "WS523",
     "room": "RUANG_MAGANG",
     "name": "WS523_RUANG_MAGANG"
   },
-  "24E124148060801A": {
+  "24E1241480608D1A": {
     "model": "WS523",
     "room": "ATAS_PINTU",
     "name": "WS523_ATAS_PINTU"

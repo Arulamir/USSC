@@ -16,7 +16,7 @@ from .office_control import _valid_key, valid_control_url
 smart_office_bp = Blueprint("smart_office", __name__, url_prefix="/api")
 AC_METERS = frozenset((
     "24E124148060C6A0", "24E12414806031FC",
-    "24E124148060D73E", "24E1241480609886",
+    "24E124148060D73E", "24E1241480609B86",
 ))
 LAMP_METERS = frozenset((
     "24E1247710630110", "24E124771063F466",
