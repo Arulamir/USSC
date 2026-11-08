@@ -33,22 +33,32 @@ class MinutePowerTests(unittest.TestCase):
         self.context.push()
         self.addCleanup(self.context.pop)
 
+    def test_latest_nine_meter_flow_keeps_upstream_estimate_once(self):
+        payload = packet()
+        a = next(r for r in payload["records"] if r["device_eui"] == "24E124148060C6A0")
+        a["power_w"] = 1271  # actual flow has already applied 1 W + 1270 W once
+        data = minute_power_data(payload, NOW)
+        self.assertEqual(data["ac_power_w"], 1271 + 4 * 10)
+        self.assertEqual(data["lamp_power_w"], 40)
+        self.assertEqual(data["power_quality"]["ac"], {"meter_used": 5, "meter_expected": 5})
+        self.assertEqual(data["ac_power_estimate_managed_by"], "node_red")
+
     def test_sum_with_zero_and_observation_timestamp(self):
         payload = packet()
         payload["records"][0]["power_w"] = 0
         data = minute_power_data(payload, NOW)
-        self.assertEqual(data["ac_power_w"], 30)
+        self.assertEqual(data["ac_power_w"], 10 * (len(AC_METERS) - 1))
         self.assertEqual(data["lamp_power_w"], 40)
         self.assertFalse(data["power_stale"])
         self.assertEqual(data["power_observed_at_utc"], "2026-10-17T06:00:00.000Z")
-        self.assertEqual(data["power_quality"]["ac"]["meter_used"], 4)
+        self.assertEqual(data["power_quality"]["ac"]["meter_used"], len(AC_METERS))
 
     def test_old_measurements_remain_visible_without_renewing_their_time(self):
         payload = packet()
         for record in payload["records"]:
             record["power_w_at"] = (NOW - timedelta(minutes=4)).isoformat()
         data = minute_power_data(payload, NOW)
-        self.assertEqual(data["ac_power_w"], 40)
+        self.assertEqual(data["ac_power_w"], 10 * len(AC_METERS))
         self.assertEqual(data["lamp_power_w"], 40)
         self.assertTrue(data["power_stale"])
         self.assertTrue(data["power_previous"])
@@ -56,7 +66,7 @@ class MinutePowerTests(unittest.TestCase):
 
     def test_old_packet_keeps_readings_but_future_packet_is_rejected(self):
         data = minute_power_data(packet(NOW - timedelta(seconds=151)), NOW)
-        self.assertEqual(data["ac_power_w"], 40)
+        self.assertEqual(data["ac_power_w"], 10 * len(AC_METERS))
         self.assertTrue(data["power_previous"])
         self.assertTrue(data["power_stale"])
         data = minute_power_data(packet(NOW + timedelta(seconds=1)), NOW)
@@ -70,6 +80,8 @@ class MinutePowerTests(unittest.TestCase):
         ac[1]["power_w_at"] = (NOW + timedelta(seconds=1)).isoformat()
         ac[2]["power_w"] = True
         ac[3]["power_w"] = -1
+        for extra in ac[4:]:
+            extra["power_w"] = None
         data = minute_power_data(payload, NOW)
         self.assertEqual(data["ac_power_w"], 0)
         self.assertEqual(data["power_quality"]["ac"]["meter_used"], 1)
@@ -79,7 +91,7 @@ class MinutePowerTests(unittest.TestCase):
         first = payload["records"][0]
         payload["records"][1] = {**first, "power_w_at": (NOW - timedelta(minutes=4)).isoformat()}
         data = minute_power_data(payload, NOW)
-        self.assertEqual(data["ac_power_w"], 20)
+        self.assertEqual(data["ac_power_w"], 10 * (len(AC_METERS) - 2))
 
     def test_unexpected_source_interval_or_type_rejected(self):
         for field, value in (("source_id", "other"), ("interval_minutes", 10),
@@ -90,11 +102,20 @@ class MinutePowerTests(unittest.TestCase):
                 payload[field] = value
                 self.assertTrue(minute_power_data(payload, NOW)["power_stale"])
 
-    def test_above_door_meter_excluded(self):
+    def test_unknown_meter_excluded(self):
         payload = packet()
         payload["records"][0] = {"device_eui": "24E124148060FAKE", "power_w": 10000,
                                   "power_w_at": NOW.isoformat()}
-        self.assertEqual(minute_power_data(payload, NOW)["ac_power_w"], 30)
+        self.assertEqual(minute_power_data(payload, NOW)["ac_power_w"], 10 * (len(AC_METERS) - 1))
+
+    def test_above_door_contributes_power_and_counts_as_fifth_ac(self):
+        payload = packet()
+        self.assertIn('24E1241480608D1A', AC_METERS)
+        for r in payload['records']:
+            r['power_w'] = 250 if r['device_eui'] == '24E1241480608D1A' else 0
+        data = minute_power_data(payload, NOW)
+        self.assertEqual(data['ac_power_w'], 250)
+        self.assertEqual(data['power_quality']['ac'], {'meter_used': 5, 'meter_expected': 5})
 
 
 class MinutePowerBridgeTests(unittest.TestCase):
@@ -127,8 +148,8 @@ class MinutePowerBridgeTests(unittest.TestCase):
                     {'at': at.isoformat(), 'wh': 1015},
                 ]
         data = merge_minute_power(self.data)
-        self.assertEqual(data['ac_interval_wh'], 60)
-        self.assertEqual(data["ac_power_w"], 40)
+        self.assertEqual(data['ac_interval_wh'], 15 * len(AC_METERS))
+        self.assertEqual(data["ac_power_w"], 10 * len(AC_METERS))
         self.assertEqual(data["lamp_power_w"], 40)
         self.assertEqual(data["ac_day_wh"], 1234)
         self.assertEqual(data["illumination"], "bright")
@@ -207,14 +228,14 @@ class MinutePowerBridgeTests(unittest.TestCase):
         now = datetime.now(timezone.utc)
         first_packet = packet(now - timedelta(minutes=2))
         self.response.json.return_value = {"status": "success", "data": first_packet}
-        self.assertEqual(merge_minute_power(self.data)["ac_power_w"], 40)
+        self.assertEqual(merge_minute_power(self.data)["ac_power_w"], 10 * len(AC_METERS))
         next_packet = packet(now)
         ac_records = [r for r in next_packet["records"] if r["device_eui"] in AC_METERS]
         ac_records[0]["power_w_at"] = (now - timedelta(minutes=5)).isoformat()
         ac_records[1]["power_w"] = 100
         self.response.json.return_value = {"status": "success", "data": next_packet}
         result = merge_minute_power(self.data)
-        self.assertEqual(result["ac_power_w"], 130)
+        self.assertEqual(result["ac_power_w"], 100 + 10 * (len(AC_METERS) - 1))
         self.assertEqual(result["power_observed_at_by_group"]["ac"],
                          (now - timedelta(minutes=2)).isoformat(timespec="milliseconds").replace("+00:00", "Z"))
 
@@ -227,7 +248,7 @@ class MinutePowerBridgeTests(unittest.TestCase):
                 record["power_w"] = 1642 if record["device_eui"] == main_a else 1
         self.response.json.return_value = {"status": "success", "data": first}
         initial = merge_minute_power(self.data)
-        self.assertEqual(initial["ac_power_w"], 1645)
+        self.assertEqual(initial["ac_power_w"], 1642 + len(AC_METERS) - 1)
 
         partial = packet(now - timedelta(seconds=1))
         for record in partial["records"]:
@@ -235,8 +256,8 @@ class MinutePowerBridgeTests(unittest.TestCase):
                 record["power_w"] = None if record["device_eui"] == main_a else 1
         self.response.json.return_value = {"status": "success", "data": partial}
         retained = merge_minute_power(self.data)
-        self.assertEqual(retained["ac_power_w"], 1645)
-        self.assertEqual(retained["power_quality"]["ac"]["meter_used"], 4)
+        self.assertEqual(retained["ac_power_w"], 1642 + len(AC_METERS) - 1)
+        self.assertEqual(retained["power_quality"]["ac"]["meter_used"], len(AC_METERS))
         self.assertEqual(retained["power_observed_at_by_group"]["ac"],
                          initial["power_observed_at_by_group"]["ac"])
         self.assertTrue(retained["power_previous_by_group"]["ac"])
@@ -248,7 +269,7 @@ class MinutePowerBridgeTests(unittest.TestCase):
         main_report["records"][0]["power_w"] = 0
         self.response.json.return_value = {"status": "success", "data": main_report}
         stopped = merge_minute_power(self.data)
-        self.assertEqual(stopped["ac_power_w"], 3)
+        self.assertEqual(stopped["ac_power_w"], len(AC_METERS) - 1)
         self.assertEqual(stopped["lamp_power_w"], retained["lamp_power_w"])
 
     def test_database_seeds_each_meter_after_backend_restart(self):
@@ -265,7 +286,7 @@ class MinutePowerBridgeTests(unittest.TestCase):
             record["power_w"] = 1
         self.response.json.return_value = {"status": "success", "data": partial}
         result = merge_minute_power(snapshot_data(row))
-        self.assertEqual(result["ac_power_w"], 1645)
+        self.assertEqual(result["ac_power_w"], 1642 + len(AC_METERS) - 1)
         self.assertTrue(result["power_previous_by_group"]["ac"])
         self.assertEqual(result["ac_day_wh"], 500)
 
@@ -323,7 +344,7 @@ class MinutePowerBridgeTests(unittest.TestCase):
         with patch("backend.api.smart_office.get_connection", return_value=connection):
             response = self.app.test_client().get("/api/smart-office")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json["data"]["ac_power_w"], 40)
+        self.assertEqual(response.json["data"]["ac_power_w"], 10 * len(AC_METERS))
         self.assertEqual(response.json["data"]["ac_day_wh"], 500)
         self.assertEqual(response.json["data"]["interval_minutes"], 10)
         self.assertEqual(response.json["data"]["power_interval_minutes"], 1)

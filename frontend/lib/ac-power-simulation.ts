@@ -73,16 +73,16 @@ export function subscribeAcPowerMinute(onChange: () => void) {
   };
 }
 
-export function acReplacementPower(realPower: number | null | undefined, enabled: boolean, minute: number) {
-  if (!enabled || realPower == null || !Number.isFinite(realPower)
+export function acReplacementPower(realPower: number | null | undefined, enabled: boolean, minute: number, managedByNodeRed = false) {
+  if (managedByNodeRed || !enabled || realPower == null || !Number.isFinite(realPower)
     || realPower < AC_REPLACEMENT_THRESHOLD_W) return 0;
   // Stable within each clock minute and across tabs/reloads; changes every minute.
   const range = AC_REPLACEMENT_MAX_W - AC_REPLACEMENT_MIN_W + 1;
   return AC_REPLACEMENT_MIN_W + ((minute * 37) % range + range) % range;
 }
 
-export function displayedAcPower(realPower: number | null | undefined, enabled: boolean, minute: number) {
+export function displayedAcPower(realPower: number | null | undefined, enabled: boolean, minute: number, managedByNodeRed = false) {
   if (realPower == null || !Number.isFinite(realPower)) return null;
   if (realPower <= 3) return 0;
-  return realPower + acReplacementPower(realPower, enabled, minute);
+  return realPower + acReplacementPower(realPower, enabled, minute, managedByNodeRed);
 }

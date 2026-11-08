@@ -80,7 +80,7 @@ export function useSmartOfficeSnapshot() {
 
   return {
     snapshot, loading, error,
-    acDisplayPowerW: displayedAcPower(snapshot?.ac_power_w, simulationEnabled, powerMinute),
-    acSimulationPowerW: acReplacementPower(snapshot?.ac_power_w, simulationEnabled, powerMinute),
+    acDisplayPowerW: displayedAcPower(snapshot?.ac_power_w, simulationEnabled, powerMinute, snapshot?.ac_power_estimate_managed_by === "node_red"),
+    acSimulationPowerW: acReplacementPower(snapshot?.ac_power_w, simulationEnabled, powerMinute, snapshot?.ac_power_estimate_managed_by === "node_red"),
   };
 }

@@ -8,6 +8,7 @@ export type SmartOfficeSnapshot = {
   interval_minutes: number;
   stale: boolean;
   ac_power_w: number | null;
+  ac_power_estimate_managed_by?: "node_red";
   ac_interval_wh?: number | null;
   ac_interval_minutes?: number | null;
   ac_interval_stale?: boolean;

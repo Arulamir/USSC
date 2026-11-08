@@ -11,25 +11,19 @@ jika jumlah pembacaan sensor asli **≤3 W**. Aturan ini hanya mengubah tampilan
 API, database, grafik, energi harian, dan Excel tetap memakai data asli.
 Data yang belum tersedia tetap ditampilkan sebagai tanda kosong, bukan nol.
 
-Tombol website `AC_KANTOR` mengontrol dua AC. Salah satu sensor AC rusak,
-sehingga tambahan pengganti pembacaan sensor **1000–1080 W tetap berlaku**
-setelah perintah ON diterima UG65. Tambahan berubah pada setiap pergantian
-menit, tetap sama selama menit tersebut, dan konsisten antar-tab/refresh.
-Tambahan menjadi **0 W** jika pembacaan sensor asli **<50 W**, atau setelah
-perintah OFF diterima. ON berulang tidak menumpuk tambahan. Contoh:
+Flow pengguna tanggal 8 November 2026 mengelola estimasi AC pada UG65:
+state `main_ac_estimate_v1.active`, pembacaan A valid, dan pembacaan B >0 W
+menambahkan 1270 W tepat satu kali pada baris A. Sembilan meter (5 WS523 +
+4 WS502) diteruskan mini PC. Website menjumlahkan nilai yang sudah diterima;
+tidak menambahkan 1270 W lagi dan tidak mengubah counter Wh menjadi estimasi.
 
-- Sensor 3 W → tampilan 0 W.
-- Sensor 4 W atau 49 W → tampilan tetap 4 W atau 49 W.
-- Sensor 1500 W saat ON → tampilan 2500–2580 W.
-- Sensor 1500 W saat OFF → tampilan 1500 W.
-
-Status tambahan disimpan di browser dan tersinkron antar-tab pada origin
-sama. Browser/perangkat lain memiliki status sendiri. Saat browser belum
-mempunyai status, membuka akses operator menginisialisasinya dari laporan
-AC ON/OFF yang masih segar tanpa mengirim ulang perintah. Jika penyimpanan
-browser diblokir, status hanya bertahan di halaman aktif. Laporan fisik,
-timer, dan kendali di luar website tidak mengubah status tambahan tersimpan.
-Label kartu tetap **Daya AC**, tanpa tulisan simulasi.
+API menandai kontrak flow ini melalui `ac_power_estimate_managed_by: "node_red"`.
+Mekanisme estimasi browser 1000-1080 W tetap tersedia untuk API lama yang belum
+memiliki penanda tersebut. Untuk API baru, tambahan browser menjadi nol agar
+estimasi tidak dobel. Status ON/OFF dan localStorage browser tidak menambahkan
+daya di atas nilai flow baru. Aturan tampilan <=3 W menjadi 0 W tetap berlaku;
+missing tetap kosong. Terapkan backend dan frontend bersama flow terbaru;
+API baru mengasumsikan flow pengguna ini sudah mengelola estimasi.
 
 - **Daya AC (W)**: jumlah pembacaan `power_w` meter AC yang tersedia.
   Sumbernya `active_power` WS523, sama dengan nilai `daya_sum` pada Function
@@ -40,7 +34,7 @@ Label kartu tetap **Daya AC**, tanpa tulisan simulasi.
   lima menit bisa terlewat jika terjadi di antara dua laporan sepuluh menit.
   Energi pemakaian singkat tetap dapat masuk counter Wh jika pencatatan aktif.
 - Daya lampu tetap **W**, jumlah pembacaan `power_w` empat meter lampu.
-  AC juga menggunakan empat meter; `ATAS_PINTU` tidak masuk total AC.
+  AC menggunakan lima meter WS523, termasuk `ATAS_PINTU` (24E1241480608D1A).
 - Occupancy: `occupied` → Terisi, `vacant` → Kosong.
 - Suhu dalam °C dan kelembapan dalam %.
 - Illumination: `bright` → Terang, `dim` → Redup. Sensor ini tidak memberikan lux.

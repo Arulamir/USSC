@@ -40,13 +40,13 @@ class SnapshotTests(unittest.TestCase):
     def test_all_meters_and_environment(self):
         records = [record(eui) for eui in AC_METERS]
         records += [record(eui, 30.5) for eui in LAMP_METERS]
-        records += [record("ATAS_PINTU", 9999)]
+        records += [record("UNKNOWN_METER", 9999)]
         row = snapshot(records)
         row["device_samples"] = json.dumps(row["device_samples"])
         data = snapshot_data(row, NOW)
-        self.assertEqual(data["ac_power_w"], 400)
+        self.assertEqual(data["ac_power_w"], 500)
         self.assertEqual(data["lamp_power_w"], 122)
-        self.assertEqual(data["power_quality"]["ac"], {"meter_used": 4, "meter_expected": 4})
+        self.assertEqual(data["power_quality"]["ac"], {"meter_used": 5, "meter_expected": 5})
         self.assertEqual(data["temperature_c"], 25.2)
         self.assertEqual(data["humidity_pct"], 61.4)
         self.assertEqual(data["occupancy"], "occupied")

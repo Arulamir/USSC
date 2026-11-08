@@ -16,7 +16,7 @@ from .office_control import _valid_key, valid_control_url
 smart_office_bp = Blueprint("smart_office", __name__, url_prefix="/api")
 AC_METERS = frozenset((
     "24E124148060C6A0", "24E12414806031FC",
-    "24E124148060D73E", "24E1241480609B86",
+    "24E124148060D73E", "24E1241480609B86", "24E1241480608D1A",
 ))
 LAMP_METERS = frozenset((
     "24E1247710630110", "24E124771063F466",
@@ -136,6 +136,7 @@ def snapshot_data(row, now=None):
         "interval_minutes": row.get("interval_minutes"),
         "stale": now < sampled_at or now - sampled_at > MAX_AGE,
         "ac_power_w": ac_power,
+        "ac_power_estimate_managed_by": "node_red",
         "lamp_power_w": lamp_power,
         "ac_day_wh": _number(row.get("ac_hari_wh")),
         "lamp_day_wh": _number(row.get("lampu_hari_wh")),
@@ -182,7 +183,7 @@ def interval_ac_energy(records, sampled_at, now):
     result = {"ac_interval_wh": None, "ac_interval_stale": True,
               "ac_interval_minutes": None,
               "ac_interval_start_utc": None, "ac_interval_end_utc": None,
-              "ac_interval_quality": {"meter_used": 0, "meter_expected": 4,
+              "ac_interval_quality": {"meter_used": 0, "meter_expected": len(AC_METERS),
                                       "estimated": False, "intervals": []}}
     intervals = []
     for eui in sorted(AC_METERS):
@@ -235,7 +236,7 @@ def interval_ac_energy(records, sampled_at, now):
             ac_interval_stale=False,
             ac_interval_start_utc=min(item["start_utc"] for item in intervals),
             ac_interval_end_utc=min(item["end_utc"] for item in intervals),
-            ac_interval_quality={"meter_used": len(intervals), "meter_expected": 4,
+            ac_interval_quality={"meter_used": len(intervals), "meter_expected": len(AC_METERS),
                                  "estimated": False, "intervals": intervals},
         )
     return result
@@ -246,8 +247,9 @@ def minute_power_data(packet, now=None):
     now = _utc(now) if now is not None else datetime.now(timezone.utc)
     data = {
         "ac_power_w": None, "lamp_power_w": None,
-        "power_quality": {group: {"meter_used": 0, "meter_expected": 4}
-                          for group in ("ac", "lamp")},
+        "ac_power_estimate_managed_by": "node_red",
+        "power_quality": {group: {"meter_used": 0, "meter_expected": len(meters)}
+                          for group, meters in (("ac", AC_METERS), ("lamp", LAMP_METERS))},
         "power_interval_minutes": 1, "power_stale": True,
         "power_previous": False,
         "power_sampled_at_utc": None, "power_observed_at_utc": None,
@@ -266,7 +268,7 @@ def minute_power_data(packet, now=None):
             or packet.get("source_id") != current_app.config.get("SMART_OFFICE_SOURCE_ID", "ug65-ussc")
             or packet.get("interval_minutes") != 1 or sampled_at is None
             or sampled_at > now
-            or not isinstance(records, list) or len(records) > 8):
+            or not isinstance(records, list) or len(records) > len(AC_METERS | LAMP_METERS)):
         return data
     records = [record for record in records if isinstance(record, dict)]
     # Interval Wh uses actual meter reports; minute transport does not renew them.
@@ -386,7 +388,7 @@ def merge_minute_power(data):
                     updated_at = _utc(updated)
                     if (value is not None and observed_at is not None and observed_at <= now
                             and updated_at is not None and updated_at <= now):
-                        quality = (reading.get("power_quality") or {}).get(group, {"meter_used": 0, "meter_expected": 4})
+                        quality = (reading.get("power_quality") or {}).get(group, {"meter_used": 0, "meter_expected": len(allowed_meters)})
                         candidates.append((updated_at, priority, source, value, stamp, quality, updated))
                 if not candidates:
                     continue
