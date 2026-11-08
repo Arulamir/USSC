@@ -20,13 +20,13 @@ function formatTime(timestamp: string | null | undefined) {
 }
 
 export default function SmartOfficeMonitoring() {
-  const { snapshot: data, loading, error: failed } = useSmartOfficeSnapshot();
+  const { snapshot: data, loading, error: failed, acDisplayPowerW } = useSmartOfficeSnapshot();
 
   const updatedAt = formatTime(data?.sampled_at_utc);
   const powerUpdatedAt = formatTime(data?.lamp_power_observed_at_utc);
   const acUpdatedAt = formatTime(data?.power_observed_at_by_group?.ac);
   const metrics = [
-    { label: "Daya AC", icon: "bi-snow", value: formatValue(data?.ac_power_w, "W") },
+    { label: "Daya AC", icon: "bi-snow", value: formatValue(acDisplayPowerW, "W") },
     { label: "Daya Lampu", icon: "bi-lightbulb", value: formatValue(data?.lamp_power_w, "W") },
     { label: "Status Occupancy", icon: "bi-people", value: data?.occupancy === "occupied" ? "Terisi"
       : data?.occupancy === "vacant" ? "Kosong" : "—" },

@@ -75,7 +75,7 @@ export default function MonthlySummary() {
           <div className="office-monthly-facts">
             <div><span>Total energi AC + lampu</span><strong>{value(facts.total_kwh, "kWh")}</strong>
               <small>AC {value(facts.ac_kwh, "kWh")} · Lampu {value(facts.lamp_kwh, "kWh")}</small></div>
-            <div><span>Estimasi emisi jaringan</span><strong>{value(facts.emissions_kg_co2, "kg CO₂")}</strong>
+            <div><span>Estimasi emisi konsumsi listrik</span><strong>{value(facts.emissions_kg_co2, "kg CO₂")}</strong>
               <small>{value(facts.emissions_t_co2, "t CO₂", 6)}</small></div>
           </div>
           <p className="office-monthly-narrative" role="status">{visible.summary}</p>

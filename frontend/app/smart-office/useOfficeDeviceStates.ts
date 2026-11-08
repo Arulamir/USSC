@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { initializeAcPowerFromReport } from "../../lib/ac-power-simulation";
 
 export type DeviceReport = {
   state: "on" | "off" | "mixed" | null;
@@ -47,7 +48,14 @@ export function useOfficeDeviceStates(operatorKey: string) {
         const body = await response.json();
         const parsed = reports(body?.states);
         if (!response.ok || body?.status !== "success" || !parsed) throw Error("State unavailable");
-        if (!disposed) { setStates(parsed); setError(false); }
+        if (!disposed) {
+          const ac = parsed.AC_KANTOR;
+          if (!ac.stale && (ac.state === "on" || ac.state === "off")) {
+            initializeAcPowerFromReport(ac.state);
+          }
+          setStates(parsed);
+          setError(false);
+        }
       } catch {
         if (!disposed) {
           setError(true);

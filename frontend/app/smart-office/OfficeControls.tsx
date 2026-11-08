@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import DeviceStateSlider from "./DeviceStateSlider";
 import { useOfficeDeviceStates } from "./useOfficeDeviceStates";
+import { setAcPowerSimulation } from "../../lib/ac-power-simulation";
 import "./controls.css";
 
 type ControlDevice = { id: string; label: string; group: "lampu" | "ac" };
@@ -129,7 +130,8 @@ export default function OfficeControls() {
       if (response.ok && body.status === "accepted_by_ug65" && body.device === device.id
         && body.state === state && body.request_id === requestId && body.physical_state_confirmed === false) {
         setCommands((current) => ({ ...current, [device.id]: { state, requestedAt } }));
-        setNotice({ kind: "success", text: `Perintah ${state.toUpperCase()} ${device.label} diterima UG65. Menunggu laporan status perangkat; kondisi fisik belum dikonfirmasi.` });
+        if (device.id === "AC_KANTOR") setAcPowerSimulation(state);
+        setNotice({ kind: "success", text: `Perintah ${state.toUpperCase()} ${device.label} telah diterima server.` });
         refreshStates();
       } else if (response.ok || body.status === "unknown" || response.status === 504) {
         setNotice({ kind: "warning", text: detail(body, UNKNOWN) });

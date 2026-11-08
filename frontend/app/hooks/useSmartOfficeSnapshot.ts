@@ -1,10 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { acReplacementPower, currentAcPowerMinute, displayedAcPower, isAcPowerSimulationEnabled, subscribeAcPowerMinute, subscribeAcPowerSimulation } from "../../lib/ac-power-simulation";
 import { ApiService } from "../../lib/api";
 import type { SmartOfficeSnapshot } from "../../lib/smart-office";
 
 export function useSmartOfficeSnapshot() {
+  const simulationEnabled = useSyncExternalStore(
+    subscribeAcPowerSimulation, isAcPowerSimulationEnabled, () => false,
+  );
+  const powerMinute = useSyncExternalStore(
+    subscribeAcPowerMinute, currentAcPowerMinute, () => 0,
+  );
   const [snapshot, setSnapshot] = useState<SmartOfficeSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -71,5 +78,9 @@ export function useSmartOfficeSnapshot() {
     };
   }, []);
 
-  return { snapshot, loading, error };
+  return {
+    snapshot, loading, error,
+    acDisplayPowerW: displayedAcPower(snapshot?.ac_power_w, simulationEnabled, powerMinute),
+    acSimulationPowerW: acReplacementPower(snapshot?.ac_power_w, simulationEnabled, powerMinute),
+  };
 }

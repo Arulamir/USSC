@@ -66,7 +66,7 @@ function qualityLabel(status: string) {
 
 export default function SmartOfficePage() {
   const { theme } = useTheme();
-  const { snapshot, error: snapshotError, loading: snapshotLoading } = useSmartOfficeSnapshot();
+  const { snapshot, error: snapshotError, loading: snapshotLoading, acDisplayPowerW } = useSmartOfficeSnapshot();
   const [period, setPeriod] = useState<OfficePeriod>("daily");
   const [date, setDate] = useState(todayWib);
   const [year, setYear] = useState(() => todayWib().slice(0, 4));
@@ -182,7 +182,7 @@ export default function SmartOfficePage() {
   };
 
   const cards = [
-    { label: "Daya AC", icon: "bi-snow", value: number(snapshot?.ac_power_w, "W"), color: "green" },
+    { label: "Daya AC", icon: "bi-snow", value: number(acDisplayPowerW, "W"), color: "green" },
     { label: "Daya Lampu", icon: "bi-lightbulb", value: number(snapshot?.lamp_power_w, "W"), color: "green" },
     { label: "Energi Harian AC", icon: "bi-lightning-charge", value: number(snapshot?.ac_day_wh == null ? null : snapshot.ac_day_wh / 1000, "kWh", 3), color: "green" },
     { label: "Energi Harian Lampu", icon: "bi-lightning-charge", value: number(snapshot?.lamp_day_wh == null ? null : snapshot.lamp_day_wh / 1000, "kWh", 3), color: "orange" },
@@ -195,6 +195,10 @@ export default function SmartOfficePage() {
   ];
   const hasChartData = Boolean(history?.data.some(row => row.ac_wh !== null || row.lamp_wh !== null));
   const range = history ? `${dateTime(history.start_wib)} – ${dateTime(new Date(new Date(history.end_wib).getTime() - 1).toISOString())} WIB` : "";
+  const snapshotStatus = snapshotLoading ? "Memuat data kantor..."
+    : !snapshot ? snapshotError ? "Koneksi data terputus." : "Data kantor belum tersedia."
+    : `Data terakhir: ${dateTime(snapshot.sampled_at_utc, true)}${snapshotError
+      ? " · Koneksi terputus" : snapshot.stale || snapshot.power_stale ? " · Data sebelumnya" : ""}`;
 
   return (
     <MainLayout>
@@ -209,17 +213,8 @@ export default function SmartOfficePage() {
             <div><span>{card.label}</span><strong>{card.value}</strong></div>
           </div>)}
         </div>
-        <p className="office-snapshot-status" role="status">
-          {snapshotLoading ? "Memuat data kantor..." : snapshotError ? "Koneksi data terputus." : !snapshot ? "Belum ada snapshot kantor." : snapshot.stale ? "Data terlambat." : "Data terakhir tersedia."}
-          {snapshot && ` Snapshot: ${dateTime(snapshot.sampled_at_utc, true)}. Energi harian tanggal ${dateTime(snapshot.energy_date_wib)}.`}
-          {snapshot && (snapshot.ac_power_w == null
-            ? " Daya AC menunggu pembacaan meter."
-            : ` Daya AC: pembacaan meter terakhir${snapshot.power_previous ? " (data sebelumnya)" : ""}; mengikuti interval laporan perangkat. Pembacaan tertua: ${dateTime(snapshot.power_observed_at_by_group?.ac, true)}.`)}
-          {snapshot?.power_interval_minutes === 1 && (snapshot.lamp_power_w == null
-            ? " Daya lampu belum mendapat pembacaan terbaru."
-            : snapshot.lamp_power_previous
-            ? ` Menampilkan daya lampu sebelumnya; pembacaan: ${dateTime(snapshot.lamp_power_observed_at_utc, true)}.`
-            : ` Daya lampu diperbarui tiap 1 menit; pembacaan: ${dateTime(snapshot.lamp_power_observed_at_utc, true)}.`)}
+        <p className="office-snapshot-status" role="status" title={snapshotStatus}>
+          {snapshotStatus}
         </p>
 
         <section aria-labelledby="office-energy-title">

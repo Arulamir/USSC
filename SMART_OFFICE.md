@@ -6,6 +6,31 @@ CSS tambahan hanya berlaku pada panel baru.
 
 ## Data yang ditampilkan
 
+Kartu **Daya AC** pada dashboard dan halaman detail menampilkan **0 W**
+jika jumlah pembacaan sensor asli **≤3 W**. Aturan ini hanya mengubah tampilan;
+API, database, grafik, energi harian, dan Excel tetap memakai data asli.
+Data yang belum tersedia tetap ditampilkan sebagai tanda kosong, bukan nol.
+
+Tombol website `AC_KANTOR` mengontrol dua AC. Salah satu sensor AC rusak,
+sehingga tambahan pengganti pembacaan sensor **1000–1080 W tetap berlaku**
+setelah perintah ON diterima UG65. Tambahan berubah pada setiap pergantian
+menit, tetap sama selama menit tersebut, dan konsisten antar-tab/refresh.
+Tambahan menjadi **0 W** jika pembacaan sensor asli **<50 W**, atau setelah
+perintah OFF diterima. ON berulang tidak menumpuk tambahan. Contoh:
+
+- Sensor 3 W → tampilan 0 W.
+- Sensor 4 W atau 49 W → tampilan tetap 4 W atau 49 W.
+- Sensor 1500 W saat ON → tampilan 2500–2580 W.
+- Sensor 1500 W saat OFF → tampilan 1500 W.
+
+Status tambahan disimpan di browser dan tersinkron antar-tab pada origin
+sama. Browser/perangkat lain memiliki status sendiri. Saat browser belum
+mempunyai status, membuka akses operator menginisialisasinya dari laporan
+AC ON/OFF yang masih segar tanpa mengirim ulang perintah. Jika penyimpanan
+browser diblokir, status hanya bertahan di halaman aktif. Laporan fisik,
+timer, dan kendali di luar website tidak mengubah status tambahan tersimpan.
+Label kartu tetap **Daya AC**, tanpa tulisan simulasi.
+
 - **Daya AC (W)**: jumlah pembacaan `power_w` meter AC yang tersedia.
   Sumbernya `active_power` WS523, sama dengan nilai `daya_sum` pada Function
   `WS523: daya_sum + energi_sum`. Function tersebut memberi alias per perangkat,
@@ -294,11 +319,12 @@ perangkat nyata selama pengembangan.
 
 Halaman Smart Office menyediakan pilihan bulan dan ringkasan singkat 3–4 kalimat.
 Backend menghitung energi dari riwayat counter meter yang sama dengan grafik,
-mengonversi Wh ke kWh, lalu menghitung estimasi emisi jaringan Jamali:
+mengonversi Wh ke kWh, lalu menghitung **estimasi emisi konsumsi listrik**
+AC dan lampu menggunakan faktor emisi jaringan Jamali:
 `emisi kg CO2 = total kWh × 0.87` atau `emisi t CO2 = total kWh / 1000 × 0.87`.
 Faktor 0,87 tCO2/MWh memakai tahun acuan 2019; ini faktor referensi, bukan klaim
 faktor terbaru. Periksa publikasi DJK/ESDM sebelum memakai hasil untuk inventarisasi.
-Referensi: https://gatrik.esdm.go.id/assets/uploads/download_index/files/96d7c-nilai-fe-grk-sistem-ketenagalistrikan-tahun-2019.pdf
+Referensi: https://gatrik.esdm.go.id/gatrik/gatrik-api/storage/migrasi/download_index/files/96d7c-nilai-fe-grk-sistem-ketenagalistrikan-tahun-2019.pdf
 dan https://gec.jp/jcm/jp/kobo/r07/mp/jcmsbsdR7_koboyoryo_rev5.pdf.
 
 Konfigurasi server saja: `GROQ_API_KEY` dan opsional

@@ -16,7 +16,7 @@ from .office_history import HistoryUnavailable, WIB, get_history
 
 office_summary_bp = Blueprint("office_summary", __name__, url_prefix="/api")
 FACTOR = Decimal("0.87")  # tCO2/MWh, numerically equal to kgCO2/kWh.
-FACTOR_SOURCE = "https://gatrik.esdm.go.id/assets/uploads/download_index/files/96d7c-nilai-fe-grk-sistem-ketenagalistrikan-tahun-2019.pdf"
+FACTOR_SOURCE = "https://gatrik.esdm.go.id/gatrik/gatrik-api/storage/migrasi/download_index/files/96d7c-nilai-fe-grk-sistem-ketenagalistrikan-tahun-2019.pdf"
 CACHE_SECONDS = 1800
 _cache = OrderedDict()
 _lock = Lock()
@@ -75,7 +75,7 @@ def fallback_summary(facts):
     if facts["total_kwh"] is None:
         return "Data energi untuk bulan ini belum tersedia; total konsumsi dan estimasi emisi belum dapat dihitung."
     return (f"Konsumsi energi AC dan lampu yang tercatat pada {facts['month_label']} adalah "
-            f"{_format(facts['total_kwh'])} kWh. Estimasi emisi jaringan Jamali sebesar "
+            f"{_format(facts['total_kwh'])} kWh. Estimasi emisi konsumsi listrik AC dan lampu sebesar "
             f"{_format(facts['emissions_kg_co2'])} kg CO₂ menggunakan faktor referensi "
             "0,87 tCO₂/MWh tahun 2019. " + coverage_sentence(facts))
 
@@ -89,7 +89,8 @@ def qwen_summary(facts, key, model):
         "Tulis ringkasan Smart Office dalam bahasa Indonesia, tepat 3 kalimat singkat, maksimal 100 kata. "
         "Kembalikan JSON dengan satu properti sentences berupa array 3 string, masing-masing satu kalimat. "
         "Kalimat pertama menjelaskan total konsumsi energi bulanan AC dan lampu dalam kWh. "
-        "Kalimat kedua menjelaskan estimasi emisi jaringan listrik dalam kg CO₂. "
+        "Kalimat kedua menjelaskan estimasi emisi CO₂ dari konsumsi listrik AC dan lampu dalam kg CO₂; "
+        "gunakan istilah emisi konsumsi listrik, bukan emisi jaringan listrik. "
         "Kalimat ketiga memberi saran penghematan umum yang relevan tanpa mengarang kondisi ruangan. "
         "Gunakan hanya angka yang sudah dihitung pada data, jangan menghitung ulang, membulatkan ke nol, "
         "memproyeksikan sebulan penuh, membandingkan dengan bulan lain, atau menyatakan pengurangan emisi. "
