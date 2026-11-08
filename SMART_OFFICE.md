@@ -7,7 +7,7 @@ CSS tambahan hanya berlaku pada panel baru.
 ## Data yang ditampilkan
 
 Kartu **Daya AC** pada dashboard dan halaman detail menampilkan **0 W**
-jika jumlah pembacaan sensor asli **≤3 W**. Aturan ini hanya mengubah tampilan;
+jika jumlah pembacaan sensor asli **≤6 W**. Aturan ini hanya mengubah tampilan;
 API, database, grafik, energi harian, dan Excel tetap memakai data asli.
 Data yang belum tersedia tetap ditampilkan sebagai tanda kosong, bukan nol.
 
@@ -21,7 +21,7 @@ API menandai kontrak flow ini melalui `ac_power_estimate_managed_by: "node_red"`
 Mekanisme estimasi browser 1000-1080 W tetap tersedia untuk API lama yang belum
 memiliki penanda tersebut. Untuk API baru, tambahan browser menjadi nol agar
 estimasi tidak dobel. Status ON/OFF dan localStorage browser tidak menambahkan
-daya di atas nilai flow baru. Aturan tampilan <=3 W menjadi 0 W tetap berlaku;
+daya di atas nilai flow baru. Aturan tampilan <=6 W menjadi 0 W tetap berlaku;
 missing tetap kosong. Terapkan backend dan frontend bersama flow terbaru;
 API baru mengasumsikan flow pengguna ini sudah mengelola estimasi.
 

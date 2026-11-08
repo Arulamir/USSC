@@ -83,6 +83,6 @@ export function acReplacementPower(realPower: number | null | undefined, enabled
 
 export function displayedAcPower(realPower: number | null | undefined, enabled: boolean, minute: number, managedByNodeRed = false) {
   if (realPower == null || !Number.isFinite(realPower)) return null;
-  if (realPower <= 3) return 0;
+  if (realPower <= 6) return 0;
   return realPower + acReplacementPower(realPower, enabled, minute, managedByNodeRed);
 }
